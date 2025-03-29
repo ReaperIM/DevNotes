@@ -1,8 +1,5 @@
-# Заметка: Плагин для команды
+# /* Действительно ли человек из STEAM */
 ```pawn
-////////////////STOCK FUNCTION///////////////////////
-/* Действительно ли человек из STEAM */
-
 #if AMXX_VERSION_NUM < 183
 stock bool:is_user_steam(id)
 {
@@ -18,7 +15,8 @@ stock bool:is_user_steam(id)
 }
 #endif
 ```
-# ID ентити оружия в руках у игрока
+
+# /* ID ентити оружия в руках у игрока */
 ```pawn
 stock get_player_active_item_id(const player_id)
 {
@@ -28,8 +26,10 @@ stock get_player_active_item_id(const player_id)
 
 	return (pev_valid(weapon_id) == 2 ? weapon_id : 0);
 }
+```
 
-/* CSW ID ентити оружия в руках у игрока */
+# /* CSW ID ентити оружия в руках у игрока */
+```pawn
 stock get_player_active_csw_id(const player_id)
 {
 	if(!is_user_connected(player_id)) return 0;
@@ -38,7 +38,10 @@ stock get_player_active_csw_id(const player_id)
 
 	return (pev_valid(weapon_id) == 2 ? cs_get_weapon_id(weapon_id) : 0);
 }
-/*  Анимация модели игрока */
+```
+
+# /*  Анимация модели игрока */
+```pawn
 stock set_player_animation(const player_id, const anim_name[])
 {
 	static anim_id, Float:flFrameRate, bool:bLoops, Float:flGroundSpeed;
