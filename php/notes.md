@@ -51,3 +51,24 @@ function transliterate( string $text ) :string
 	return $text;
 }
 ```
+
+# Установка статуса страницы ошибки и добавление сообщения об ошибке
+```php
+# bySanya@
+/*
+Описание: Установка статуса страницы ошибки и добавление сообщения об ошибке.
+Параметры: 
+	$code - код ошибки (по умолчанию 404)
+	$message - сообщение об ошибке (по умолчанию "Страница не найдена")
+Возвращает: отсутствует
+*/
+function set_error_page_status( int $code = 404, string $message = 'Страница не найдена' )
+{
+	header('HTTP/1.1 '.$code.' '.$message);
+	header('Status: '.$code.' '.$message);
+	
+	echo '['.$code.'] '.$message;
+	
+	exit( );
+}
+```
