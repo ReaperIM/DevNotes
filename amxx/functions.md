@@ -18,7 +18,8 @@ stock bool:is_user_steam(id)
 }
 #endif
 
-/* ID ентити оружия в руках у игрока */
+# /* ID ентити оружия в руках у игрока */
+```pawn
 stock get_player_active_item_id(const player_id)
 {
 	if(!is_user_connected(player_id)) return 0;
