@@ -9,8 +9,8 @@
 // CBaseEntity -> CBaseDelay -> CBaseAnimating
 // (Linux: добавляется +4 к базовому указателю)
 stock const XO_CBASEANIMATING = 4;  
-  // Базовое смещение для полей анимации.
-  
+
+// Базовое смещение для полей анимации.
 stock const m_flFrameRate       = 36; // (float) Частота анимации.
 stock const m_flGroundSpeed     = 37; // (float) Скорость объекта по земле.
 stock const m_flLastEventCheck  = 38; // (float) Время последней проверки события.
@@ -21,8 +21,8 @@ stock const m_fSequenceLoops    = 40; // (int) Счётчик или флаг ц
 // CBaseEntity -> CBaseDelay
 // (Linux: +4)
 stock const XO_CBASEDELAY = 4;
-  // Базовое смещение для полей, связанных с задержками выполнения.
-  
+
+// Базовое смещение для полей, связанных с задержками выполнения.
 stock const m_flDelay       = 34; // (float) Задержка выполнения команды.
 stock const m_iszKillTarget = 35; // (индекс строки) Идентификатор цели для команды убить; доступ через get_pdata_string.
 
@@ -69,8 +69,8 @@ stock const m_fInAttack      = 33; // (int, bool) Флаг, показывающ
 // CBaseEntity -> CArmoury
 // (Linux: +4)
 stock const XO_CARMOURY = 4;
-  // Базовое смещение для полей, связанных с инвентаризацией оружия.
-  
+
+// Базовое смещение для полей, связанных с инвентаризацией оружия.
 stock const m_iItem       = 34;  // (int) Идентификатор оружия/предмета, определённый в FGD.
 stock const m_iCount      = 35;  // (int) Количество предметов до исчезновения сущности.
 stock const m_iSaveCount  = 36;  // (int) Сохранённое количество предметов при спавне.
@@ -79,8 +79,8 @@ stock const m_bRestoreCount = 148; // (int, bool) Флаг восстановл�
 // ------------------------------
 // CBaseEntity -> CPointEntity -> CMapInfo
 stock const XO_CMAPINFO = 4;
-  // Базовое смещение для полей, связанных с информацией о карте.
-  
+
+// Базовое смещение для полей, связанных с информацией о карте.
 stock const m_ibuying      = 34; // (int) Флаг, связанный с покупкой (например, оружия).
 stock const m_flBombRadius = 35; // (float) Радиус взрыва бомбы.
 
@@ -88,8 +88,8 @@ stock const m_flBombRadius = 35; // (float) Радиус взрыва бомбы
 // CBaseEntity -> CBaseDelay -> CBaseAnimating -> CBaseToggle -> CBaseMonster
 // (Linux: +5)
 stock const XO_CBASEMONSTER = 5;
-  // Базовое смещение для полей монстров (NPC).
-  
+
+// Базовое смещение для полей монстров (NPC).
 stock const m_Activity       = 73; // (int) Текущая активность/анимация монстра.
 stock const m_IdealActivity  = 74; // (int) Идеальное состояние активности, к которому стремится монстр.
 stock const m_LastHitGroup   = 75; // (int) Группа попадания – определяет, куда именно нанесён урон.
