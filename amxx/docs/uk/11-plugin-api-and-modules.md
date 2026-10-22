@@ -1,6 +1,6 @@
 # API плагінів і модулі
 
-[English](../en/11-plugin-api-and-modules.md) | [Українська](../uk/11-plugin-api-and-modules.md) | [Русский](../ru/11-plugin-api-and-modules.md) | [Зміст](../../README.uk.md)
+[EN](../en/11-plugin-api-and-modules.md) | [UK](../uk/11-plugin-api-and-modules.md) | [RU](../ru/11-plugin-api-and-modules.md) | [Зміст](../../README.uk.md)
 
 Natives для запитів, forwards для сповіщень і контракти пам’яті та залежностей між плагінами. Приклади постачальника та споживача є окремими плагінами; кожен блок компілюється незалежно.
 
@@ -8,7 +8,7 @@ Natives для запитів, forwards для сповіщень і контр�
 - [Native постачальника та її виклик](#register-native)
 - [Рядки між пам’яттю різних плагінів](#native-strings)
 - [Значення за посиланням потребують відповідного доступу](#native-byref)
-- [Float-параметри та cell результату native](#native-floats)
+- [`Float`-параметри та cell результату native](#native-floats)
 - [Публікуємо forward і звільняємо handle](#publish-forward)
 - [Визначаємо зміст результатів споживача](#forward-return-policy)
 - [Готуємо масив перед forward](#forward-arrays)
@@ -75,7 +75,7 @@ public plugin_init()
 
 Споживач друкує `100`. У спільному API перенеси оголошення та `#pragma reqlib notes_api` до include. Вимога бібліотеки дає явну помилку завантаження без постачальника. Natives стилю `1` застарілі; для нового API вони не потрібні. Не викликай ту саму native рекурсивно з її handler.
 
-Джерела: [plugin_natives](https://www.amxmodx.org/api/amxmodx/plugin_natives), [register_native](https://www.amxmodx.org/api/amxmodx/register_native), [register_library](https://www.amxmodx.org/api/amxmodx/register_library).
+Джерела: [`plugin_natives`](https://www.amxmodx.org/api/amxmodx/plugin_natives), [`register_native`](https://www.amxmodx.org/api/amxmodx/register_native), [`register_library`](https://www.amxmodx.org/api/amxmodx/register_library).
 
 <a id="native-strings"></a>
 ## Рядки між пам’яттю різних плагінів
@@ -116,7 +116,7 @@ public native_make_label( plugin_id, params )
 
 Для `new label[64]` виклик передає `charsmax( label )`, а не `sizeof label`. Префікс `VIP` дає `[VIP] ready`, з обрізанням для меншого буфера. Реальну місткість знає викликаюча сторона; постачальник не може вивести її з довільного числа. Масиви так само передаються через `get_array` / `set_array` з явною кількістю cells.
 
-Джерела: [get_string](https://www.amxmodx.org/api/amxmodx/get_string), [set_string](https://www.amxmodx.org/api/amxmodx/set_string), [get_array](https://www.amxmodx.org/api/amxmodx/get_array).
+Джерела: [`get_string`](https://www.amxmodx.org/api/amxmodx/get_string), [`set_string`](https://www.amxmodx.org/api/amxmodx/set_string), [`get_array`](https://www.amxmodx.org/api/amxmodx/get_array).
 
 <a id="native-byref"></a>
 ## Значення за посиланням потребують відповідного доступу
@@ -149,10 +149,10 @@ public native_add_bonus( plugin_id, params )
 
 Якщо `score = 20`, виклик `notes_add_bonus( score, 5 )` залишить у споживача `25`. Для посилань на `Float` є `get_float_byref` / `set_float_byref`. В API визнач, що повертається: оновлене значення, ознака успіху чи код помилки.
 
-Джерела: [get_param_byref](https://www.amxmodx.org/api/amxmodx/get_param_byref), [set_param_byref](https://www.amxmodx.org/api/amxmodx/set_param_byref), [get_float_byref](https://www.amxmodx.org/api/amxmodx/get_float_byref).
+Джерела: [`get_param_byref`](https://www.amxmodx.org/api/amxmodx/get_param_byref), [`set_param_byref`](https://www.amxmodx.org/api/amxmodx/set_param_byref), [`get_float_byref`](https://www.amxmodx.org/api/amxmodx/get_float_byref).
 
 <a id="native-floats"></a>
-## Float-параметри та cell результату native
+## `Float`-параметри та cell результату native
 
 Для `native Float:notes_scale( Float:value, Float:factor )` читай параметри через `get_param_f`. Handler native стилю 0 повертає cell без тега; прибери тег, не перетворюючи float на ціле число.
 
@@ -181,12 +181,12 @@ public native_scale( plugin_id, params )
 
 Оголошення у споживача надає повернутим бітам тег `Float`. `notes_scale( 2.5, 2.0 )` дає `5.0`. `floatround` тут змінив би подання результату й порушив контракт оголошення. Зняття тега через `_:` та числове перетворення є різними операціями.
 
-Джерела: [get_param_f](https://www.amxmodx.org/api/amxmodx/get_param_f), [register_native](https://www.amxmodx.org/api/amxmodx/register_native).
+Джерела: [`get_param_f`](https://www.amxmodx.org/api/amxmodx/get_param_f), [`register_native`](https://www.amxmodx.org/api/amxmodx/register_native).
 
 <a id="publish-forward"></a>
 ## Публікуємо forward і звільняємо handle
 
-Native дає споживачу можливість викликати постачальника. Forward дозволяє постачальнику сповіщати споживачів. `CreateMultiForward` знаходить відповідні public-функції у плагінах; збережи handle та звільни його після завершення постачальника.
+Native дає споживачу можливість викликати постачальника. Forward дозволяє постачальнику сповіщати споживачів. `CreateMultiForward` знаходить відповідні `public`-функції у плагінах; збережи handle та звільни його після завершення постачальника.
 
 
 ```pawn
@@ -217,7 +217,7 @@ public plugin_end()
 
 Споживач реалізує `public notes_rank_changed( player, rank )`. `ET_IGNORE` означає, що сповіщення не використовує результати споживачів. Сам `ExecuteForward` повертає успішність виконання; вихідний `result` містить об’єднаний результат callbacks. Це різні значення. `CreateOneForward` адресує один плагін замість усіх відповідних споживачів.
 
-Джерела: [forward API declarations](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc), [ExecuteForward](https://www.amxmodx.org/api/amxmodx/ExecuteForward), [DestroyForward](https://www.amxmodx.org/api/amxmodx/DestroyForward).
+Джерела: [forward API declarations](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc), [`ExecuteForward`](https://www.amxmodx.org/api/amxmodx/ExecuteForward), [`DestroyForward`](https://www.amxmodx.org/api/amxmodx/DestroyForward).
 
 <a id="forward-return-policy"></a>
 ## Визначаємо зміст результатів споживача
@@ -293,7 +293,7 @@ public plugin_cfg()
 
 Споживач реалізує `public notes_adjust_values( values[], count )` і працює лише в межах `count`. Довжина передається явно, бо callback не отримує початкове оголошення масиву. Підготовлене значення призначене для виконання forward, а не є handle контейнера `Array:`; його не передають до `ArrayDestroy`.
 
-Джерела: [PrepareArray](https://www.amxmodx.org/api/amxmodx/PrepareArray), [ExecuteForward](https://www.amxmodx.org/api/amxmodx/ExecuteForward).
+Джерела: [`PrepareArray`](https://www.amxmodx.org/api/amxmodx/PrepareArray), [`ExecuteForward`](https://www.amxmodx.org/api/amxmodx/ExecuteForward).
 
 <a id="optional-natives"></a>
 ## Необов’язкові natives потребують явного fallback
@@ -334,7 +334,7 @@ public plugin_cfg()
 
 Тут навмисно немає обов’язкового `#pragma reqlib notes_api`. `trap = 0` означає відсутність native під час пошуку; `trap = 1` означає спробу її виклику. Не приховуй другу помилку чи сторонні missing natives загальним фільтром. Include з вимогою необов’язкового модуля може також потребувати точного module filter або окремої збірки: native filter не виконує вимогу бібліотеки.
 
-Джерела: [native and module filter declarations](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc), [LibraryExists](https://www.amxmodx.org/api/amxmodx/LibraryExists).
+Джерела: [native and module filter declarations](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc), [`LibraryExists`](https://www.amxmodx.org/api/amxmodx/LibraryExists).
 
 <a id="api-contract"></a>
 ## Невеликий і явний контракт API
@@ -350,4 +350,4 @@ public plugin_cfg()
 
 Не змінюй порядок чи зміст параметрів існуючої native непомітно. За зміни сумісності додай перевірку версії або нову точку входу. `log_error( AMX_ERR_NATIVE, ... )` показує помилку перевірки постачальника як помилку у викликаючому плагіні; це корисніше за прийняття невалідного гравця чи handle з пізнім падінням.
 
-Джерела: [register_library](https://www.amxmodx.org/api/amxmodx/register_library), [log_error](https://www.amxmodx.org/api/amxmodx/log_error).
+Джерела: [`register_library`](https://www.amxmodx.org/api/amxmodx/register_library), [`log_error`](https://www.amxmodx.org/api/amxmodx/log_error).

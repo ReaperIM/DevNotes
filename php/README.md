@@ -1,6 +1,6 @@
 # PHP 7.0-8.5 notes
 
-[English](README.md) | [Українська](README.uk.md) | [Русский](README.ru.md)
+[EN](README.md) | [UK](README.uk.md) | [RU](README.ru.md)
 
 Draft notes on useful language and bundled-extension features: syntax, examples and gotchas.
 

@@ -1,6 +1,6 @@
 # Classes and objects
 
-[English](../en/03-classes-and-objects.md) | [Українська](../uk/03-classes-and-objects.md) | [Русский](../ru/03-classes-and-objects.md)
+[EN](../en/03-classes-and-objects.md) | [UK](../uk/03-classes-and-objects.md) | [RU](../ru/03-classes-and-objects.md)
 
 [Contents](../../README.md)
 
@@ -10,27 +10,27 @@
 - [Declare properties in the constructor](#constructor-promotion)
 - [Objects as default parameter values](#new-initializers)
 - [Attributes and reading their metadata](#attributes)
-- [The Stringable interface](#stringable)
+- [The `Stringable` interface](#stringable)
 - [Enums for a closed set of states](#enums)
 - [Enum properties in constant expressions](#enum-constants)
-- [Readonly properties and shallow immutability](#readonly-properties)
-- [Readonly classes](#readonly-classes)
-- [Reinitialize readonly properties during __clone()](#readonly-cloning)
-- [Readonly anonymous classes](#readonly-anonymous)
-- [Visibility and final class constants](#constant-visibility-final)
+- [`Readonly` properties and shallow immutability](#readonly-properties)
+- [`Readonly` classes](#readonly-classes)
+- [Reinitialize `readonly` properties during `__clone()`](#readonly-cloning)
+- [`Readonly` anonymous classes](#readonly-anonymous)
+- [Visibility and `final` class constants](#constant-visibility-final)
 - [A class constant selected by name](#dynamic-constants)
 - [Constants declared in traits](#trait-constants)
-- [Import a trait method as final](#trait-final)
-- [Check overridden methods with #[Override]](#override)
+- [Import a trait method as `final`](#trait-final)
+- [Check overridden methods with `#[Override]`](#override)
 - [Property hooks: backed and virtual values](#property-hooks)
 - [A full setter must assign the backing value](#setter-validation)
 - [Different visibility for reading and writing](#asymmetric-visibility)
 - [Property contracts in interfaces](#interface-properties)
 - [Lazy ghosts and lazy proxies](#lazy-objects)
-- [Call a method directly after new](#new-chaining)
-- [Check property overrides with #[Override]](#override-properties)
+- [Call a method directly after `new`](#new-chaining)
+- [Check property overrides with `#[Override]`](#override-properties)
 - [Asymmetric visibility for static properties](#static-visibility)
-- [Final promoted properties](#final-promotion)
+- [`Final` promoted properties](#final-promotion)
 - [Clone an object with selected property changes](#clone-with)
 - [Dynamic properties are deprecated](#dynamic-properties)
 
@@ -127,7 +127,7 @@ echo $description->text; # Exports a report
 PHP 8.5 adds `#[DelayedTargetValidation]`, deferring invalid-target checks for built-in or extension attributes until reflection instantiates them; see also [diagnostic attributes](08-errors-and-debugging.md#deprecated-attribute) and [global constants](01-syntax-and-functions.md#global-constant-attributes).
 
 <a id="stringable"></a>
-## The Stringable interface
+## The `Stringable` interface
 
 **PHP 8.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/class.stringable.php)
 
@@ -200,7 +200,7 @@ echo DEFAULT_CASE_NAME, ':', DEFAULT_FORMAT; # Json:json
 This does not allow arbitrary object property reads or method calls in constants.
 
 <a id="readonly-properties"></a>
-## Readonly properties and shallow immutability
+## `Readonly` properties and shallow immutability
 
 **PHP 8.1+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.properties.php#language.oop5.properties.readonly-properties)
 
@@ -221,11 +221,11 @@ echo $snapshot->data->count; # 2
 Before PHP 8.4 initialization was implicitly private to the declaring class; from 8.4 the default is `protected(set)` unless narrowed, while scalar increments and array-entry writes remain forbidden.
 
 <a id="readonly-classes"></a>
-## Readonly classes
+## `Readonly` classes
 
 **PHP 8.2+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.basic.php#language.oop5.basic.class.readonly)
 
-A readonly class makes all instance properties readonly.
+A `readonly` class makes all instance properties `readonly`.
 
 ```php
 readonly class Point
@@ -237,14 +237,14 @@ $point = new Point( 3, 4 );
 echo $point->x, ':', $point->y; # 3:4
 ```
 
-Properties must be typed, static and dynamic properties are forbidden, inheritance must obey readonly rules, and nested objects can still be mutable.
+Properties must be typed, static and dynamic properties are forbidden, inheritance must obey `readonly` rules, and nested objects can still be mutable.
 
 <a id="readonly-cloning"></a>
-## Reinitialize readonly properties during __clone()
+## Reinitialize `readonly` properties during `__clone()`
 
 **PHP 8.3+ | Core** | [PHP documentation](https://www.php.net/manual/en/migration83.new-features.php)
 
-`__clone()` may reinitialize readonly properties to detach nested objects in the copy.
+`__clone()` may reinitialize `readonly` properties to detach nested objects in the copy.
 
 ```php
 readonly class Schedule
@@ -268,11 +268,11 @@ echo $original->date->format( 'Y-m-d' ), ':', $copy->date->format( 'Y-m-d' );
 This is a controlled cloning-time exception; unlisted nested objects remain shared by an ordinary shallow clone.
 
 <a id="readonly-anonymous"></a>
-## Readonly anonymous classes
+## `Readonly` anonymous classes
 
 **PHP 8.3+ | Core** | [PHP documentation](https://www.php.net/manual/en/migration83.new-features.php)
 
-Anonymous classes may also be readonly.
+Anonymous classes may also be `readonly`.
 
 ```php
 $value = new readonly class( 7 )
@@ -283,10 +283,10 @@ $value = new readonly class( 7 )
 echo $value->id; # 7
 ```
 
-They retain the typed-property and shallow-immutability restrictions of named readonly classes.
+They retain the typed-property and shallow-immutability restrictions of named `readonly` classes.
 
 <a id="constant-visibility-final"></a>
-## Visibility and final class constants
+## Visibility and `final` class constants
 
 **PHP 7.1+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.constants.php)
 
@@ -351,7 +351,7 @@ echo $format; # json
 Since PHP 8.3, a child explicitly reusing a trait has separate static trait-property storage from its parent.
 
 <a id="trait-final"></a>
-## Import a trait method as final
+## Import a trait method as `final`
 
 **PHP 8.3+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.traits.php)
 
@@ -380,7 +380,7 @@ echo (new Report())->identifier(); # report
 This prevents overriding that method in subclasses of the consuming class without changing the trait itself.
 
 <a id="override"></a>
-## Check overridden methods with #[Override]
+## Check overridden methods with `#[Override]`
 
 **PHP 8.3+ | Core** | [PHP documentation](https://www.php.net/manual/en/class.override.php)
 
@@ -486,7 +486,7 @@ $article->rename( ' Published ' );
 echo $article->title; # Published
 ```
 
-Write visibility cannot exceed read visibility, `private(set)` makes the property final, and references or array-entry changes also require write access.
+Write visibility cannot exceed read visibility, `private(set)` makes the property `final`, and references or array-entry changes also require write access.
 
 <a id="interface-properties"></a>
 ## Property contracts in interfaces
@@ -551,7 +551,7 @@ echo $proxy->title;
 Proxy identity differs from the real instance, and support targets user-defined classes and `stdClass`, not arbitrary internal classes.
 
 <a id="new-chaining"></a>
-## Call a method directly after new
+## Call a method directly after `new`
 
 **PHP 8.4+ | Core** | [PHP documentation](https://www.php.net/manual/en/migration84.new-features.php)
 
@@ -566,7 +566,7 @@ echo $date; # 2025-01-02
 The older `(new ClassName(...))->method()` syntax remains valid.
 
 <a id="override-properties"></a>
-## Check property overrides with #[Override]
+## Check property overrides with `#[Override]`
 
 **PHP 8.5+ | Core** | [PHP documentation](https://www.php.net/manual/en/class.override.php)
 
@@ -593,7 +593,7 @@ class Report extends Record
 echo new Report()->label; # report
 ```
 
-It does not permit incompatible overrides or overriding a final property.
+It does not permit incompatible overrides or overriding a `final` property.
 
 <a id="static-visibility"></a>
 ## Asymmetric visibility for static properties
@@ -617,14 +617,14 @@ Counter::count_call();
 echo Counter::$calls; # 1
 ```
 
-This controls access rather than state lifetime; readonly static properties remain unsupported.
+This controls access rather than state lifetime; `readonly` static properties remain unsupported.
 
 <a id="final-promotion"></a>
-## Final promoted properties
+## `Final` promoted properties
 
 **PHP 8.5+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.final.php)
 
-PHP 8.5 permits `final` on promoted properties, extending final properties introduced in PHP 8.4.
+PHP 8.5 permits `final` on promoted properties, extending `final` properties introduced in PHP 8.4.
 
 ```php
 class Ticket
@@ -671,7 +671,7 @@ echo $original->alpha, ':', $copy->alpha;
 # 255:128
 ```
 
-Overrides respect write visibility, so readonly updates need a permitted class scope. The constructor is not rerun: validate changed values explicitly; other nested objects retain shallow-clone behavior.
+Overrides respect write visibility, so `readonly` updates need a permitted class scope. The constructor is not rerun: validate changed values explicitly; other nested objects retain shallow-clone behavior.
 
 <a id="dynamic-properties"></a>
 ## Dynamic properties are deprecated

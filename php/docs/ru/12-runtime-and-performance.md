@@ -1,6 +1,6 @@
 # Выполнение и производительность
 
-[English](../en/12-runtime-and-performance.md) | [Українська](../uk/12-runtime-and-performance.md) | [Русский](../ru/12-runtime-and-performance.md)
+[EN](../en/12-runtime-and-performance.md) | [UK](../uk/12-runtime-and-performance.md) | [RU](../ru/12-runtime-and-performance.md)
 
 [Содержание](../../README.ru.md)
 
@@ -11,8 +11,8 @@
 - [Приостановка и возобновление стека вызовов](#fibers)
 - [Предварительная загрузка постоянного кода](#preloading)
 - [JIT и OPcache являются разными инструментами](#jit)
-- [FFI для явного взаимодействия с C](#ffi)
-- [Разбор размеров из php.ini](#ini-quantities)
+- [`FFI` для явного взаимодействия с C](#ffi)
+- [Разбор размеров из `php.ini`](#ini-quantities)
 - [Сброс пика памяти для отдельного этапа](#measure-memory)
 - [Значения среды по умолчанию, права журнала и пакетный lint](#ini-and-cli)
 - [Проверка возможностей сборки: AVIF в GD](#extension-capabilities)
@@ -61,7 +61,7 @@ var_dump( count($cache) ); # int(0)
 
 **PHP 8.1+ | Core** [Документация PHP](https://www.php.net/manual/en/language.fibers.php)
 
-Fiber сохраняет стек вызовов, который можно возобновить, поэтому функция глубоко в цепочке может его приостановить. `resume()` задаёт результат `suspend()`, а `getReturn()` читает окончательный результат функции.
+`Fiber` сохраняет стек вызовов, который можно возобновить, поэтому функция глубоко в цепочке может его приостановить. `resume()` задаёт результат `suspend()`, а `getReturn()` читает окончательный результат функции.
 
 ```php
 $fiber = new Fiber( function(): int
@@ -83,7 +83,7 @@ Fibers работают кооперативно: блокирующий вво�
 
 **PHP 7.4+ | OPcache** [Документация PHP](https://www.php.net/manual/en/opcache.preloading.php)
 
-В php.ini задайте в `opcache.preload` путь к стартовому скрипту, который один раз загрузит выбранные функции и классы для следующих запросов постоянных процессов.
+В `php.ini` задайте в `opcache.preload` путь к стартовому скрипту, который один раз загрузит выбранные функции и классы для следующих запросов постоянных процессов.
 
 <!-- example: fragment -->
 ```php
@@ -111,11 +111,11 @@ var_dump( $jit ); # Environment-dependent.
 
 <a id="ffi"></a>
 
-## FFI для явного взаимодействия с C
+## `FFI` для явного взаимодействия с C
 
 **PHP 7.4+ | FFI** [Документация PHP](https://www.php.net/manual/en/book.ffi.php)
 
-FFI описывает нативные типы и функции C; этот пример выделяет целое C без загрузки библиотеки.
+`FFI` описывает нативные типы и функции C; этот пример выделяет целое C без загрузки библиотеки.
 
 <!-- example: fragment -->
 ```php
@@ -129,11 +129,11 @@ var_dump( $value->cdata ); # int(42)
 
 <a id="ini-quantities"></a>
 
-## Разбор размеров из php.ini
+## Разбор размеров из `php.ini`
 
 **PHP 8.2+ | Core** [Документация PHP](https://www.php.net/manual/en/function.ini-parse-quantity.php)
 
-`ini_parse_quantity()` разбирает размеры php.ini с множителями K, M и G на основе 1024.
+`ini_parse_quantity()` разбирает размеры `php.ini` с множителями `K`, `M` и `G` на основе 1024.
 
 ```php
 var_dump( ini_parse_quantity('128M') ); # int(134217728)
@@ -168,7 +168,7 @@ unset( $buffer );
 
 **PHP 8.2+ log mode / PHP 8.3+ ini fallback and batch lint** [Документация PHP](https://www.php.net/manual/en/configuration.file.php)
 
-PHP 8.3 добавляет запасные значения переменных среды в php.ini и `php -l` для нескольких файлов; PHP 8.2 добавляет `error_log_mode`.
+PHP 8.3 добавляет запасные значения переменных среды в `php.ini` и `php -l` для нескольких файлов; PHP 8.2 добавляет `error_log_mode`.
 
 ```ini
 max_execution_time = ${PHP_MAX_EXECUTION_TIME:-30}
@@ -225,4 +225,4 @@ $elapsed_ms = ($finished_at - $started_at) / 1000000;
 var_dump( $elapsed_ms ); # Elapsed milliseconds; varies each run.
 ```
 
-С `true` наносекунды имеют тип int на 64-битных и float на 32-битных платформах; единица не гарантирует наносекундной точности оборудования.
+С `true` наносекунды имеют тип `int` на 64-битных и `float` на 32-битных платформах; единица не гарантирует наносекундной точности оборудования.

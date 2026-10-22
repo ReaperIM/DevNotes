@@ -1,6 +1,6 @@
 # Масиви та обхід даних
 
-[English](../en/04-arrays-and-iteration.md) | [Українська](../uk/04-arrays-and-iteration.md) | [Русский](../ru/04-arrays-and-iteration.md)
+[EN](../en/04-arrays-and-iteration.md) | [UK](../uk/04-arrays-and-iteration.md) | [RU](../ru/04-arrays-and-iteration.md)
 
 [Зміст](../../README.uk.md)
 
@@ -10,9 +10,9 @@
 - [Читання вибраних іменованих полів](#keyed-destructuring)
 - [Розкладання за посиланням для зміни оригіналу](#reference-destructuring)
 - [Масиви та ітератори через `iterable`](#iterable)
-- [Об’єднання потоків через yield from](#generator-delegation)
+- [Об’єднання потоків через `yield from`](#generator-delegation)
 - [Підсумковий результат генератора](#generator-return)
-- [Побудова масивів через ... і повторні ключі](#unpacking)
+- [Побудова масивів через `...` і повторні ключі](#unpacking)
 - [Злиття нуля або більше масивів](#merge-empty)
 - [Перший і останній ключ без зміни вказівника](#boundary-keys)
 - [Перевірка можливості `count()`](#countable)
@@ -99,7 +99,7 @@ $total = sum_values( new ArrayIterator([2, 3, 5]) ); # 10
 
 <a id="generator-delegation"></a>
 
-## Об’єднання потоків через yield from
+## Об’єднання потоків через `yield from`
 
 **PHP 7.0+ | Ядро** | [PHP](https://www.php.net/manual/en/language.generators.syntax.php)
 
@@ -139,7 +139,7 @@ $count = $stream->getReturn(); # 1
 
 <a id="unpacking"></a>
 
-## Побудова масивів через ... і повторні ключі
+## Побудова масивів через `...` і повторні ключі
 
 **PHP 7.4+ | Ядро** | [PHP](https://www.php.net/manual/en/language.types.array.php#language.types.array.unpacking)
 

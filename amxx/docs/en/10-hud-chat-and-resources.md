@@ -1,10 +1,10 @@
 # HUD, chat and resources
 
-[English](../en/10-hud-chat-and-resources.md) | [Українська](../uk/10-hud-chat-and-resources.md) | [Русский](../ru/10-hud-chat-and-resources.md)
+[EN](../en/10-hud-chat-and-resources.md) | [UK](../uk/10-hud-chat-and-resources.md) | [RU](../ru/10-hud-chat-and-resources.md)
 
 [Contents](../../README.md)
 
-Output that reaches the intended client, survives repeated updates and uses the correct resource paths. Examples use AMXX 1.9. Colored chat and the StatusIcon example are specific to CS 1.6 / Condition Zero.
+Output that reaches the intended client, survives repeated updates and uses the correct resource paths. Examples use AMXX 1.9. Colored chat and the `StatusIcon` example are specific to CS 1.6 / Condition Zero.
 
 **In this chapter**
 
@@ -15,7 +15,7 @@ Output that reaches the intended client, survives repeated updates and uses the 
 - [DHUD is a stack, not a reusable channel](#director-hud)
 - [A user message must match its protocol](#user-messages)
 - [Translate for the actual recipient](#localized-output)
-- [WAV sounds use paths relative to sound/](#precache-sound)
+- [WAV sounds use paths relative to `sound/`](#precache-sound)
 - [Precache models and keep map-local indexes](#precache-models)
 - [Download registration is not sound precaching](#generic-downloads)
 
@@ -42,7 +42,7 @@ public command_colors( id )
 }
 ```
 
-Only the caller receives this message. `^4` is green, `^3` is the selected team color and `^1` returns to the default color. Recipient `0` sends to everyone; filtering recipients is a separate operation. Do not include an old custom ColorChat implementation with the same native name.
+Only the caller receives this message. `^4` is green, `^3` is the selected team color and `^1` returns to the default color. Recipient `0` sends to everyone; filtering recipients is a separate operation. Do not include an old custom `ColorChat` implementation with the same native name.
 
 <a id="format-player-text"></a>
 
@@ -194,7 +194,7 @@ public command_icon( id )
 }
 ```
 
-This changes the displayed icon, not server-side buying permission. Do all validation before `message_begin()` and never return halfway through a message. Unreliable delivery may drop cosmetic updates; reliable delivery is not a reason to flood the channel. Send on meaningful changes or at a controlled refresh rate. [StatusIcon layout](https://wiki.alliedmods.net/Half-Life_1_Game_Events#StatusIcon).
+This changes the displayed icon, not server-side buying permission. Do all validation before `message_begin()` and never return halfway through a message. Unreliable delivery may drop cosmetic updates; reliable delivery is not a reason to flood the channel. Send on meaningful changes or at a controlled refresh rate. [`StatusIcon` layout](https://wiki.alliedmods.net/Half-Life_1_Game_Events#StatusIcon).
 
 <a id="localized-output"></a>
 
@@ -237,7 +237,7 @@ NOTE_WELCOME = Добро пожаловать, %s!
 
 <a id="precache-sound"></a>
 
-## WAV sounds use paths relative to sound/
+## WAV sounds use paths relative to `sound/`
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/precache_sound)
 

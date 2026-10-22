@@ -1,6 +1,6 @@
 # Debugging and performance
 
-[English](../en/12-debugging-and-performance.md) | [Українська](../uk/12-debugging-and-performance.md) | [Русский](../ru/12-debugging-and-performance.md)
+[EN](../en/12-debugging-and-performance.md) | [UK](../uk/12-debugging-and-performance.md) | [RU](../ru/12-debugging-and-performance.md)
 
 [Contents](../../README.md)
 
@@ -20,7 +20,7 @@ Loading, runtime diagnostics, ownership and work in frequent callbacks. Optimize
 
 ## Compiler errors and warnings are different evidence
 
-An undefined symbol often points to a missing or wrong include; a tag mismatch often means that a Float, enum or handle was passed as another kind of cell. Fix the contract instead of hiding the warning with a cast.
+An undefined symbol often points to a missing or wrong include; a tag mismatch often means that a `Float`, `enum` or handle was passed as another kind of cell. Fix the contract instead of hiding the warning with a cast.
 
 ```pawn
 #include <amxmodx>
@@ -64,7 +64,7 @@ public client_authorized( id, const authid[] )
 
 This is a diagnostic example, not a requirement to log every authorization. Do not print passwords, database credentials or every frame. Rate-limit repetitive failures at their source.
 
-[amxmodx.inc](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc)
+[`amxmodx.inc`](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc)
 
 <a id="fail-state"></a>
 
@@ -93,13 +93,13 @@ public plugin_cfg()
 
 A missing optional cosmetic feature can simply be disabled. Choose a fail state for a real inability to satisfy the plugin contract, not for every rejected user command.
 
-[amxmodx.inc](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc)
+[`amxmodx.inc`](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc)
 
 <a id="hot-paths"></a>
 
 ## Do cheap checks before expensive work
 
-A PreThink hook can be called very frequently. Reject disabled or irrelevant states first, and avoid reading files, opening SQL connections or scanning all players for a local operation.
+A `PreThink` hook can be called very frequently. Reject disabled or irrelevant states first, and avoid reading files, opening SQL connections or scanning all players for a local operation.
 
 ```pawn
 #include <amxmodx>
@@ -135,7 +135,7 @@ public player_prethink( id )
 
 This throttles the body, not the hook itself. If the feature does not need frame access, a task, entity think or a specific event can be clearer. Do not move a calculation away from the event if that changes required timing.
 
-[get_gametime](https://www.amxmodx.org/api/amxmodx/get_gametime)
+[`get_gametime`](https://www.amxmodx.org/api/amxmodx/get_gametime)
 
 <a id="distance"></a>
 
@@ -198,14 +198,14 @@ Static storage keeps the counter between calls. For recursive or reentrant code,
 
 A handle is meaningful only to its own API. Record who creates it, who closes it and which invalid sentinel that API uses.
 
-- Array / Trie: `ArrayDestroy()` / `TrieDestroy()` for owned containers.
+- `Array` / `Trie`: `ArrayDestroy()` / `TrieDestroy()` for owned containers.
 - nVault: `nvault_close()`; failed open is `INVALID_HANDLE` (`-1`).
 - SQLX: free owned tuples, connections and prepared queries with `SQL_FreeHandle()`; do not free a threaded callback query.
 - New menu: destroy according to its lifetime; a shared menu cannot be destroyed after the first player uses it.
 
 [Containers](03-arrays-and-containers.md) | [Menus](07-tasks-and-menus.md) | [Storage](09-files-vault-and-sql.md)
 
-[ArrayDestroy](https://www.amxmodx.org/api/cellarray/ArrayDestroy) | [SQL_ThreadQuery](https://www.amxmodx.org/api/sqlx/SQL_ThreadQuery)
+[`ArrayDestroy`](https://www.amxmodx.org/api/cellarray/ArrayDestroy) | [`SQL_ThreadQuery`](https://www.amxmodx.org/api/sqlx/SQL_ThreadQuery)
 
 <a id="clocks"></a>
 
@@ -226,4 +226,4 @@ public plugin_init()
 
 Do not benchmark a tiny block by subtracting two game-time reads in the same frame. Compare the same workload with controlled player/entity counts, and separate callback frequency from the cost of one call.
 
-[get_gametime](https://www.amxmodx.org/api/amxmodx/get_gametime) | [get_systime](https://www.amxmodx.org/api/amxmodx/get_systime)
+[`get_gametime`](https://www.amxmodx.org/api/amxmodx/get_gametime) | [`get_systime`](https://www.amxmodx.org/api/amxmodx/get_systime)

@@ -1,37 +1,37 @@
 # Syntax and functions
 
-[English](../en/01-syntax-and-functions.md) | [Українська](../uk/01-syntax-and-functions.md) | [Русский](../ru/01-syntax-and-functions.md)
+[EN](../en/01-syntax-and-functions.md) | [UK](../uk/01-syntax-and-functions.md) | [RU](../ru/01-syntax-and-functions.md)
 
 [Contents](../../README.md)
 
 **On this page**
 
-- [A default value with ??](#null-coalescing)
-- [Fill missing configuration with ??=](#null-coalescing-assignment)
-- [Sorting with the spaceship operator <=>](#spaceship)
+- [A default value with `??`](#null-coalescing)
+- [Fill missing configuration with `??=`](#null-coalescing-assignment)
+- [Sorting with the spaceship operator `<=>`](#spaceship)
 - [Arrow functions and captured values](#arrow-functions)
 - [Named arguments](#named-arguments)
 - [String keys become named arguments](#unpacking-named-arguments)
 - [Named arguments after unpacking](#named-after-unpacking)
-- [match returns a value and compares strictly](#match)
-- [A nullable object chain with ?->](#nullsafe)
-- [throw inside an expression](#throw-expression)
-- [Convert a callable with Closure::fromCallable()](#closure-from-callable)
-- [First-class callable syntax: function_name(...)](#first-class-callables)
-- [The pipe operator |>](#pipe)
+- [`match` returns a value and compares strictly](#match)
+- [A nullable object chain with `?->`](#nullsafe)
+- [`throw` inside an expression](#throw-expression)
+- [Convert a callable with `Closure::fromCallable()`](#closure-from-callable)
+- [First-class callable syntax: `function_name(...)`](#first-class-callables)
+- [The pipe operator `|>`](#pipe)
 - [Callbacks in constant expressions](#closures-in-constant-expressions)
-- [Recursion with Closure::getCurrent()](#recursive-closures)
+- [Recursion with `Closure::getCurrent()`](#recursive-closures)
 - [Trailing commas in calls and declarations](#trailing-commas)
 - [Readable numeric literals](#numeric-literals)
 - [Grouped namespace imports](#group-use)
-- [Temporarily binding a closure with call()](#closure-call)
+- [Temporarily binding a closure with `call()`](#closure-call)
 - [Expressions in static local initializers](#static-initializers)
-- [exit() and die() behave more like functions](#exit-callable)
+- [`exit()` and `die()` behave more like functions](#exit-callable)
 - [Type casts in constant expressions](#casts-in-constant-expressions)
 - [Attributes on global constants](#global-constant-attributes)
 
 <a id="null-coalescing"></a>
-## A default value with ??
+## A default value with `??`
 
 **PHP 7.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.operators.comparison.php#language.operators.comparison.coalesce)
 
@@ -48,7 +48,7 @@ echo $limit, ':', $label; # 0:Untitled
 Use `array_key_exists()` to distinguish a missing key from `null`; parenthesize `??` when combining it with concatenation.
 
 <a id="null-coalescing-assignment"></a>
-## Fill missing configuration with ??=
+## Fill missing configuration with `??=`
 
 **PHP 7.4+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.operators.assignment.php)
 
@@ -65,7 +65,7 @@ echo $config['timeout'], ':', $config['retries']; # 30:0
 The right side is evaluated only when assignment is needed; existing zero values remain unchanged.
 
 <a id="spaceship"></a>
-## Sorting with the spaceship operator <=>
+## Sorting with the spaceship operator `<=>`
 
 **PHP 7.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.operators.comparison.php)
 
@@ -158,7 +158,7 @@ echo join_parts( ...$parts, separator: ':' ); # docs:types
 They must not overwrite a parameter already supplied by the unpacked array.
 
 <a id="match"></a>
-## match returns a value and compares strictly
+## `match` returns a value and compares strictly
 
 **PHP 8.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/control-structures.match.php)
 
@@ -180,7 +180,7 @@ echo $label; # text
 Without a matching arm or `default`, it throws `UnhandledMatchError`; this differs from the loose comparisons in `switch`.
 
 <a id="nullsafe"></a>
-## A nullable object chain with ?->
+## A nullable object chain with `?->`
 
 **PHP 8.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.basic.php#language.oop5.basic.nullsafe)
 
@@ -196,7 +196,7 @@ echo $city; # Not provided
 It supports reads only and does not suppress invalid accesses or exceptions on non-null objects.
 
 <a id="throw-expression"></a>
-## throw inside an expression
+## `throw` inside an expression
 
 **PHP 8.0+ | Core** | [PHP documentation](https://www.php.net/exceptions)
 
@@ -210,7 +210,7 @@ $token = $config['token'] ?? throw new InvalidArgumentException( 'Token is requi
 Here an empty string is still accepted because `??` only checks absence and `null`.
 
 <a id="closure-from-callable"></a>
-## Convert a callable with Closure::fromCallable()
+## Convert a callable with `Closure::fromCallable()`
 
 **PHP 7.1+ | Core** | [PHP documentation](https://www.php.net/manual/en/closure.fromcallable.php)
 
@@ -230,7 +230,7 @@ echo $format( 'types' ); # note:types
 Invalid or inaccessible callables throw `TypeError`; [first-class callable syntax](#first-class-callables) provides the same semantics from PHP 8.1.
 
 <a id="first-class-callables"></a>
-## First-class callable syntax: function_name(...)
+## First-class callable syntax: `function_name(...)`
 
 **PHP 8.1+ | Core** | [PHP documentation](https://www.php.net/manual/en/functions.first_class_callable_syntax.php)
 
@@ -246,7 +246,7 @@ echo implode( ',', $values ); # one,two
 This is not argument unpacking and cannot be combined with `?->` or `new ClassName(...)`.
 
 <a id="pipe"></a>
-## The pipe operator |>
+## The pipe operator `|>`
 
 **PHP 8.5+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.operators.functional.php)
 
@@ -282,7 +282,7 @@ echo normalize_name( ' Ada ' ); # Ada
 They create callbacks rather than execute them; closures must be static and cannot capture variables with `use`.
 
 <a id="recursive-closures"></a>
-## Recursion with Closure::getCurrent()
+## Recursion with `Closure::getCurrent()`
 
 **PHP 8.5+ | Core** | [PHP documentation](https://www.php.net/manual/en/closure.getcurrent.php)
 
@@ -353,7 +353,7 @@ $writers = [CsvWriter::class, JsonWriter::class];
 Importing a name does not load or instantiate its class.
 
 <a id="closure-call"></a>
-## Temporarily binding a closure with call()
+## Temporarily binding a closure with `call()`
 
 **PHP 7.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/closure.call.php)
 
@@ -394,7 +394,7 @@ echo next_number(), ':', next_number(); # 5:6
 Later function calls reuse the stored value in the current process; it is not a cache shared across separate PHP requests.
 
 <a id="exit-callable"></a>
-## exit() and die() behave more like functions
+## `exit()` and `die()` behave more like functions
 
 **PHP 8.4+ | Core** | [PHP documentation](https://www.php.net/manual/en/migration84.incompatible.php)
 

@@ -1,23 +1,23 @@
 # Types
 
-[English](../en/02-types.md) | [Українська](../uk/02-types.md) | [Русский](../ru/02-types.md)
+[EN](../en/02-types.md) | [UK](../uk/02-types.md) | [RU](../ru/02-types.md)
 
 [Contents](../../README.md)
 
 - [Scalar parameters and return types](#scalar-types)
-- [strict_types](#strict-types)
+- [`strict_types`](#strict-types)
 - [Nullable types](#nullable)
-- [void](#void)
-- [iterable / object](#iterable-object)
+- [`void`](#void)
+- [`iterable` / `object`](#iterable-object)
 - [Typed properties](#typed-properties)
 - [Covariance / contravariance](#variance)
-- [Union: A|B](#union)
-- [mixed](#mixed)
-- [Return type static](#static-return)
-- [Intersection: A&B](#intersection)
-- [never](#never)
-- [DNF: (A&B)|C](#dnf)
-- [Standalone true / false / null](#literal-types)
+- [Union: `A|B`](#union)
+- [`mixed`](#mixed)
+- [Return type `static`](#static-return)
+- [Intersection: `A&B`](#intersection)
+- [`never`](#never)
+- [DNF: `(A&B)|C`](#dnf)
+- [Standalone `true` / `false` / `null`](#literal-types)
 - [Typed constants](#typed-constants)
 - [PHPDoc vs native types](#native-type-limits)
 
@@ -40,7 +40,7 @@ echo line_total( 12.5, 3 ); # 37.5
 The scalar names are `int`, `float`, `string` and `bool`; conversion rules depend on `strict_types`.
 
 <a id="strict-types"></a>
-## strict_types
+## `strict_types`
 
 **PHP 7.0+** | [PHP](https://www.php.net/manual/en/language.types.declarations.php#language.types.declarations.strict)
 
@@ -79,7 +79,7 @@ echo display_name(); # Guest
 `string|null` is another spelling from 8.0. The implicit form `string $name = null` is deprecated from 8.4.
 
 <a id="void"></a>
-## void
+## `void`
 
 **PHP 7.1+** | [PHP](https://www.php.net/manual/en/language.types.void.php)
 
@@ -96,7 +96,7 @@ function print_status( bool $visible ): void
 ```
 
 <a id="iterable-object"></a>
-## iterable / object
+## `iterable` / `object`
 
 **PHP 7.1 / 7.2+** | [PHP](https://www.php.net/manual/en/language.types.iterable.php)
 
@@ -136,7 +136,7 @@ $profile = new Profile();
 var_dump( isset($profile->id), $profile->email ); # false, null
 ```
 
-Reading id before assignment throws `Error`. `isset()` is safe but does not distinguish uninitialized from `null`. `callable` is not a property type; use `Closure` for a stored closure.
+Reading `id` before assignment throws `Error`. `isset()` is safe but does not distinguish uninitialized from `null`. `callable` is not a property type; use `Closure` for a stored closure.
 
 <a id="variance"></a>
 ## Covariance / contravariance
@@ -163,7 +163,7 @@ class CustomFactory implements Factory
 7.2 already allowed removing a parameter type. Ordinary read/write properties remain invariant.
 
 <a id="union"></a>
-## Union: A|B
+## Union: `A|B`
 
 **PHP 8.0+** | [PHP](https://www.php.net/manual/en/language.types.type-system.php)
 
@@ -178,10 +178,10 @@ function find_position( string $text, string $needle ): int|false
 echo find_position( 'php', 'p' ); # 0
 ```
 
-`false` is allowed in unions from 8.0, standalone from 8.2. Check failure with !== `false` rather than discarding position zero.
+`false` is allowed in unions from 8.0, standalone from 8.2. Check failure with `!== false` rather than discarding position zero.
 
 <a id="mixed"></a>
-## mixed
+## `mixed`
 
 **PHP 8.0+** | [PHP](https://www.php.net/manual/en/language.types.mixed.php)
 
@@ -199,7 +199,7 @@ echo describe_value( ['id' => 42] ); # array
 `mixed` already includes `null`, so `?mixed` and `mixed|null` are invalid.
 
 <a id="static-return"></a>
-## Return type static
+## Return type `static`
 
 **PHP 8.0+** | [PHP](https://www.php.net/manual/en/language.types.relative-class-types.php)
 
@@ -219,14 +219,14 @@ class UserRecord extends Record {}
 echo get_class( UserRecord::create() ); # UserRecord
 ```
 
-8.5: an override in a final class may replace `static` with `self` or the final class name.
+8.5: an override in a `final` class may replace `static` with `self` or the `final` class name.
 
 <a id="intersection"></a>
-## Intersection: A&B
+## Intersection: `A&B`
 
 **PHP 8.1+** | [PHP](https://www.php.net/manual/en/language.types.declarations.php#language.types.declarations.composite.intersection)
 
-A&B requires one `object` to satisfy both contracts. `Countable&Iterator` is useful when a function needs both iteration methods and the item count.
+`A&B` requires one `object` to satisfy both contracts. `Countable&Iterator` is useful when a function needs both iteration methods and the item count.
 
 ```php
 function item_count( Countable&Iterator $items ): int
@@ -240,7 +240,7 @@ echo item_count( new ArrayIterator([10, 20]) ); # 2
 Scalar intersections such as `int&string` are invalid.
 
 <a id="never"></a>
-## never
+## `never`
 
 **PHP 8.1+** | [PHP](https://www.php.net/manual/en/language.types.never.php)
 
@@ -256,7 +256,7 @@ function reject_request(): never
 Even a bare `return` is forbidden; reaching the end throws `TypeError`.
 
 <a id="dnf"></a>
-## DNF: (A&B)|C
+## DNF: `(A&B)|C`
 
 **PHP 8.2+** | [PHP](https://www.php.net/manual/en/migration82.new-features.php)
 
@@ -275,7 +275,7 @@ echo optional_count( new ArrayIterator([1, 2]) ); # 2
 Parentheses around intersection groups are required. `A&(B|C)` is not accepted.
 
 <a id="literal-types"></a>
-## Standalone true / false / null
+## Standalone `true` / `false` / `null`
 
 **PHP 8.2+** | [PHP](https://www.php.net/manual/en/language.types.singleton.php)
 

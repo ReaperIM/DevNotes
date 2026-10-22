@@ -1,13 +1,13 @@
 # Plugin lifecycle and players
 
-[English](../en/04-plugin-lifecycle-and-players.md) | [Українська](../uk/04-plugin-lifecycle-and-players.md) | [Русский](../ru/04-plugin-lifecycle-and-players.md)
+[EN](../en/04-plugin-lifecycle-and-players.md) | [UK](../uk/04-plugin-lifecycle-and-players.md) | [RU](../ru/04-plugin-lifecycle-and-players.md)
 
 [Contents](../../README.md)
 
 Map setup, player identity and cleanup. The most important distinction is between a reusable slot and a particular connection.
 
 - [Register once per map](#registration)
-- [plugin_cfg is not the end of configuration](#initialization-order)
+- [`plugin_cfg` is not the end of configuration](#initialization-order)
 - [Authorization and entering the game are separate](#authorization-order)
 - [Validate a player index before using player state](#player-index)
 - [Use userid for the current connection](#userid)
@@ -41,11 +41,11 @@ public command_ready( id )
 
 Globals describe the current plugin instance, not persistent storage. A map change is not a substitute for saving data.
 
-[plugin_init](https://www.amxmodx.org/api/amxmodx/plugin_init)
+[`plugin_init`](https://www.amxmodx.org/api/amxmodx/plugin_init)
 
 <a id="initialization-order"></a>
 
-## plugin_cfg is not the end of configuration
+## `plugin_cfg` is not the end of configuration
 
 `plugin_cfg()` runs after all `plugin_init()` callbacks. To use final AMXX configuration values, use `OnConfigsExecuted()` rather than assuming buffered commands have already run.
 
@@ -67,7 +67,7 @@ public OnConfigsExecuted()
 
 This covers the normal AMXX config phase, not an arbitrary later `exec` issued by another plugin. See [cvar bindings and config changes](05-commands-cvars-and-configs.md).
 
-[OnConfigsExecuted](https://www.amxmodx.org/api/amxmodx/OnConfigsExecuted)
+[`OnConfigsExecuted`](https://www.amxmodx.org/api/amxmodx/OnConfigsExecuted)
 
 <a id="authorization-order"></a>
 
@@ -103,7 +103,7 @@ public client_putinserver( id )
 
 The action runs in whichever forward arrives second. Bots are also authorized; this alone does not identify a human or grant access.
 
-[client_authorized](https://www.amxmodx.org/api/amxmodx/client_authorized)
+[`client_authorized`](https://www.amxmodx.org/api/amxmodx/client_authorized)
 
 <a id="player-index"></a>
 
@@ -131,7 +131,7 @@ public command_health( id )
 
 Pawn permits chained comparisons, but explicit `id >= 1 && id <= MaxClients` is easier to transfer to other languages. Do not treat every entity index as a player.
 
-[is_user_alive](https://www.amxmodx.org/api/amxmodx/is_user_alive)
+[`is_user_alive`](https://www.amxmodx.org/api/amxmodx/is_user_alive)
 
 <a id="userid"></a>
 
@@ -159,7 +159,7 @@ public show_welcome( const data[] )
 
 Userid is not an account key for saved progress. The same rule applies to SQL callbacks and menu targets. [Task lifecycle](07-tasks-and-menus.md).
 
-[get_user_userid](https://www.amxmodx.org/api/amxmodx/get_user_userid)
+[`get_user_userid`](https://www.amxmodx.org/api/amxmodx/get_user_userid)
 
 <a id="authid"></a>
 
@@ -181,7 +181,7 @@ public client_authorized( id, const authid[] )
 
 The identity guarantees depend on the server authentication setup. Do not award privileges merely because a string starts with `STEAM_`; bot auth is `BOT`.
 
-[get_user_authid](https://www.amxmodx.org/api/amxmodx/get_user_authid)
+[`get_user_authid`](https://www.amxmodx.org/api/amxmodx/get_user_authid)
 
 <a id="player-list"></a>
 
@@ -211,7 +211,7 @@ public command_players()
 
 `players[index]` is a slot; `index` is just the list position. An empty result means the loop does not run.
 
-[get_players_ex](https://www.amxmodx.org/api/amxmisc/get_players_ex)
+[`get_players_ex`](https://www.amxmodx.org/api/amxmisc/get_players_ex)
 
 <a id="disconnect-cleanup"></a>
 
@@ -238,7 +238,7 @@ public client_disconnected( id )
 
 `client_remove()` is later, after the entity is removed. Save the data you need before clearing it; do not assume that `is_user_connected()` is already false inside `client_disconnected()`.
 
-[client_disconnected](https://www.amxmodx.org/api/amxmodx/client_disconnected)
+[`client_disconnected`](https://www.amxmodx.org/api/amxmodx/client_disconnected)
 
 <a id="handle-cleanup"></a>
 
@@ -264,4 +264,4 @@ public plugin_end()
 
 Closing an owned handle is different from freeing a borrowed callback handle. In particular, a threaded SQL query handle is owned by SQLX. [Storage](09-files-vault-and-sql.md).
 
-[plugin_end](https://www.amxmodx.org/api/amxmodx/plugin_end)
+[`plugin_end`](https://www.amxmodx.org/api/amxmodx/plugin_end)

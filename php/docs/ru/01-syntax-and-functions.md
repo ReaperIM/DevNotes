@@ -1,37 +1,37 @@
 # Синтаксис и функции
 
-[English](../en/01-syntax-and-functions.md) | [Українська](../uk/01-syntax-and-functions.md) | [Русский](../ru/01-syntax-and-functions.md)
+[EN](../en/01-syntax-and-functions.md) | [UK](../uk/01-syntax-and-functions.md) | [RU](../ru/01-syntax-and-functions.md)
 
 [Содержание](../../README.ru.md)
 
 **На этой странице**
 
-- [Значение по умолчанию через ??](#null-coalescing)
-- [Дополнение настроек через ??=](#null-coalescing-assignment)
-- [Сортировка оператором <=>](#spaceship)
+- [Значение по умолчанию через `??`](#null-coalescing)
+- [Дополнение настроек через `??=`](#null-coalescing-assignment)
+- [Сортировка оператором `<=>`](#spaceship)
 - [Стрелочные функции и захваченные значения](#arrow-functions)
 - [Именованные аргументы](#named-arguments)
 - [Строковые ключи становятся именованными аргументами](#unpacking-named-arguments)
 - [Именованные аргументы после распаковки](#named-after-unpacking)
-- [match возвращает значение и сравнивает строго](#match)
-- [Цепочка необязательных объектов через ?->](#nullsafe)
-- [throw внутри выражения](#throw-expression)
-- [Преобразование callable через Closure::fromCallable()](#closure-from-callable)
-- [Синтаксис ссылки на функцию: function_name(...)](#first-class-callables)
-- [Оператор последовательной обработки |>](#pipe)
+- [`match` возвращает значение и сравнивает строго](#match)
+- [Цепочка необязательных объектов через `?->`](#nullsafe)
+- [`throw` внутри выражения](#throw-expression)
+- [Преобразование callable через `Closure::fromCallable()`](#closure-from-callable)
+- [Синтаксис ссылки на функцию: `function_name(...)`](#first-class-callables)
+- [Оператор последовательной обработки `|>`](#pipe)
 - [Callback в константных выражениях](#closures-in-constant-expressions)
-- [Рекурсия через Closure::getCurrent()](#recursive-closures)
+- [Рекурсия через `Closure::getCurrent()`](#recursive-closures)
 - [Завершающая запятая в вызовах и объявлениях](#trailing-commas)
 - [Читаемые числовые литералы](#numeric-literals)
 - [Группировка импортов пространства имён](#group-use)
-- [Временная привязка замыкания через call()](#closure-call)
+- [Временная привязка замыкания через `call()`](#closure-call)
 - [Выражения в инициализаторах статических локальных переменных](#static-initializers)
-- [exit() и die() ведут себя ближе к обычным функциям](#exit-callable)
+- [`exit()` и `die()` ведут себя ближе к обычным функциям](#exit-callable)
 - [Приведение типа в константных выражениях](#casts-in-constant-expressions)
 - [Атрибуты глобальных констант](#global-constant-attributes)
 
 <a id="null-coalescing"></a>
-## Значение по умолчанию через ??
+## Значение по умолчанию через `??`
 
 **PHP 7.0+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.operators.comparison.php#language.operators.comparison.coalesce)
 
@@ -48,7 +48,7 @@ echo $limit, ':', $label; # 0:Untitled
 `array_key_exists()` различает отсутствующий ключ и `null`; при сочетании `??` со склеиванием строк ставьте скобки.
 
 <a id="null-coalescing-assignment"></a>
-## Дополнение настроек через ??=
+## Дополнение настроек через `??=`
 
 **PHP 7.4+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.operators.assignment.php)
 
@@ -65,7 +65,7 @@ echo $config['timeout'], ':', $config['retries']; # 30:0
 Правая часть вычисляется только при необходимости присваивания; существующие нулевые значения сохраняются.
 
 <a id="spaceship"></a>
-## Сортировка оператором <=>
+## Сортировка оператором `<=>`
 
 **PHP 7.0+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.operators.comparison.php)
 
@@ -158,7 +158,7 @@ echo join_parts( ...$parts, separator: ':' ); # docs:types
 Они не могут повторно передавать параметр, уже заполненный распакованным массивом.
 
 <a id="match"></a>
-## match возвращает значение и сравнивает строго
+## `match` возвращает значение и сравнивает строго
 
 **PHP 8.0+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/control-structures.match.php)
 
@@ -180,7 +180,7 @@ echo $label; # text
 Без подходящей ветки или `default` возникает `UnhandledMatchError`; это отличается от нестрогих сравнений в `switch`.
 
 <a id="nullsafe"></a>
-## Цепочка необязательных объектов через ?->
+## Цепочка необязательных объектов через `?->`
 
 **PHP 8.0+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.basic.php#language.oop5.basic.nullsafe)
 
@@ -196,7 +196,7 @@ echo $city; # Not provided
 Доступен только для чтения и не скрывает некорректные обращения или исключения в ненулевых объектах.
 
 <a id="throw-expression"></a>
-## throw внутри выражения
+## `throw` внутри выражения
 
 **PHP 8.0+ | Ядро** | [Документация PHP](https://www.php.net/exceptions)
 
@@ -210,7 +210,7 @@ $token = $config['token'] ?? throw new InvalidArgumentException( 'Token is requi
 Здесь пустая строка всё ещё допустима, поскольку `??` проверяет только отсутствие и `null`.
 
 <a id="closure-from-callable"></a>
-## Преобразование callable через Closure::fromCallable()
+## Преобразование callable через `Closure::fromCallable()`
 
 **PHP 7.1+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/closure.fromcallable.php)
 
@@ -230,7 +230,7 @@ echo $format( 'types' ); # note:types
 Некорректный или недоступный callable вызывает `TypeError`; [синтаксис ссылки на функцию](#first-class-callables) имеет ту же семантику с PHP 8.1.
 
 <a id="first-class-callables"></a>
-## Синтаксис ссылки на функцию: function_name(...)
+## Синтаксис ссылки на функцию: `function_name(...)`
 
 **PHP 8.1+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/functions.first_class_callable_syntax.php)
 
@@ -246,7 +246,7 @@ echo implode( ',', $values ); # one,two
 Это не распаковка аргументов; синтаксис не сочетается с `?->` или `new ClassName(...)`.
 
 <a id="pipe"></a>
-## Оператор последовательной обработки |>
+## Оператор последовательной обработки `|>`
 
 **PHP 8.5+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.operators.functional.php)
 
@@ -282,7 +282,7 @@ echo normalize_name( ' Ada ' ); # Ada
 Выражение создаёт callback, а не выполняет его; замыкание должно быть статическим и не может захватывать переменные через `use`.
 
 <a id="recursive-closures"></a>
-## Рекурсия через Closure::getCurrent()
+## Рекурсия через `Closure::getCurrent()`
 
 **PHP 8.5+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/closure.getcurrent.php)
 
@@ -353,7 +353,7 @@ $writers = [CsvWriter::class, JsonWriter::class];
 Импорт имени не загружает класс и не создаёт его экземпляр.
 
 <a id="closure-call"></a>
-## Временная привязка замыкания через call()
+## Временная привязка замыкания через `call()`
 
 **PHP 7.0+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/closure.call.php)
 
@@ -394,7 +394,7 @@ echo next_number(), ':', next_number(); # 5:6
 Значение сохраняется между вызовами функции в текущем процессе; между отдельными PHP-запросами общего кеша нет.
 
 <a id="exit-callable"></a>
-## exit() и die() ведут себя ближе к обычным функциям
+## `exit()` и `die()` ведут себя ближе к обычным функциям
 
 **PHP 8.4+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/migration84.incompatible.php)
 

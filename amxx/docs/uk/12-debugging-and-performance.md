@@ -1,6 +1,6 @@
 # Налагодження та продуктивність
 
-[English](../en/12-debugging-and-performance.md) | [Українська](../uk/12-debugging-and-performance.md) | [Русский](../ru/12-debugging-and-performance.md)
+[EN](../en/12-debugging-and-performance.md) | [UK](../uk/12-debugging-and-performance.md) | [RU](../ru/12-debugging-and-performance.md)
 
 [Зміст](../../README.uk.md)
 
@@ -20,7 +20,7 @@
 
 ## Помилки й попередження компілятора
 
-Невизначений символ часто означає відсутній або неправильний include; tag mismatch може означати передачу Float, enum чи handle як іншого виду cell. Виправляйте контракт, а не приховуйте попередження приведенням тегу.
+Невизначений символ часто означає відсутній або неправильний include; tag mismatch може означати передачу `Float`, `enum` чи handle як іншого виду cell. Виправляйте контракт, а не приховуйте попередження приведенням тегу.
 
 ```pawn
 #include <amxmodx>
@@ -64,7 +64,7 @@ public client_authorized( id, const authid[] )
 
 Це діагностичний приклад, а не вимога журналювати кожну авторизацію. Не виводьте паролі, доступ до БД чи кожен кадр. Повторні помилки варто обмежувати в місці їх виникнення.
 
-[amxmodx.inc](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc)
+[`amxmodx.inc`](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc)
 
 <a id="fail-state"></a>
 
@@ -93,13 +93,13 @@ public plugin_cfg()
 
 Необов’язкову косметичну можливість можна вимкнути окремо. Fail state потрібен, коли плагін справді не може виконати свою задачу, а не для кожної відхиленої команди.
 
-[amxmodx.inc](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc)
+[`amxmodx.inc`](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc)
 
 <a id="hot-paths"></a>
 
 ## Дешеві перевірки перед важкою роботою
 
-PreThink може викликатися дуже часто. Спочатку відсіюйте вимкнений або непотрібний стан; не читайте файли, не відкривайте SQL і не скануйте всіх гравців заради локальної дії.
+`PreThink` може викликатися дуже часто. Спочатку відсіюйте вимкнений або непотрібний стан; не читайте файли, не відкривайте SQL і не скануйте всіх гравців заради локальної дії.
 
 ```pawn
 #include <amxmodx>
@@ -135,7 +135,7 @@ public player_prethink( id )
 
 Це обмежує частоту тіла, а не самого хука. Якщо покадровий доступ не потрібен, task, think сутності чи конкретна подія можуть бути зрозумілішими. Не переносьте обчислення, якщо це змінює потрібний момент виконання.
 
-[get_gametime](https://www.amxmodx.org/api/amxmodx/get_gametime)
+[`get_gametime`](https://www.amxmodx.org/api/amxmodx/get_gametime)
 
 <a id="distance"></a>
 
@@ -198,14 +198,14 @@ Static зберігає лічильник між викликами. У рек�
 
 Handle має сенс лише для свого API. Важливо знати, хто його створює, хто закриває та яке значення означає помилку.
 
-- Array / Trie: `ArrayDestroy()` / `TrieDestroy()` для власних контейнерів.
+- `Array` / `Trie`: `ArrayDestroy()` / `TrieDestroy()` для власних контейнерів.
 - nVault: `nvault_close()`; помилка відкриття `INVALID_HANDLE` (`-1`).
 - SQLX: власні tuples, з’єднання й підготовлені запити закривають через `SQL_FreeHandle()`; запит потокового callback не звільняють.
 - New menu: знищення залежить від часу життя; спільне меню не можна видаляти після першого гравця.
 
 [Контейнери](03-arrays-and-containers.md) | [Меню](07-tasks-and-menus.md) | [Сховища](09-files-vault-and-sql.md)
 
-[ArrayDestroy](https://www.amxmodx.org/api/cellarray/ArrayDestroy) | [SQL_ThreadQuery](https://www.amxmodx.org/api/sqlx/SQL_ThreadQuery)
+[`ArrayDestroy`](https://www.amxmodx.org/api/cellarray/ArrayDestroy) | [`SQL_ThreadQuery`](https://www.amxmodx.org/api/sqlx/SQL_ThreadQuery)
 
 <a id="clocks"></a>
 
@@ -226,4 +226,4 @@ public plugin_init()
 
 Не вимірюйте короткий блок відніманням двох читань ігрового часу в одному кадрі. Порівнюйте однакове навантаження з контрольованою кількістю гравців/сутностей; частота callback і вартість одного виклику є різними величинами.
 
-[get_gametime](https://www.amxmodx.org/api/amxmodx/get_gametime) | [get_systime](https://www.amxmodx.org/api/amxmodx/get_systime)
+[`get_gametime`](https://www.amxmodx.org/api/amxmodx/get_gametime) | [`get_systime`](https://www.amxmodx.org/api/amxmodx/get_systime)

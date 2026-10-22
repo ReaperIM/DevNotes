@@ -1,26 +1,26 @@
 # Databases
 
-[English](../en/10-databases.md) | [Українська](../uk/10-databases.md) | [Русский](../ru/10-databases.md)
+[EN](../en/10-databases.md) | [UK](../uk/10-databases.md) | [RU](../ru/10-databases.md)
 
 [Contents](../../README.md)
 
 **In this chapter**
 
-- [PDO exceptions became the default](#pdo-errors)
-- [mysqli strict reporting became the default](#mysqli-errors)
+- [`PDO` exceptions became the default](#pdo-errors)
+- [`mysqli` strict reporting became the default](#mysqli-errors)
 - [Execute with an array of parameters](#mysqli-execute)
 - [Read one column directly](#fetch-column)
-- [Driver-specific PDO classes](#pdo-subclasses)
+- [Driver-specific `PDO` classes](#pdo-subclasses)
 - [Copy SQLite through its backup API](#sqlite-backup)
 - [What a placeholder represents](#placeholder-boundaries)
 
 <a id="pdo-errors"></a>
 
-## PDO exceptions became the default
+## `PDO` exceptions became the default
 
 **PHP 8.0+ changed default | PDO** [PHP manual](https://www.php.net/manual/en/pdo.error-handling.php)
 
-PDO defaults to `ERRMODE_EXCEPTION` rather than silent errors from PHP 8.0. Setting it explicitly also gives PHP 7 the same failure policy.
+`PDO` defaults to `ERRMODE_EXCEPTION` rather than silent errors from PHP 8.0. Setting it explicitly also gives PHP 7 the same failure policy.
 
 <!-- example: fragment -->
 ```php
@@ -35,11 +35,11 @@ Old branches that only check `false` may now be bypassed by `PDOException`.
 
 <a id="mysqli-errors"></a>
 
-## mysqli strict reporting became the default
+## `mysqli` strict reporting became the default
 
 **PHP 8.1+ changed default | mysqli** [PHP manual](https://www.php.net/manual/en/mysqli-driver.report-mode.php)
 
-mysqli defaults to `MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT` from PHP 8.1.
+`mysqli` defaults to `MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT` from PHP 8.1.
 
 <!-- example: fragment -->
 ```php
@@ -56,7 +56,7 @@ Failures can throw `mysqli_sql_exception` where older code expected warnings or 
 
 ## Execute with an array of parameters
 
-**PHP 8.1+ execute(array) / PHP 8.2+ execute_query() | mysqli** [PHP manual](https://www.php.net/manual/en/mysqli.execute-query.php)
+**PHP 8.1+ `execute(array)` / PHP 8.2+ `execute_query()` | mysqli** [PHP manual](https://www.php.net/manual/en/mysqli.execute-query.php)
 
 `mysqli_stmt::execute()` accepts a parameter array from 8.1. From 8.2, `execute_query()` combines prepare, bind and execute for a one-off query.
 
@@ -71,7 +71,7 @@ $statement = $db->prepare( 'SELECT id, name FROM users WHERE id = ?' );
 $statement->execute( [7] );
 ```
 
-`execute_query()` prepares anew each time and returns `mysqli_result` for result sets or a boolean otherwise.
+`execute_query()` prepares anew each time and returns `mysqli_result` for result sets or a `boolean` otherwise.
 
 <a id="fetch-column"></a>
 
@@ -88,15 +88,15 @@ $result = $db->execute_query( 'SELECT COUNT(*) FROM users' );
 $count = $result->fetch_column();
 ```
 
-Each call advances the row; `false` means no row remains, while SQL NULL becomes `null`.
+Each call advances the row; `false` means no row remains, while SQL `NULL` becomes `null`.
 
 <a id="pdo-subclasses"></a>
 
-## Driver-specific PDO classes
+## Driver-specific `PDO` classes
 
 **PHP 8.4+ | PDO and matching driver** [PHP manual](https://www.php.net/manual/en/pdo.connect.php)
 
-`PDO::connect()` returns a matching subclass such as `Pdo\Mysql`, `Pdo\Pgsql` or `Pdo\Sqlite`, exposing driver-specific methods alongside the shared PDO API.
+`PDO::connect()` returns a matching subclass such as `Pdo\Mysql`, `Pdo\Pgsql` or `Pdo\Sqlite`, exposing driver-specific methods alongside the shared `PDO` API.
 
 <!-- example: fragment -->
 ```php
@@ -109,7 +109,7 @@ if( $db instanceof Pdo\Mysql )
 	$warnings = $db->getWarningCount();
 ```
 
-PHP 8.5 deprecates driver constants such as `PDO::MYSQL_*` in favor of subclass constants; shared constants remain on PDO.
+PHP 8.5 deprecates driver constants such as `PDO::MYSQL_*` in favor of subclass constants; shared constants remain on `PDO`.
 
 <a id="sqlite-backup"></a>
 

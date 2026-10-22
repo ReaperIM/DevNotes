@@ -1,6 +1,6 @@
 # Безпека й випадкові значення
 
-[English](../en/11-security-and-random.md) | [Українська](../uk/11-security-and-random.md) | [Русский](../ru/11-security-and-random.md)
+[EN](../en/11-security-and-random.md) | [UK](../uk/11-security-and-random.md) | [RU](../ru/11-security-and-random.md)
 
 [Зміст](../../README.uk.md)
 
@@ -9,7 +9,7 @@
 - [Безпечні випадкові байти й числа](#secure-random)
 - [Алгоритми паролів і перевірка можливостей](#password-algorithms)
 - [Автентифіковане шифрування через Sodium](#sodium)
-- [Єдиний API Randomizer](#randomizer)
+- [Єдиний API `Randomizer`](#randomizer)
 - [Відтворювана випадковість для тестів](#seeded-random)
 - [Випадкові байти із заданого алфавіту](#random-alphabet)
 - [Випадкові дробові числа з явними межами](#random-floats)
@@ -37,7 +37,7 @@ var_dump( strlen($token) ); # int(64)
 
 ## Алгоритми паролів і перевірка можливостей
 
-**PHP 7.2+ Argon2i / 7.3+ Argon2id / 7.4+ password_algos()** [Документація PHP](https://www.php.net/manual/en/function.password-hash.php)
+**PHP 7.2+ Argon2i / 7.3+ Argon2id / 7.4+ `password_algos()`** [Документація PHP](https://www.php.net/manual/en/function.password-hash.php)
 
 Варіанти Argon2 розширюють `password_hash()`; `password_algos()` показує алгоритми, реально доступні в поточній збірці.
 
@@ -77,7 +77,7 @@ echo $plaintext; # private note
 
 <a id="randomizer"></a>
 
-## Єдиний API Randomizer
+## Єдиний API `Randomizer`
 
 **PHP 8.2+ | random** [Документація PHP](https://www.php.net/manual/en/class.random-randomizer.php)
 
@@ -137,7 +137,7 @@ var_dump( strspn($code, $alphabet) === 12 ); # bool(true)
 
 **PHP 8.3+ | random** [Документація PHP](https://www.php.net/manual/en/random-randomizer.getfloat.php)
 
-`nextFloat()` повертає [0.0, 1.0); `getFloat()` приймає межі та режим `IntervalBoundary`.
+`nextFloat()` повертає `[0.0, 1.0)`; `getFloat()` приймає межі та режим `IntervalBoundary`.
 
 ```php
 $randomizer = new Random\Randomizer();

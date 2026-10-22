@@ -1,6 +1,6 @@
 # AMXX / Pawn notes
 
-[English](README.md) | [Українська](README.uk.md) | [Русский](README.ru.md)
+[EN](README.md) | [UK](README.uk.md) | [RU](README.ru.md)
 
 Draft working notes on AMX Mod X: useful APIs, examples and the details that affect real plugin behavior. English is the primary version; Ukrainian and Russian cover the same material.
 
@@ -27,4 +27,4 @@ The baseline is AMXX 1.9. Game-specific APIs and optional ReAPI dependencies are
 <a id="earlier"></a>
 ## Earlier notes
 
-[functions.md](functions.md) | [offsets.md](offsets.md)
+[`functions.md`](functions.md) | [`offsets.md`](offsets.md)

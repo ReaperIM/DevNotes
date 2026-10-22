@@ -1,6 +1,6 @@
 # JSON, XML, HTML and serialization
 
-[English](../en/06-json-xml-and-serialization.md) | [Українська](../uk/06-json-xml-and-serialization.md) | [Русский](../ru/06-json-xml-and-serialization.md)
+[EN](../en/06-json-xml-and-serialization.md) | [UK](../uk/06-json-xml-and-serialization.md) | [RU](../ru/06-json-xml-and-serialization.md)
 
 [Contents](../../README.md)
 

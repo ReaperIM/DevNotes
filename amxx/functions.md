@@ -1767,3 +1767,4 @@ stock cs_get_user_money_v2( const id )
 {
 	return get_pdata_int(id, OFFSET_CSMONEY, OFFSET_LINUX);
 }
+```

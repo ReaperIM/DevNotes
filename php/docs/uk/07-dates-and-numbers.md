@@ -1,6 +1,6 @@
 # Дати та числа
 
-[English](../en/07-dates-and-numbers.md) | [Українська](../uk/07-dates-and-numbers.md) | [Русский](../ru/07-dates-and-numbers.md)
+[EN](../en/07-dates-and-numbers.md) | [UK](../uk/07-dates-and-numbers.md) | [RU](../ru/07-dates-and-numbers.md)
 
 [Зміст](../../README.uk.md)
 
@@ -23,7 +23,7 @@
 
 **PHP 7.0+ | Ядро** | [PHP](https://www.php.net/manual/en/function.intdiv.php)
 
-`intdiv()` повертає цілу частку без проміжного float, що зручно для повних одиниць, наприклад хвилин чи сторінок.
+`intdiv()` повертає цілу частку без проміжного `float`, що зручно для повних одиниць, наприклад хвилин чи сторінок.
 
 ```php
 $minutes = intdiv( 125, 60 ); # 2
@@ -144,7 +144,7 @@ $original = $date->getMicrosecond(); # 125000
 $updated = $changed->getMicrosecond(); # 500000
 ```
 
-Незмінний сеттер повертає копію, а `DateTime` змінюється. Float уже міг втратити точність; часовий пояс для показу задається окремо від моменту часу.
+Незмінний сеттер повертає копію, а `DateTime` змінюється. `Float` уже міг втратити точність; часовий пояс для показу задається окремо від моменту часу.
 
 <a id="rounding-modes"></a>
 
@@ -152,7 +152,7 @@ $updated = $changed->getMicrosecond(); # 500000
 
 **PHP 8.4+ | Ядро** | [PHP](https://www.php.net/manual/en/enum.roundingmode.php)
 
-`RoundingMode` задає спільне правило округлення для `round()`, `bcround()` і `BcMath\Number::round()`. HalfEven спрямовує точну половину до парного результату, HalfAwayFromZero від нуля.
+`RoundingMode` задає спільне правило округлення для `round()`, `bcround()` і `BcMath\Number::round()`. `HalfEven` спрямовує точну половину до парного результату, `HalfAwayFromZero` від нуля.
 
 ```php
 $even = round( 2.5, 0, RoundingMode::HalfEven ); # 2
@@ -160,7 +160,7 @@ $away = round( 2.5, 0, RoundingMode::HalfAwayFromZero ); # 3
 $truncated = round( -2.9, 0, RoundingMode::TowardsZero ); # -2
 ```
 
-Режим округлення не робить двійкові float десятково точними. Окремо обирайте подання числа й момент округлення; TowardsZero усікає до заданої точності.
+Режим округлення не робить двійкові `float` десятково точними. Окремо обирайте подання числа й момент округлення; `TowardsZero` усікає до заданої точності.
 
 <a id="bcmath-number"></a>
 
@@ -168,7 +168,7 @@ $truncated = round( -2.9, 0, RoundingMode::TowardsZero ); # -2
 
 **PHP 8.4+ | bcmath** | [PHP](https://www.php.net/manual/en/class.bcmath-number.php)
 
-`BcMath\Number` надає незмінні десяткові числа довільної точності з арифметичними операторами й явними методами. Створюйте значення з рядків або цілих чисел, щоб уникнути попереднього округлення float.
+`BcMath\Number` надає незмінні десяткові числа довільної точності з арифметичними операторами й явними методами. Створюйте значення з рядків або цілих чисел, щоб уникнути попереднього округлення `float`.
 
 ```php
 $price = new BcMath\Number( '19.995' );
@@ -185,7 +185,7 @@ $equal = $total->compare( $expected ) === 0; # true
 
 **PHP 8.4+ | bcmath** | [PHP](https://www.php.net/manual/en/function.bcround.php) | [PHP](https://www.php.net/manual/en/function.bcdivmod.php)
 
-`bcround()`, `bcfloor()` та `bcceil()` округлюють десяткові рядки без перетворення на float. `bcdivmod()` повертає частку й остачу разом, у формі для деструктуризації.
+`bcround()`, `bcfloor()` та `bcceil()` округлюють десяткові рядки без перетворення на `float`. `bcdivmod()` повертає частку й остачу разом, у формі для деструктуризації.
 
 ```php
 $rounded = bcround( '19.995', 2, RoundingMode::HalfAwayFromZero ); # '20.00'

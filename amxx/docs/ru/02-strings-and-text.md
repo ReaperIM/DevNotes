@@ -1,24 +1,24 @@
 # Строки и текст
 
-[English](../en/02-strings-and-text.md) | [Українська](../uk/02-strings-and-text.md) | [Русский](../ru/02-strings-and-text.md)
+[EN](../en/02-strings-and-text.md) | [UK](../uk/02-strings-and-text.md) | [RU](../ru/02-strings-and-text.md)
 
 [Содержание](../../README.ru.md)
 
-- [Размер буфера и charsmax](#buffers-and-charsmax)
+- [Размер буфера и `charsmax`](#buffers-and-charsmax)
 - [Форматирование значений в буфер](#format-values)
-- [format при пересечении ввода и вывода](#overlapping-buffers)
+- [`format` при пересечении ввода и вывода](#overlapping-buffers)
 - [Сборка текста со смещением записи](#append-with-offset)
 - [Экранирование через ^ в Pawn](#caret-escaping)
 - [Сравнение строк и позиция подстроки](#comparison-and-search)
-- [parse для известного количества полей](#parse-fields)
+- [`parse` для известного количества полей](#parse-fields)
 - [Первый аргумент и остальной текст](#argbreak-and-argparse)
 - [Убрать внешние пробелы и кавычки](#trim-and-remove-quotes)
 - [Проверить целый числовой токен](#number-parsing)
 - [Байты UTF-8 и смена регистра](#unicode-bytes)
-- [Сообщения из словаря через %L](#multilingual-messages)
+- [Сообщения из словаря через `%L`](#multilingual-messages)
 
 <a id="buffers-and-charsmax"></a>
-## Размер буфера и charsmax
+## Размер буфера и `charsmax`
 
 Обычная строка AMXX представляет собой массив с нулевой ячейкой в конце. В буфере из 16 ячеек поместятся до 15 байт текста и терминатор. `charsmax()` даёт доступную вместимость для текста.
 
@@ -41,7 +41,7 @@ public plugin_init()
 <a id="format-values"></a>
 ## Форматирование значений в буфер
 
-`formatex()` записывает ограниченный результат прямо в буфер. Формат должен соответствовать значению: `%d` для целых чисел, `%f` для Float, `%s` для строк.
+`formatex()` записывает ограниченный результат прямо в буфер. Формат должен соответствовать значению: `%d` для целых чисел, `%f` для `Float`, `%s` для строк.
 
 ```pawn
 #include <amxmodx>
@@ -63,7 +63,7 @@ public plugin_init()
 [AMXX / Pawn](https://www.amxmodx.org/api/string/formatex)
 
 <a id="overlapping-buffers"></a>
-## format при пересечении ввода и вывода
+## `format` при пересечении ввода и вывода
 
 `formatex()` не может читать из буфера, который сейчас перезаписывает. Для изменения на месте с пересечением источника и результата `format()` обеспечивает необходимое промежуточное копирование.
 
@@ -156,7 +156,7 @@ public plugin_init()
 [AMXX / Pawn](https://www.amxmodx.org/api/string/containi)
 
 <a id="parse-fields"></a>
-## parse для известного количества полей
+## `parse` для известного количества полей
 
 `parse()` разделяет поля по пробелам, сохраняя группы в кавычках. Для каждого результата передавайте отдельный буфер и максимальную длину текста.
 
@@ -274,7 +274,7 @@ public plugin_init()
 [AMXX / Pawn](https://www.amxmodx.org/api/string/mb_strtoupper)
 
 <a id="multilingual-messages"></a>
-## Сообщения из словаря через %L
+## Сообщения из словаря через `%L`
 
 Словарь регистрируется один раз, после чего `%L` находит ключ для нужного языка. В примере используется стандартный `common.txt`, где уже есть ключ `YES`.
 

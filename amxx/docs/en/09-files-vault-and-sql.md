@@ -1,6 +1,6 @@
 # Files, nVault and SQL
 
-[English](../en/09-files-vault-and-sql.md) | [Українська](../uk/09-files-vault-and-sql.md) | [Русский](../ru/09-files-vault-and-sql.md)
+[EN](../en/09-files-vault-and-sql.md) | [UK](../uk/09-files-vault-and-sql.md) | [RU](../ru/09-files-vault-and-sql.md)
 
 [Contents](../../README.md)
 
@@ -14,7 +14,7 @@ Configuration files, structured data and persistent storage. Examples that write
 - [Distinguish a missing key from a stored zero](#vault-missing)
 - [Timestamps and pruning are explicit](#vault-expiry)
 - [Threaded SQL and its callback](#threaded-sql)
-- [SQL_PrepareQuery is not parameter binding](#sql-quoting)
+- [`SQL_PrepareQuery` is not parameter binding](#sql-quoting)
 - [A query result can outlive the player connection](#sql-player-context)
 
 <a id="paths"></a>
@@ -38,7 +38,7 @@ public plugin_init()
 
 A base directory does not make a user-supplied filename safe. Keep names controlled; do not append arbitrary `../` or absolute paths from commands.
 
-[get_datadir](https://www.amxmodx.org/api/amxmisc/get_datadir)
+[`get_datadir`](https://www.amxmodx.org/api/amxmisc/get_datadir)
 
 <a id="read-lines"></a>
 
@@ -73,7 +73,7 @@ public plugin_cfg()
 
 A line longer than the buffer can be truncated with its tail discarded. Limit line lengths in the format or use a reader that handles long records explicitly. Trimming and skipping `;` here are example rules, not a full INI parser.
 
-[fgets](https://www.amxmodx.org/api/file/fgets)
+[`fgets`](https://www.amxmodx.org/api/file/fgets)
 
 <a id="append"></a>
 
@@ -106,7 +106,7 @@ public plugin_init()
 
 Opening files or flushing on every frame is expensive work for the server thread. Save on meaningful changes or in batches; `fflush()` is not a transaction.
 
-[fputs](https://www.amxmodx.org/api/file/fputs)
+[`fputs`](https://www.amxmodx.org/api/file/fputs)
 
 <a id="json"></a>
 
@@ -133,7 +133,7 @@ public plugin_init()
 
 Free JSON values you own. Native handles for nested values and serialization buffers have their own lifetime and size rules; do not assume that a parent frees every independently created handle.
 
-[json_parse](https://www.amxmodx.org/api/json/json_parse) | [json_free](https://www.amxmodx.org/api/json/json_free)
+[`json_parse`](https://www.amxmodx.org/api/json/json_parse) | [`json_free`](https://www.amxmodx.org/api/json/json_free)
 
 <a id="vault-open"></a>
 
@@ -162,7 +162,7 @@ public plugin_end()
 
 nVault failure is `-1`, not a generic false handle. Values are strings; key design and account identity remain application concerns.
 
-[nvault_open](https://www.amxmodx.org/api/nvault/nvault_open)
+[`nvault_open`](https://www.amxmodx.org/api/nvault/nvault_open)
 
 <a id="vault-missing"></a>
 
@@ -191,7 +191,7 @@ public plugin_init()
 
 The two-argument numeric `nvault_get()` cannot by itself distinguish a missing key from a stored numeric zero.
 
-[nvault_lookup](https://www.amxmodx.org/api/nvault/nvault_lookup)
+[`nvault_lookup`](https://www.amxmodx.org/api/nvault/nvault_lookup)
 
 <a id="vault-expiry"></a>
 
@@ -218,13 +218,13 @@ public plugin_init()
 
 Use pruning for data that is actually disposable. Permanent entries created with `nvault_pset()` are not removed by prune.
 
-[nvault_prune](https://www.amxmodx.org/api/nvault/nvault_prune)
+[`nvault_prune`](https://www.amxmodx.org/api/nvault/nvault_prune)
 
 <a id="threaded-sql"></a>
 
 ## Threaded SQL and its callback
 
-`SQL_MakeDbTuple()` stores connection settings; it does not connect. `SQL_ThreadQuery()` runs a query asynchronously and calls a public handler with either failure details or a result.
+`SQL_MakeDbTuple()` stores connection settings; it does not connect. `SQL_ThreadQuery()` runs a query asynchronously and calls a `public` handler with either failure details or a result.
 
 ```pawn
 #include <amxmodx>
@@ -264,11 +264,11 @@ public plugin_end()
 
 This example selects the SQLite driver. MySQL needs real connection settings from server configuration. Do not free the callback query handle: SQLX owns it. The handler still must avoid expensive work on the game thread.
 
-[SQL_ThreadQuery](https://www.amxmodx.org/api/sqlx/SQL_ThreadQuery) | [SQL_MakeDbTuple](https://www.amxmodx.org/api/sqlx/SQL_MakeDbTuple)
+[`SQL_ThreadQuery`](https://www.amxmodx.org/api/sqlx/SQL_ThreadQuery) | [`SQL_MakeDbTuple`](https://www.amxmodx.org/api/sqlx/SQL_MakeDbTuple)
 
 <a id="sql-quoting"></a>
 
-## SQL_PrepareQuery is not parameter binding
+## `SQL_PrepareQuery` is not parameter binding
 
 The format arguments of SQLX are string formatting, not PDO-style placeholders. Escape external string values for the active connection before inserting them into SQL.
 
@@ -313,7 +313,7 @@ public plugin_init()
 
 This is deliberately synchronous to show escaping with a real connection; do not open a blocking connection for each gameplay event. Escaping values does not validate table names or sort expressions. `SQL_SetCharset()` on a MySQL tuple belongs before connections/queries.
 
-[SQL_PrepareQuery](https://www.amxmodx.org/api/sqlx/SQL_PrepareQuery) | [SQL_QuoteString](https://www.amxmodx.org/api/sqlx/SQL_QuoteString)
+[`SQL_PrepareQuery`](https://www.amxmodx.org/api/sqlx/SQL_PrepareQuery) | [`SQL_QuoteString`](https://www.amxmodx.org/api/sqlx/SQL_QuoteString)
 
 <a id="sql-player-context"></a>
 
@@ -366,4 +366,4 @@ public plugin_end()
 
 Userid prevents applying an old result to a new occupant. Multiple requests within the same connection can still arrive out of order: add a request generation if the latest result must win. Persistent writes use an authorized account key, not the userid.
 
-[SQL_ThreadQuery](https://www.amxmodx.org/api/sqlx/SQL_ThreadQuery) | [find_player](https://www.amxmodx.org/api/amxmodx/find_player)
+[`SQL_ThreadQuery`](https://www.amxmodx.org/api/sqlx/SQL_ThreadQuery) | [`find_player`](https://www.amxmodx.org/api/amxmodx/find_player)

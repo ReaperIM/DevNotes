@@ -1,26 +1,26 @@
 # Базы данных
 
-[English](../en/10-databases.md) | [Українська](../uk/10-databases.md) | [Русский](../ru/10-databases.md)
+[EN](../en/10-databases.md) | [UK](../uk/10-databases.md) | [RU](../ru/10-databases.md)
 
 [Содержание](../../README.ru.md)
 
 **В этой главе**
 
-- [Исключения PDO стали поведением по умолчанию](#pdo-errors)
-- [Строгий режим ошибок mysqli стал стандартным](#mysqli-errors)
+- [Исключения `PDO` стали поведением по умолчанию](#pdo-errors)
+- [Строгий режим ошибок `mysqli` стал стандартным](#mysqli-errors)
 - [Выполнение с массивом параметров](#mysqli-execute)
 - [Прямое чтение одного столбца](#fetch-column)
-- [Классы PDO для отдельных драйверов](#pdo-subclasses)
+- [Классы `PDO` для отдельных драйверов](#pdo-subclasses)
 - [Копирование SQLite через API резервирования](#sqlite-backup)
 - [Что означает плейсхолдер](#placeholder-boundaries)
 
 <a id="pdo-errors"></a>
 
-## Исключения PDO стали поведением по умолчанию
+## Исключения `PDO` стали поведением по умолчанию
 
 **PHP 8.0+ changed default | PDO** [Документация PHP](https://www.php.net/manual/en/pdo.error-handling.php)
 
-С PHP 8.0 PDO по умолчанию использует `ERRMODE_EXCEPTION` вместо скрытых ошибок. Явная настройка задаёт такое же поведение ошибок и для PHP 7.
+С PHP 8.0 `PDO` по умолчанию использует `ERRMODE_EXCEPTION` вместо скрытых ошибок. Явная настройка задаёт такое же поведение ошибок и для PHP 7.
 
 <!-- example: fragment -->
 ```php
@@ -35,11 +35,11 @@ $name = $statement->fetchColumn();
 
 <a id="mysqli-errors"></a>
 
-## Строгий режим ошибок mysqli стал стандартным
+## Строгий режим ошибок `mysqli` стал стандартным
 
 **PHP 8.1+ changed default | mysqli** [Документация PHP](https://www.php.net/manual/en/mysqli-driver.report-mode.php)
 
-С PHP 8.1 mysqli по умолчанию использует `MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT`.
+С PHP 8.1 `mysqli` по умолчанию использует `MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT`.
 
 <!-- example: fragment -->
 ```php
@@ -56,7 +56,7 @@ $statement->execute( [7] );
 
 ## Выполнение с массивом параметров
 
-**PHP 8.1+ execute(array) / PHP 8.2+ execute_query() | mysqli** [Документация PHP](https://www.php.net/manual/en/mysqli.execute-query.php)
+**PHP 8.1+ `execute(array)` / PHP 8.2+ `execute_query()` | mysqli** [Документация PHP](https://www.php.net/manual/en/mysqli.execute-query.php)
 
 `mysqli_stmt::execute()` принимает массив параметров с 8.1. С 8.2 `execute_query()` объединяет prepare, bind и execute для разового запроса.
 
@@ -71,7 +71,7 @@ $statement = $db->prepare( 'SELECT id, name FROM users WHERE id = ?' );
 $statement->execute( [7] );
 ```
 
-`execute_query()` каждый раз создаёт новый подготовленный запрос и возвращает `mysqli_result` для набора строк или boolean для других запросов.
+`execute_query()` каждый раз создаёт новый подготовленный запрос и возвращает `mysqli_result` для набора строк или `boolean` для других запросов.
 
 <a id="fetch-column"></a>
 
@@ -88,15 +88,15 @@ $result = $db->execute_query( 'SELECT COUNT(*) FROM users' );
 $count = $result->fetch_column();
 ```
 
-Каждый вызов переходит к следующей строке; `false` означает конец строк, а SQL NULL становится `null`.
+Каждый вызов переходит к следующей строке; `false` означает конец строк, а SQL `NULL` становится `null`.
 
 <a id="pdo-subclasses"></a>
 
-## Классы PDO для отдельных драйверов
+## Классы `PDO` для отдельных драйверов
 
 **PHP 8.4+ | PDO and matching driver** [Документация PHP](https://www.php.net/manual/en/pdo.connect.php)
 
-`PDO::connect()` возвращает подкласс вроде `Pdo\Mysql`, `Pdo\Pgsql` или `Pdo\Sqlite`, предоставляя методы драйвера вместе с общим API PDO.
+`PDO::connect()` возвращает подкласс вроде `Pdo\Mysql`, `Pdo\Pgsql` или `Pdo\Sqlite`, предоставляя методы драйвера вместе с общим API `PDO`.
 
 <!-- example: fragment -->
 ```php
@@ -109,7 +109,7 @@ if( $db instanceof Pdo\Mysql )
 	$warnings = $db->getWarningCount();
 ```
 
-PHP 8.5 объявляет константы драйверов вроде `PDO::MYSQL_*` устаревшими в пользу констант подклассов; общие остаются в PDO.
+PHP 8.5 объявляет константы драйверов вроде `PDO::MYSQL_*` устаревшими в пользу констант подклассов; общие остаются в `PDO`.
 
 <a id="sqlite-backup"></a>
 

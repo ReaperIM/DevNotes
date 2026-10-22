@@ -1,6 +1,6 @@
 # Security and random values
 
-[English](../en/11-security-and-random.md) | [Українська](../uk/11-security-and-random.md) | [Русский](../ru/11-security-and-random.md)
+[EN](../en/11-security-and-random.md) | [UK](../uk/11-security-and-random.md) | [RU](../ru/11-security-and-random.md)
 
 [Contents](../../README.md)
 
@@ -9,11 +9,11 @@
 - [Secure bytes and integers](#secure-random)
 - [Password algorithms and capability checks](#password-algorithms)
 - [Authenticated encryption with Sodium](#sodium)
-- [One Randomizer API](#randomizer)
+- [One `Randomizer` API](#randomizer)
 - [Reproducible randomness for tests](#seeded-random)
 - [Random bytes from a chosen alphabet](#random-alphabet)
 - [Random floats with explicit bounds](#random-floats)
-- [Validate a float and its range](#float-validation)
+- [Validate a `float` and its range](#float-validation)
 - [Throw when validation fails](#filter-exceptions)
 - [Ask OpenSSL for the key length](#cipher-key-length)
 
@@ -37,7 +37,7 @@ Seeded simulation engines, timestamps and `uniqid()` are unsuitable substitutes 
 
 ## Password algorithms and capability checks
 
-**PHP 7.2+ Argon2i / 7.3+ Argon2id / 7.4+ password_algos()** [PHP manual](https://www.php.net/manual/en/function.password-hash.php)
+**PHP 7.2+ Argon2i / 7.3+ Argon2id / 7.4+ `password_algos()`** [PHP manual](https://www.php.net/manual/en/function.password-hash.php)
 
 Argon2 variants extend `password_hash()`; `password_algos()` lists algorithms actually available in the running build.
 
@@ -77,7 +77,7 @@ Keep the key secret and store the nonce with the ciphertext; never reuse a nonce
 
 <a id="randomizer"></a>
 
-## One Randomizer API
+## One `Randomizer` API
 
 **PHP 8.2+ | random** [PHP manual](https://www.php.net/manual/en/class.random-randomizer.php)
 
@@ -137,7 +137,7 @@ This operates on bytes, not Unicode characters; repeated alphabet bytes increase
 
 **PHP 8.3+ | random** [PHP manual](https://www.php.net/manual/en/random-randomizer.getfloat.php)
 
-`nextFloat()` returns [0.0, 1.0); `getFloat()` accepts bounds and an `IntervalBoundary` mode.
+`nextFloat()` returns `[0.0, 1.0)`; `getFloat()` accepts bounds and an `IntervalBoundary` mode.
 
 ```php
 $randomizer = new Random\Randomizer();
@@ -150,7 +150,7 @@ The default mode is `ClosedOpen`.
 
 <a id="float-validation"></a>
 
-## Validate a float and its range
+## Validate a `float` and its range
 
 **PHP 7.4+ range options | filter** [PHP manual](https://www.php.net/manual/en/filter.constants.validation.php)
 

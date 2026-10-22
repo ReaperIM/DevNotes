@@ -1,6 +1,6 @@
 # Класи та об’єкти
 
-[English](../en/03-classes-and-objects.md) | [Українська](../uk/03-classes-and-objects.md) | [Русский](../ru/03-classes-and-objects.md)
+[EN](../en/03-classes-and-objects.md) | [UK](../uk/03-classes-and-objects.md) | [RU](../ru/03-classes-and-objects.md)
 
 [Зміст](../../README.uk.md)
 
@@ -10,27 +10,27 @@
 - [Оголошення властивостей у конструкторі](#constructor-promotion)
 - [Об’єкти як значення параметрів за замовчуванням](#new-initializers)
 - [Атрибути та читання їхніх метаданих](#attributes)
-- [Інтерфейс Stringable](#stringable)
+- [Інтерфейс `Stringable`](#stringable)
 - [Enum для закритого набору станів](#enums)
 - [Властивості enum у константних виразах](#enum-constants)
-- [Readonly-властивості та поверхнева незмінюваність](#readonly-properties)
-- [Readonly-класи](#readonly-classes)
-- [Повторна ініціалізація readonly у __clone()](#readonly-cloning)
-- [Анонімні readonly-класи](#readonly-anonymous)
-- [Видимість і final для констант класу](#constant-visibility-final)
+- [`Readonly`-властивості та поверхнева незмінюваність](#readonly-properties)
+- [`Readonly`-класи](#readonly-classes)
+- [Повторна ініціалізація `readonly` у `__clone()`](#readonly-cloning)
+- [Анонімні `readonly`-класи](#readonly-anonymous)
+- [Видимість і `final` для констант класу](#constant-visibility-final)
 - [Вибір константи класу за назвою](#dynamic-constants)
 - [Константи, оголошені у traits](#trait-constants)
-- [Імпорт методу trait як final](#trait-final)
-- [Перевірка перевизначених методів через #[Override]](#override)
+- [Імпорт методу trait як `final`](#trait-final)
+- [Перевірка перевизначених методів через `#[Override]`](#override)
 - [Обробники властивостей: збережені та віртуальні значення](#property-hooks)
 - [Повний setter має записувати значення властивості](#setter-validation)
 - [Різні права для читання та запису](#asymmetric-visibility)
 - [Контракти властивостей в інтерфейсах](#interface-properties)
 - [Відкладені об’єкти: ghost і proxy](#lazy-objects)
-- [Виклик методу одразу після new](#new-chaining)
-- [Перевірка перевизначення властивостей через #[Override]](#override-properties)
+- [Виклик методу одразу після `new`](#new-chaining)
+- [Перевірка перевизначення властивостей через `#[Override]`](#override-properties)
 - [Асиметрична видимість статичних властивостей](#static-visibility)
-- [Final для властивостей у параметрах конструктора](#final-promotion)
+- [`Final` для властивостей у параметрах конструктора](#final-promotion)
 - [Клонування об’єкта зі зміною вибраних властивостей](#clone-with)
 - [Динамічні властивості застаріли](#dynamic-properties)
 
@@ -127,7 +127,7 @@ echo $description->text; # Exports a report
 PHP 8.5 додає `#[DelayedTargetValidation]`, що відкладає перевірку некоректної цілі вбудованих атрибутів або атрибутів розширень до створення екземпляра через рефлексію; див. також [діагностичні атрибути](08-errors-and-debugging.md#deprecated-attribute) та [глобальні константи](01-syntax-and-functions.md#global-constant-attributes).
 
 <a id="stringable"></a>
-## Інтерфейс Stringable
+## Інтерфейс `Stringable`
 
 **PHP 8.0+ | Ядро** | [Документація PHP](https://www.php.net/manual/en/class.stringable.php)
 
@@ -200,7 +200,7 @@ echo DEFAULT_CASE_NAME, ':', DEFAULT_FORMAT; # Json:json
 Це не дозволяє довільне читання властивостей об’єктів або виклики методів у константах.
 
 <a id="readonly-properties"></a>
-## Readonly-властивості та поверхнева незмінюваність
+## `Readonly`-властивості та поверхнева незмінюваність
 
 **PHP 8.1+ | Ядро** | [Документація PHP](https://www.php.net/manual/en/language.oop5.properties.php#language.oop5.properties.readonly-properties)
 
@@ -221,11 +221,11 @@ echo $snapshot->data->count; # 2
 До PHP 8.4 ініціалізація була неявно приватною для класу оголошення; з 8.4 типово діє `protected(set)`, якщо доступ не звужено, а інкремент скаляра та запис елементів масиву залишаються забороненими.
 
 <a id="readonly-classes"></a>
-## Readonly-класи
+## `Readonly`-класи
 
 **PHP 8.2+ | Ядро** | [Документація PHP](https://www.php.net/manual/en/language.oop5.basic.php#language.oop5.basic.class.readonly)
 
-Клас readonly робить усі властивості екземпляра readonly.
+Клас `readonly` робить усі властивості екземпляра `readonly`.
 
 ```php
 readonly class Point
@@ -237,14 +237,14 @@ $point = new Point( 3, 4 );
 echo $point->x, ':', $point->y; # 3:4
 ```
 
-Властивості мають бути типізованими, статичні та динамічні властивості заборонені, успадкування підкоряється правилам readonly, а вкладені об’єкти все ще можуть бути змінюваними.
+Властивості мають бути типізованими, статичні та динамічні властивості заборонені, успадкування підкоряється правилам `readonly`, а вкладені об’єкти все ще можуть бути змінюваними.
 
 <a id="readonly-cloning"></a>
-## Повторна ініціалізація readonly у __clone()
+## Повторна ініціалізація `readonly` у `__clone()`
 
 **PHP 8.3+ | Ядро** | [Документація PHP](https://www.php.net/manual/en/migration83.new-features.php)
 
-`__clone()` може повторно ініціалізувати readonly-властивості, щоб відокремити вкладені об’єкти копії.
+`__clone()` може повторно ініціалізувати `readonly`-властивості, щоб відокремити вкладені об’єкти копії.
 
 ```php
 readonly class Schedule
@@ -268,11 +268,11 @@ echo $original->date->format( 'Y-m-d' ), ':', $copy->date->format( 'Y-m-d' );
 Це обмежений виняток на час клонування; інші вкладені об’єкти залишаються спільними при звичайному поверхневому клонуванні.
 
 <a id="readonly-anonymous"></a>
-## Анонімні readonly-класи
+## Анонімні `readonly`-класи
 
 **PHP 8.3+ | Ядро** | [Документація PHP](https://www.php.net/manual/en/migration83.new-features.php)
 
-Анонімні класи також можуть бути readonly.
+Анонімні класи також можуть бути `readonly`.
 
 ```php
 $value = new readonly class( 7 )
@@ -283,10 +283,10 @@ $value = new readonly class( 7 )
 echo $value->id; # 7
 ```
 
-Для них діють обмеження типізованих властивостей і поверхневої незмінюваності іменованих readonly-класів.
+Для них діють обмеження типізованих властивостей і поверхневої незмінюваності іменованих `readonly`-класів.
 
 <a id="constant-visibility-final"></a>
-## Видимість і final для констант класу
+## Видимість і `final` для констант класу
 
 **PHP 7.1+ | Ядро** | [Документація PHP](https://www.php.net/manual/en/language.oop5.constants.php)
 
@@ -351,7 +351,7 @@ echo $format; # json
 З PHP 8.3 нащадок, який явно повторно використовує trait, має окреме від батька сховище статичних властивостей trait.
 
 <a id="trait-final"></a>
-## Імпорт методу trait як final
+## Імпорт методу trait як `final`
 
 **PHP 8.3+ | Ядро** | [Документація PHP](https://www.php.net/manual/en/language.oop5.traits.php)
 
@@ -380,7 +380,7 @@ echo (new Report())->identifier(); # report
 Це забороняє перевизначення методу в нащадках класу, що використовує trait, без зміни самого trait.
 
 <a id="override"></a>
-## Перевірка перевизначених методів через #[Override]
+## Перевірка перевизначених методів через `#[Override]`
 
 **PHP 8.3+ | Ядро** | [Документація PHP](https://www.php.net/manual/en/class.override.php)
 
@@ -486,7 +486,7 @@ $article->rename( ' Published ' );
 echo $article->title; # Published
 ```
 
-Видимість запису не може бути ширшою за читання, `private(set)` робить властивість final, а посилання та зміни елементів масиву також потребують права запису.
+Видимість запису не може бути ширшою за читання, `private(set)` робить властивість `final`, а посилання та зміни елементів масиву також потребують права запису.
 
 <a id="interface-properties"></a>
 ## Контракти властивостей в інтерфейсах
@@ -551,7 +551,7 @@ echo $proxy->title;
 Proxy та створений ним об’єкт є різними екземплярами; механізм підтримує користувацькі класи та `stdClass`, а не довільні внутрішні класи.
 
 <a id="new-chaining"></a>
-## Виклик методу одразу після new
+## Виклик методу одразу після `new`
 
 **PHP 8.4+ | Ядро** | [Документація PHP](https://www.php.net/manual/en/migration84.new-features.php)
 
@@ -566,7 +566,7 @@ echo $date; # 2025-01-02
 Старий синтаксис `(new ClassName(...))->method()` залишається коректним.
 
 <a id="override-properties"></a>
-## Перевірка перевизначення властивостей через #[Override]
+## Перевірка перевизначення властивостей через `#[Override]`
 
 **PHP 8.5+ | Ядро** | [Документація PHP](https://www.php.net/manual/en/class.override.php)
 
@@ -593,7 +593,7 @@ class Report extends Record
 echo new Report()->label; # report
 ```
 
-Атрибут не дозволяє несумісне перевизначення чи перевизначення final-властивості.
+Атрибут не дозволяє несумісне перевизначення чи перевизначення `final`-властивості.
 
 <a id="static-visibility"></a>
 ## Асиметрична видимість статичних властивостей
@@ -617,14 +617,14 @@ Counter::count_call();
 echo Counter::$calls; # 1
 ```
 
-Це керує доступом, а не часом життя стану; статичні readonly-властивості залишаються недоступними.
+Це керує доступом, а не часом життя стану; статичні `readonly`-властивості залишаються недоступними.
 
 <a id="final-promotion"></a>
-## Final для властивостей у параметрах конструктора
+## `Final` для властивостей у параметрах конструктора
 
 **PHP 8.5+ | Ядро** | [Документація PHP](https://www.php.net/manual/en/language.oop5.final.php)
 
-PHP 8.5 дозволяє `final` для властивостей у параметрах конструктора, розширюючи final-властивості з PHP 8.4.
+PHP 8.5 дозволяє `final` для властивостей у параметрах конструктора, розширюючи `final`-властивості з PHP 8.4.
 
 ```php
 class Ticket
@@ -671,7 +671,7 @@ echo $original->alpha, ':', $copy->alpha;
 # 255:128
 ```
 
-Зміни підкоряються видимості запису, тому оновлення readonly потребують дозволеної області класу. Конструктор не викликається повторно: перевіряйте зміни явно; решта вкладених об’єктів зберігають поведінку поверхневого клонування.
+Зміни підкоряються видимості запису, тому оновлення `readonly` потребують дозволеної області класу. Конструктор не викликається повторно: перевіряйте зміни явно; решта вкладених об’єктів зберігають поведінку поверхневого клонування.
 
 <a id="dynamic-properties"></a>
 ## Динамічні властивості застаріли

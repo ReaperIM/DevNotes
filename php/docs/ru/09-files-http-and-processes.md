@@ -1,13 +1,13 @@
 # Файлы, HTTP и процессы
 
-[English](../en/09-files-http-and-processes.md) | [Українська](../uk/09-files-http-and-processes.md) | [Русский](../ru/09-files-http-and-processes.md)
+[EN](../en/09-files-http-and-processes.md) | [UK](../uk/09-files-http-and-processes.md) | [RU](../ru/09-files-http-and-processes.md)
 
 [Содержание](../../README.ru.md)
 
 **В этой главе**
 
 - [Аргументы процесса массивом](#process-arguments)
-- [Запись данных на диск через fsync()](#flush-to-disk)
+- [Запись данных на диск через `fsync()`](#flush-to-disk)
 - [Несколько параметров потока одним вызовом](#stream-options)
 - [Разбор тела формы для других HTTP-методов](#request-body)
 - [Чтение и изменение URI-объектов](#uri-objects)
@@ -16,8 +16,8 @@
 - [Повторное использование данных cURL между запросами](#persistent-curl-share)
 - [Список дескрипторов в multi handle](#multi-handles)
 - [Чтение последних заголовков HTTP-потока](#http-response-headers)
-- [Загрузка каталогов и full_path](#upload-paths)
-- [Параметры cookie и Partitioned](#cookie-options)
+- [Загрузка каталогов и `full_path`](#upload-paths)
+- [Параметры cookie и `Partitioned`](#cookie-options)
 - [Чтение сеанса с освобождением блокировки](#read-only-session)
 
 <a id="process-arguments"></a>
@@ -45,7 +45,7 @@ var_dump( $output, $exit_code ); # string(5) "ready", int(0)
 
 <a id="flush-to-disk"></a>
 
-## Запись данных на диск через fsync()
+## Запись данных на диск через `fsync()`
 
 **PHP 8.1+ | standard** [Документация PHP](https://www.php.net/manual/en/function.fsync.php)
 
@@ -87,7 +87,7 @@ var_dump( stream_context_get_options($context)['http']['timeout'] ); # int(5)
 
 **PHP 8.4+ | standard** [Документация PHP](https://www.php.net/manual/en/function.request-parse-body.php)
 
-`request_parse_body()` возвращает поля формы и загруженные файлы, в том числе для обработчиков PUT и PATCH, не заполняя суперглобальные переменные.
+`request_parse_body()` возвращает поля формы и загруженные файлы, в том числе для обработчиков `PUT` и `PATCH`, не заполняя суперглобальные переменные.
 
 <!-- example: fragment -->
 ```php
@@ -125,7 +125,7 @@ echo $uri->getPath(), "\n"; # /catalog: the original is unchanged
 
 **PHP 8.0+ | curl** [Документация PHP](https://www.php.net/manual/en/function.curl-init.php)
 
-Дескрипторы cURL easy, multi и share имеют классы вместо типа resource.
+Дескрипторы cURL easy, multi и share имеют классы вместо типа `resource`.
 
 ```php
 $handle = curl_init();
@@ -226,7 +226,7 @@ var_dump( $headers ); # Response-header lines, or null.
 
 <a id="upload-paths"></a>
 
-## Загрузка каталогов и full_path
+## Загрузка каталогов и `full_path`
 
 **PHP 8.1+ | standard** [Документация PHP](https://www.php.net/manual/en/features.file-upload.multiple.php)
 
@@ -243,9 +243,9 @@ var_dump( $relative_path );
 
 <a id="cookie-options"></a>
 
-## Параметры cookie и Partitioned
+## Параметры cookie и `Partitioned`
 
-**PHP 7.3+ options / PHP 8.5+ partitioned | standard** [Документация PHP](https://www.php.net/manual/en/function.setcookie.php)
+**PHP 7.3+ options / PHP 8.5+ `partitioned` | standard** [Документация PHP](https://www.php.net/manual/en/function.setcookie.php)
 
 Параметры cookie задаются именованными элементами массива; PHP 8.5 добавляет `partitioned` для разделения хранилища по сайту верхнего уровня в совместимых клиентах.
 
@@ -261,7 +261,7 @@ setcookie( 'widget_session', $token, [
 ] );
 ```
 
-`partitioned` требует `secure`, иначе PHP выбрасывает `ValueError`; клиенты также требуют Secure для `SameSite=None`.
+`partitioned` требует `secure`, иначе PHP выбрасывает `ValueError`; клиенты также требуют `Secure` для `SameSite=None`.
 
 <a id="read-only-session"></a>
 

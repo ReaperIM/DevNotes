@@ -1,21 +1,21 @@
 # Arrays and containers
 
-[English](../en/03-arrays-and-containers.md) | [Українська](../uk/03-arrays-and-containers.md) | [Русский](../ru/03-arrays-and-containers.md)
+[EN](../en/03-arrays-and-containers.md) | [UK](../uk/03-arrays-and-containers.md) | [RU](../ru/03-arrays-and-containers.md)
 
 [Contents](../../README.md)
 
 - [Fixed arrays and valid indexes](#fixed-array-bounds)
-- [Rows, columns and sizeof](#multidimensional-size)
-- [Record-shaped arrays with enum fields](#enum-records)
-- [Array handles: capacity is not size](#dynamic-cell-array)
+- [Rows, columns and `sizeof`](#multidimensional-size)
+- [Record-shaped arrays with `enum` fields](#enum-records)
+- [`Array` handles: capacity is not size](#dynamic-cell-array)
 - [Dynamic arrays of strings](#dynamic-strings)
 - [Read, change and write a dynamic record](#dynamic-records)
 - [Delete entries without skipping the next one](#delete-while-iterating)
 - [Clone data and own every handle](#clone-and-ownership)
-- [Trie lookup: missing is not zero](#trie-presence-and-zero)
-- [Snapshot of Trie keys](#trie-snapshot)
-- [Built-in integer and Array sorting](#built-in-sorting)
-- [ArraySort vs ArraySortEx callbacks](#custom-sorting)
+- [`Trie` lookup: missing is not zero](#trie-presence-and-zero)
+- [Snapshot of `Trie` keys](#trie-snapshot)
+- [Built-in integer and `Array` sorting](#built-in-sorting)
+- [`ArraySort` vs `ArraySortEx` callbacks](#custom-sorting)
 
 <a id="fixed-array-bounds"></a>
 ## Fixed arrays and valid indexes
@@ -41,7 +41,7 @@ For partially filled buffers, keep a separate item count and check against that 
 [AMXX / Pawn](https://wiki.alliedmods.net/Pawn_Tutorial#Arrays)
 
 <a id="multidimensional-size"></a>
-## Rows, columns and sizeof
+## Rows, columns and `sizeof`
 
 For a multidimensional array, `sizeof array` gives the first dimension and `sizeof array[]` the second. This makes parallel loops and string capacities follow the declaration.
 
@@ -68,9 +68,9 @@ public plugin_init()
 [AMXX / Pawn](https://wiki.alliedmods.net/Pawn_Tutorial#Two_Dimensional_Arrays)
 
 <a id="enum-records"></a>
-## Record-shaped arrays with enum fields
+## Record-shaped arrays with `enum` fields
 
-An enum can describe offsets and sizes inside one record. This keeps related data together without parallel arrays and gives named access to its fields.
+An `enum` can describe offsets and sizes inside one record. This keeps related data together without parallel arrays and gives named access to its fields.
 
 ```pawn
 #include <amxmodx>
@@ -94,12 +94,12 @@ public plugin_init()
 }
 ```
 
-This is still an array layout, not a class or a C struct. A buffer passed to a native must have the size that native expects; the enum does not add runtime validation.
+This is still an array layout, not a class or a C struct. A buffer passed to a native must have the size that native expects; the `enum` does not add runtime validation.
 
 [AMXX / Pawn](https://wiki.alliedmods.net/Pawn_Tutorial#Arrays)
 
 <a id="dynamic-cell-array"></a>
-## Array handles: capacity is not size
+## `Array` handles: capacity is not size
 
 `ArrayCreate(1, 8)` creates an empty dynamic array of one-cell entries with space reserved for eight items. Only pushed or resized entries are valid to access.
 
@@ -120,7 +120,7 @@ public plugin_init()
 }
 ```
 
-Choose a fixed array for a small known limit. Dynamic Array is useful when item count really varies; it adds native calls and handle ownership, not a faster replacement for direct array access.
+Choose a fixed array for a small known limit. Dynamic `Array` is useful when item count really varies; it adds native calls and handle ownership, not a faster replacement for direct array access.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/cellarray/ArrayCreate)
 
@@ -146,7 +146,7 @@ public plugin_init()
 }
 ```
 
-A one-cell Array is not a container for arbitrary strings. A larger output buffer cannot recover text already truncated by the entry’s storage capacity.
+A one-cell `Array` is not a container for arbitrary strings. A larger output buffer cannot recover text already truncated by the entry’s storage capacity.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/cellarray/ArrayPushString)
 
@@ -184,14 +184,14 @@ public plugin_init()
 }
 ```
 
-The local record must hold the entry’s complete cellsize when using the default copy size. A smaller destination is not made safe by a matching enum field name.
+The local record must hold the entry’s complete `cellsize` when using the default copy size. A smaller destination is not made safe by a matching `enum` field name.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/cellarray/ArrayGetArray)
 
 <a id="delete-while-iterating"></a>
 ## Delete entries without skipping the next one
 
-Deleting an Array entry shifts later entries left. Iterate backwards when removing matching entries so the shifted values have already been considered.
+Deleting an `Array` entry shifts later entries left. Iterate backwards when removing matching entries so the shifted values have already been considered.
 
 ```pawn
 #include <amxmodx>
@@ -224,7 +224,7 @@ After deletion, stored numeric indexes can refer to a different item. Use a stab
 <a id="clone-and-ownership"></a>
 ## Clone data and own every handle
 
-Assigning an Array handle copies its identifier, not its data. `ArrayClone()` creates a separate container; both handles then require their own cleanup.
+Assigning an `Array` handle copies its identifier, not its data. `ArrayClone()` creates a separate container; both handles then require their own cleanup.
 
 ```pawn
 #include <amxmodx>
@@ -249,9 +249,9 @@ Destroying resets the handle variable passed by reference, but not its aliases. 
 [AMXX / Pawn](https://www.amxmodx.org/api/cellarray/ArrayClone)
 
 <a id="trie-presence-and-zero"></a>
-## Trie lookup: missing is not zero
+## `Trie` lookup: missing is not zero
 
-Trie stores values under string keys. `TrieGetCell()` reports whether retrieval succeeded separately from the stored value, so zero remains a valid value.
+`Trie` stores values under string keys. `TrieGetCell()` reports whether retrieval succeeded separately from the stored value, so zero remains a valid value.
 
 ```pawn
 #include <amxmodx>
@@ -277,9 +277,9 @@ Use the matching Get/Set family for cells, strings or arrays. Do not use a playe
 [AMXX / Pawn](https://www.amxmodx.org/api/celltrie/TrieGetCell)
 
 <a id="trie-snapshot"></a>
-## Snapshot of Trie keys
+## Snapshot of `Trie` keys
 
-A Trie snapshot freezes its list of keys, not the values. Later additions and deletions do not change that list, so re-check a key when reading a value from the current map.
+A `Trie` snapshot freezes its list of keys, not the values. Later additions and deletions do not change that list, so re-check a key when reading a value from the current map.
 
 ```pawn
 #include <amxmodx>
@@ -312,7 +312,7 @@ Keys are not sorted. The example controls key lengths; for arbitrary keys, inspe
 [AMXX / Pawn](https://www.amxmodx.org/api/celltrie/TrieSnapshotCreate)
 
 <a id="built-in-sorting"></a>
-## Built-in integer and Array sorting
+## Built-in integer and `Array` sorting
 
 Use a built-in sorter when the ordering is ordinary numeric or string order. It avoids writing a comparison callback for a standard operation.
 
@@ -342,9 +342,9 @@ Choose the sort type to match the stored representation. Sorting mutates the arr
 [AMXX / Pawn](https://www.amxmodx.org/api/sorting/SortADTArray)
 
 <a id="custom-sorting"></a>
-## ArraySort vs ArraySortEx callbacks
+## `ArraySort` vs `ArraySortEx` callbacks
 
-`ArraySort()` passes entry indexes to its callback. `ArraySortEx()` passes the entries themselves: scalar values when cellsize is 1, arrays when cellsize is larger. Do not mix these callback contracts.
+`ArraySort()` passes entry indexes to its callback. `ArraySortEx()` passes the entries themselves: scalar values when `cellsize` is 1, arrays when `cellsize` is larger. Do not mix these callback contracts.
 
 ```pawn
 #include <amxmodx>

@@ -1,6 +1,6 @@
 # Отладка и производительность
 
-[English](../en/12-debugging-and-performance.md) | [Українська](../uk/12-debugging-and-performance.md) | [Русский](../ru/12-debugging-and-performance.md)
+[EN](../en/12-debugging-and-performance.md) | [UK](../uk/12-debugging-and-performance.md) | [RU](../ru/12-debugging-and-performance.md)
 
 [Содержание](../../README.ru.md)
 
@@ -20,7 +20,7 @@
 
 ## Ошибки и предупреждения компилятора
 
-Неизвестный символ часто означает отсутствующий или неправильный include; tag mismatch может означать передачу Float, enum или handle как другого вида cell. Исправляйте контракт, а не скрывайте предупреждение приведением тега.
+Неизвестный символ часто означает отсутствующий или неправильный include; tag mismatch может означать передачу `Float`, `enum` или handle как другого вида cell. Исправляйте контракт, а не скрывайте предупреждение приведением тега.
 
 ```pawn
 #include <amxmodx>
@@ -64,7 +64,7 @@ public client_authorized( id, const authid[] )
 
 Это диагностический пример, а не требование записывать каждую авторизацию. Не выводите пароли, доступ к БД или каждый кадр. Повторные ошибки стоит ограничивать в месте их возникновения.
 
-[amxmodx.inc](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc)
+[`amxmodx.inc`](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc)
 
 <a id="fail-state"></a>
 
@@ -93,13 +93,13 @@ public plugin_cfg()
 
 Необязательную косметическую возможность можно отключить отдельно. Fail state нужен, когда плагин действительно не может выполнить свою задачу, а не для каждой отклонённой команды.
 
-[amxmodx.inc](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc)
+[`amxmodx.inc`](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc)
 
 <a id="hot-paths"></a>
 
 ## Дешёвые проверки перед тяжёлой работой
 
-PreThink может вызываться очень часто. Сначала отсеивайте выключенное или ненужное состояние; не читайте файлы, не открывайте SQL и не сканируйте всех игроков ради локального действия.
+`PreThink` может вызываться очень часто. Сначала отсеивайте выключенное или ненужное состояние; не читайте файлы, не открывайте SQL и не сканируйте всех игроков ради локального действия.
 
 ```pawn
 #include <amxmodx>
@@ -135,7 +135,7 @@ public player_prethink( id )
 
 Это ограничивает частоту тела, а не самого хука. Если покадровый доступ не нужен, task, think сущности или конкретное событие могут быть понятнее. Не переносите вычисление, если это меняет нужный момент выполнения.
 
-[get_gametime](https://www.amxmodx.org/api/amxmodx/get_gametime)
+[`get_gametime`](https://www.amxmodx.org/api/amxmodx/get_gametime)
 
 <a id="distance"></a>
 
@@ -198,14 +198,14 @@ Static сохраняет счётчик между вызовами. В рек�
 
 Handle имеет смысл только для своего API. Важно знать, кто его создаёт, кто закрывает и какое значение означает ошибку.
 
-- Array / Trie: `ArrayDestroy()` / `TrieDestroy()` для собственных контейнеров.
+- `Array` / `Trie`: `ArrayDestroy()` / `TrieDestroy()` для собственных контейнеров.
 - nVault: `nvault_close()`; ошибка открытия `INVALID_HANDLE` (`-1`).
 - SQLX: собственные tuples, соединения и подготовленные запросы закрывают через `SQL_FreeHandle()`; запрос потокового callback не освобождают.
 - New menu: уничтожение зависит от времени жизни; общее меню нельзя удалять после первого игрока.
 
 [Контейнеры](03-arrays-and-containers.md) | [Меню](07-tasks-and-menus.md) | [Хранилища](09-files-vault-and-sql.md)
 
-[ArrayDestroy](https://www.amxmodx.org/api/cellarray/ArrayDestroy) | [SQL_ThreadQuery](https://www.amxmodx.org/api/sqlx/SQL_ThreadQuery)
+[`ArrayDestroy`](https://www.amxmodx.org/api/cellarray/ArrayDestroy) | [`SQL_ThreadQuery`](https://www.amxmodx.org/api/sqlx/SQL_ThreadQuery)
 
 <a id="clocks"></a>
 
@@ -226,4 +226,4 @@ public plugin_init()
 
 Не измеряйте короткий блок вычитанием двух чтений игрового времени в одном кадре. Сравнивайте одинаковую нагрузку с контролируемым количеством игроков/сущностей; частота callback и стоимость одного вызова являются разными величинами.
 
-[get_gametime](https://www.amxmodx.org/api/amxmodx/get_gametime) | [get_systime](https://www.amxmodx.org/api/amxmodx/get_systime)
+[`get_gametime`](https://www.amxmodx.org/api/amxmodx/get_gametime) | [`get_systime`](https://www.amxmodx.org/api/amxmodx/get_systime)

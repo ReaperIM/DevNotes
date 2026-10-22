@@ -1,6 +1,6 @@
 # Сущности и игровая логика
 
-[English](../en/08-entities-and-gameplay.md) | [Українська](../uk/08-entities-and-gameplay.md) | [Русский](../ru/08-entities-and-gameplay.md) | [Содержание](../../README.ru.md)
+[EN](../en/08-entities-and-gameplay.md) | [UK](../uk/08-entities-and-gameplay.md) | [RU](../ru/08-entities-and-gameplay.md) | [Содержание](../../README.ru.md)
 
 Жизненный цикл сущностей, типизированные поля, triggers и граница между изменением данных и вызовом игровой логики. Блоки кода независимы; функции с аргументами показывают операции, а не автоматически зарегистрированные команды.
 
@@ -8,8 +8,8 @@
 - [Читаем entvars с правильным типом](#entvars-and-vectors)
 - [Перемещение через API origin](#moving-entities)
 - [Создаём реальный класс и настраиваем его](#create-and-spawn)
-- [Touch: проверяем обе стороны и забираем один раз](#touch-and-consume)
-- [Think использует абсолютное игровое время](#think-scheduling)
+- [`Touch`: проверяем обе стороны и забираем один раз](#touch-and-consume)
+- [`Think` использует абсолютное игровое время](#think-scheduling)
 - [Моделям нужны precache и границы](#models-and-precache)
 - [Ищем точно и удаляем только свои сущности](#search-and-remove)
 - [Слот владельца тоже может смениться](#owner-lifetime)
@@ -38,7 +38,7 @@ public bool:is_same_entity( entity, serial )
 
 Сохраняй serial в момент запоминания сущности, а не в начале отложенного callback. `pev_valid` возвращает `0` для невалидной сущности, `1` для существующего edict и `2`, когда есть ещё и private data. `pev_valid == 2` допускает доступ к private data в принципе, но не подтверждает соответствие класса выбранному offset.
 
-Источники: [pev_valid](https://www.amxmodx.org/api/fakemeta/pev_valid), [pev_serial](https://www.amxmodx.org/api/fakemeta/pev_serial).
+Источники: [`pev_valid`](https://www.amxmodx.org/api/fakemeta/pev_valid), [`pev_serial`](https://www.amxmodx.org/api/fakemeta/pev_serial).
 
 <a id="entvars-and-vectors"></a>
 ## Читаем entvars с правильным типом
@@ -66,7 +66,7 @@ public describe_entity( entity )
 
 Вектор содержит три `Float` cells, а не три округлённые целые координаты. Velocity задаёт направление и скорость; angles имеют другое поле и смысл. В Engine соответствующие семейства: `entity_get_int`, `entity_get_float`, `entity_get_vector`, `entity_get_string` и `entity_get_edict`.
 
-Источники: [pev](https://www.amxmodx.org/api/fakemeta/pev), [entity_get_vector](https://www.amxmodx.org/api/engine/entity_get_vector).
+Источники: [`pev`](https://www.amxmodx.org/api/fakemeta/pev), [`entity_get_vector`](https://www.amxmodx.org/api/engine/entity_get_vector).
 
 <a id="moving-entities"></a>
 ## Перемещение через API origin
@@ -92,7 +92,7 @@ public move_entity_up( entity )
 
 Это перемещает сущность на 32 единицы по Z, но не проверяет, нет ли там стены. Для телепортации игрока нужны подходящий hull trace и осознанное решение о скорости и состоянии на земле; setter позиции сам не ищет безопасное место.
 
-Источники: [entity_set_origin](https://www.amxmodx.org/api/engine/entity_set_origin), [engine function constants](https://www.amxmodx.org/api/fakemeta_const).
+Источники: [`entity_set_origin`](https://www.amxmodx.org/api/engine/entity_set_origin), [engine function constants](https://www.amxmodx.org/api/fakemeta_const).
 
 <a id="create-and-spawn"></a>
 ## Создаём реальный класс и настраиваем его
@@ -123,10 +123,10 @@ public create_marker( const Float:origin[3] )
 
 Результат является невидимым trigger, а не моделью предмета. Для игровых сущностей, настраиваемых через keyvalues, нужные keyvalues задаются до `DispatchSpawn`; spawn может перезаписать поля или удалить неподходящую сущность. Порядок зависит от класса, поэтому не переноси этот рецепт без изменений на двери, оружие или brush-сущности.
 
-Источники: [create_entity](https://www.amxmodx.org/api/engine/create_entity), [DispatchSpawn](https://www.amxmodx.org/api/engine/DispatchSpawn), [DispatchKeyValue](https://www.amxmodx.org/api/engine/DispatchKeyValue).
+Источники: [`create_entity`](https://www.amxmodx.org/api/engine/create_entity), [`DispatchSpawn`](https://www.amxmodx.org/api/engine/DispatchSpawn), [`DispatchKeyValue`](https://www.amxmodx.org/api/engine/DispatchKeyValue).
 
 <a id="touch-and-consume"></a>
-## Touch: проверяем обе стороны и забираем один раз
+## `Touch`: проверяем обе стороны и забираем один раз
 
 Trigger может многократно касаться игрока. Handler принимает только живых игроков и удаляет свой marker до одноразовой награды. Он предназначен для `notes_marker` из предыдущего раздела.
 
@@ -156,10 +156,10 @@ public on_marker_touch( marker, player )
 
 После удаления не читай поля `marker`. Пример забирает marker даже при 100 здоровья; перенеси эту проверку до удаления, если полностью здоровый игрок должен оставлять его на месте. Поле `owner` является игровыми данными, а не автоматическим правилом доступа.
 
-Источники: [register_touch](https://www.amxmodx.org/api/engine/register_touch), [remove_entity](https://www.amxmodx.org/api/engine/remove_entity), [set_user_health](https://www.amxmodx.org/api/fun/set_user_health).
+Источники: [`register_touch`](https://www.amxmodx.org/api/engine/register_touch), [`remove_entity`](https://www.amxmodx.org/api/engine/remove_entity), [`set_user_health`](https://www.amxmodx.org/api/fun/set_user_health).
 
 <a id="think-scheduling"></a>
-## Think использует абсолютное игровое время
+## `Think` использует абсолютное игровое время
 
 `nextthink` является временной меткой, а не интервалом. Первый вызов планируется как `get_gametime() + delay`; для повторения следующий вызов нужно запланировать заново.
 
@@ -190,7 +190,7 @@ public on_marker_think( marker )
 
 Это задаёт примерно секундный ритм; вызовы зависят от кадров сервера, а не от таймера реального времени. Учитывай число активных сущностей. Не обходи всех игроков или все сущности в каждом thinker, если данные можно сохранить при создании или обновлять событиями.
 
-Источники: [register_think](https://www.amxmodx.org/api/engine/register_think), [get_gametime](https://www.amxmodx.org/api/amxmodx/get_gametime).
+Источники: [`register_think`](https://www.amxmodx.org/api/engine/register_think), [`get_gametime`](https://www.amxmodx.org/api/amxmodx/get_gametime).
 
 <a id="models-and-precache"></a>
 ## Моделям нужны precache и границы
@@ -221,7 +221,7 @@ public apply_marker_model( marker )
 
 Модель гранаты не делает сущность гранатой: поведение по-прежнему задают её реальный класс и callbacks. Для своего ресурса проверь путь и добавь файл на сервер. Не создавай неограниченный список precache из произвольного клиентского ввода.
 
-Источники: [precache_model](https://www.amxmodx.org/api/amxmodx/precache_model), [entity_set_model](https://www.amxmodx.org/api/engine/entity_set_model), [entity_set_size](https://www.amxmodx.org/api/engine/entity_set_size).
+Источники: [`precache_model`](https://www.amxmodx.org/api/amxmodx/precache_model), [`entity_set_model`](https://www.amxmodx.org/api/engine/entity_set_model), [`entity_set_size`](https://www.amxmodx.org/api/engine/entity_set_size).
 
 <a id="search-and-remove"></a>
 ## Ищем точно и удаляем только свои сущности
@@ -246,9 +246,9 @@ public remove_markers()
 }
 ```
 
-Делай это в подходящем событии жизненного цикла, например после завершения своего режима. Глобальный поиск каждый кадр редко оправдан. Не удаляй игроков, worldspawn или все сущности общего игрового classname ради очистки одной возможности плагина.
+Делай это в подходящем событии жизненного цикла, например после завершения своего режима. Глобальный поиск каждый кадр редко оправдан. Не удаляй игроков, `worldspawn` или все сущности общего игрового classname ради очистки одной возможности плагина.
 
-Источники: [find_ent_by_class](https://www.amxmodx.org/api/engine/find_ent_by_class), [remove_entity](https://www.amxmodx.org/api/engine/remove_entity).
+Источники: [`find_ent_by_class`](https://www.amxmodx.org/api/engine/find_ent_by_class), [`remove_entity`](https://www.amxmodx.org/api/engine/remove_entity).
 
 <a id="owner-lifetime"></a>
 ## Слот владельца тоже может смениться
@@ -288,7 +288,7 @@ public get_marker_owner( marker )
 
 Отдельно реши, должен ли disconnect удалить marker, передать его или оставить нейтральным. Не перезаписывай `iuser*` игровых сущностей или другого плагина. Ownership также может влиять на столкновения, поэтому это не всегда подходящее поле для произвольных метаданных.
 
-Источники: [get_user_userid](https://www.amxmodx.org/api/amxmodx/get_user_userid), [entity_set_edict](https://www.amxmodx.org/api/engine/entity_set_edict).
+Источники: [`get_user_userid`](https://www.amxmodx.org/api/amxmodx/get_user_userid), [`entity_set_edict`](https://www.amxmodx.org/api/engine/entity_set_edict).
 
 <a id="private-data"></a>
 ## Private data: единицы, класс и платформа
@@ -317,7 +317,7 @@ public inspect_active_item( player )
 
 **Пример gamedata CS 1.6.** `get_ent_data_*` находит именованное поле в AMXX gamedata и проверяет объявленный тип. Числовые offsets не нужно вшивать в плагин, но подходящие gamedata и правильный класс всё равно нужны. Отсутствующий pointer может дать `-1`; проверь результат перед чтением сущности.
 
-Источники: [get_pdata_int](https://www.amxmodx.org/api/fakemeta/get_pdata_int), [get_pdata_ent](https://www.amxmodx.org/api/fakemeta/get_pdata_ent), [get_ent_data_entity](https://www.amxmodx.org/api/fakemeta/get_ent_data_entity).
+Источники: [`get_pdata_int`](https://www.amxmodx.org/api/fakemeta/get_pdata_int), [`get_pdata_ent`](https://www.amxmodx.org/api/fakemeta/get_pdata_ent), [`get_ent_data_entity`](https://www.amxmodx.org/api/fakemeta/get_ent_data_entity).
 
 <a id="reapi-members"></a>
 ## Именованные поля ReAPI, отдельный модуль
@@ -375,4 +375,4 @@ public give_ak47( player )
 
 Для смерти присваивание нулевого здоровья, `user_kill`, нанесение урона и вызов `Ham_Killed` по-разному влияют на damage hooks, авторство убийства и игровые правила. Выбирай нужную операцию: универсальной взаимозамены нет.
 
-Источники: [give_item](https://www.amxmodx.org/api/fun/give_item), [cs_set_user_bpammo](https://www.amxmodx.org/api/cstrike/cs_set_user_bpammo), [Ham functions](https://www.amxmodx.org/api/ham_const), [user_kill](https://www.amxmodx.org/api/amxmodx/user_kill).
+Источники: [`give_item`](https://www.amxmodx.org/api/fun/give_item), [`cs_set_user_bpammo`](https://www.amxmodx.org/api/cstrike/cs_set_user_bpammo), [Ham functions](https://www.amxmodx.org/api/ham_const), [`user_kill`](https://www.amxmodx.org/api/amxmodx/user_kill).

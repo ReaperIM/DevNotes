@@ -1,6 +1,6 @@
 # Файлы, nVault и SQL
 
-[English](../en/09-files-vault-and-sql.md) | [Українська](../uk/09-files-vault-and-sql.md) | [Русский](../ru/09-files-vault-and-sql.md)
+[EN](../en/09-files-vault-and-sql.md) | [UK](../uk/09-files-vault-and-sql.md) | [RU](../ru/09-files-vault-and-sql.md)
 
 [Содержание](../../README.ru.md)
 
@@ -14,7 +14,7 @@
 - [Отсутствующий ключ и сохранённый ноль](#vault-missing)
 - [Время записей и явная очистка](#vault-expiry)
 - [Потоковый SQL и callback](#threaded-sql)
-- [SQL_PrepareQuery не является привязкой параметров](#sql-quoting)
+- [`SQL_PrepareQuery` не является привязкой параметров](#sql-quoting)
 - [Результат запроса может прийти после выхода игрока](#sql-player-context)
 
 <a id="paths"></a>
@@ -38,7 +38,7 @@ public plugin_init()
 
 Базовый каталог не делает произвольное имя файла безопасным. Контролируйте имена; не добавляйте `../` или абсолютные пути из команд.
 
-[get_datadir](https://www.amxmodx.org/api/amxmisc/get_datadir)
+[`get_datadir`](https://www.amxmodx.org/api/amxmisc/get_datadir)
 
 <a id="read-lines"></a>
 
@@ -73,7 +73,7 @@ public plugin_cfg()
 
 Строка длиннее буфера может быть обрезана с потерей хвоста. Ограничивайте длину строк в формате или отдельно обрабатывайте длинные записи. Удаление пробелов и пропуск `;` здесь являются правилами примера, а не полноценным INI-парсером.
 
-[fgets](https://www.amxmodx.org/api/file/fgets)
+[`fgets`](https://www.amxmodx.org/api/file/fgets)
 
 <a id="append"></a>
 
@@ -106,7 +106,7 @@ public plugin_init()
 
 Открытие файлов или сброс буфера каждый кадр нагружает серверный поток. Сохраняйте по изменениям или пакетами; `fflush()` не является транзакцией.
 
-[fputs](https://www.amxmodx.org/api/file/fputs)
+[`fputs`](https://www.amxmodx.org/api/file/fputs)
 
 <a id="json"></a>
 
@@ -133,7 +133,7 @@ public plugin_init()
 
 Освобождайте собственные JSON-значения. Handles вложенных значений и буферы сериализации имеют свои правила времени жизни и размера; родительский объект не заменяет очистку всех отдельно созданных handles.
 
-[json_parse](https://www.amxmodx.org/api/json/json_parse) | [json_free](https://www.amxmodx.org/api/json/json_free)
+[`json_parse`](https://www.amxmodx.org/api/json/json_parse) | [`json_free`](https://www.amxmodx.org/api/json/json_free)
 
 <a id="vault-open"></a>
 
@@ -162,7 +162,7 @@ public plugin_end()
 
 Ошибка nVault имеет значение `-1`, а не обычный false. Значения хранятся как строки; структуру ключей и идентификацию аккаунта определяет плагин.
 
-[nvault_open](https://www.amxmodx.org/api/nvault/nvault_open)
+[`nvault_open`](https://www.amxmodx.org/api/nvault/nvault_open)
 
 <a id="vault-missing"></a>
 
@@ -191,7 +191,7 @@ public plugin_init()
 
 Числовой `nvault_get()` с двумя аргументами сам по себе не различает отсутствующий ключ и сохранённый числовой ноль.
 
-[nvault_lookup](https://www.amxmodx.org/api/nvault/nvault_lookup)
+[`nvault_lookup`](https://www.amxmodx.org/api/nvault/nvault_lookup)
 
 <a id="vault-expiry"></a>
 
@@ -218,13 +218,13 @@ public plugin_init()
 
 Очищайте только данные, которые действительно можно потерять. Постоянные записи `nvault_pset()` не удаляются через prune.
 
-[nvault_prune](https://www.amxmodx.org/api/nvault/nvault_prune)
+[`nvault_prune`](https://www.amxmodx.org/api/nvault/nvault_prune)
 
 <a id="threaded-sql"></a>
 
 ## Потоковый SQL и callback
 
-`SQL_MakeDbTuple()` сохраняет настройки, но не открывает соединение. `SQL_ThreadQuery()` выполняет запрос асинхронно и вызывает public-обработчик с ошибкой или результатом.
+`SQL_MakeDbTuple()` сохраняет настройки, но не открывает соединение. `SQL_ThreadQuery()` выполняет запрос асинхронно и вызывает `public`-обработчик с ошибкой или результатом.
 
 ```pawn
 #include <amxmodx>
@@ -264,11 +264,11 @@ public plugin_end()
 
 Пример выбирает драйвер SQLite. Для MySQL нужны настоящие настройки из конфигурации сервера. Не освобождайте handle запроса в callback: им владеет SQLX. Сам обработчик также не должен перегружать игровой поток.
 
-[SQL_ThreadQuery](https://www.amxmodx.org/api/sqlx/SQL_ThreadQuery) | [SQL_MakeDbTuple](https://www.amxmodx.org/api/sqlx/SQL_MakeDbTuple)
+[`SQL_ThreadQuery`](https://www.amxmodx.org/api/sqlx/SQL_ThreadQuery) | [`SQL_MakeDbTuple`](https://www.amxmodx.org/api/sqlx/SQL_MakeDbTuple)
 
 <a id="sql-quoting"></a>
 
-## SQL_PrepareQuery не является привязкой параметров
+## `SQL_PrepareQuery` не является привязкой параметров
 
 Аргументы формата SQLX являются форматированием строки, а не плейсхолдерами PDO. Экранируйте внешние строковые значения для активного соединения перед вставкой в SQL.
 
@@ -313,7 +313,7 @@ public plugin_init()
 
 Синхронный пример показывает экранирование с настоящим соединением; не открывайте блокирующее соединение для каждого игрового события. Экранирование значений не проверяет имена таблиц или выражения сортировки. `SQL_SetCharset()` для MySQL tuple вызывают до соединений/запросов.
 
-[SQL_PrepareQuery](https://www.amxmodx.org/api/sqlx/SQL_PrepareQuery) | [SQL_QuoteString](https://www.amxmodx.org/api/sqlx/SQL_QuoteString)
+[`SQL_PrepareQuery`](https://www.amxmodx.org/api/sqlx/SQL_PrepareQuery) | [`SQL_QuoteString`](https://www.amxmodx.org/api/sqlx/SQL_QuoteString)
 
 <a id="sql-player-context"></a>
 
@@ -366,4 +366,4 @@ public plugin_end()
 
 Userid не даёт применить старый результат к новому игроку в слоте. Запросы одного подключения всё ещё могут завершаться не по порядку: если нужен последний, добавляйте номер запроса. Для постоянных записей нужен авторизованный ключ аккаунта, а не userid.
 
-[SQL_ThreadQuery](https://www.amxmodx.org/api/sqlx/SQL_ThreadQuery) | [find_player](https://www.amxmodx.org/api/amxmodx/find_player)
+[`SQL_ThreadQuery`](https://www.amxmodx.org/api/sqlx/SQL_ThreadQuery) | [`find_player`](https://www.amxmodx.org/api/amxmodx/find_player)

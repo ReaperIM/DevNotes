@@ -1,6 +1,6 @@
 # Версии и совместимость
 
-[English](../en/COMPATIBILITY.md) | [Українська](../uk/COMPATIBILITY.md) | [Русский](../ru/COMPATIBILITY.md)
+[EN](../en/COMPATIBILITY.md) | [UK](../uk/COMPATIBILITY.md) | [RU](../ru/COMPATIBILITY.md)
 
 [Содержание](../../README.ru.md)
 

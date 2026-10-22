@@ -1,6 +1,6 @@
 # Arrays and iteration
 
-[English](../en/04-arrays-and-iteration.md) | [Українська](../uk/04-arrays-and-iteration.md) | [Русский](../ru/04-arrays-and-iteration.md)
+[EN](../en/04-arrays-and-iteration.md) | [UK](../uk/04-arrays-and-iteration.md) | [RU](../ru/04-arrays-and-iteration.md)
 
 [Contents](../../README.md)
 
@@ -10,9 +10,9 @@ PHP arrays preserve insertion order. The notes below cover working with keys, un
 - [Read selected named fields](#keyed-destructuring)
 - [Destructure by reference to modify the original](#reference-destructuring)
 - [Accept arrays and iterators with `iterable`](#iterable)
-- [Join streams with yield from](#generator-delegation)
+- [Join streams with `yield from`](#generator-delegation)
 - [Get a generator’s final result](#generator-return)
-- [Build arrays with ... and understand collisions](#unpacking)
+- [Build arrays with `...` and understand collisions](#unpacking)
 - [Merge zero or more arrays](#merge-empty)
 - [Read first and last keys without moving a pointer](#boundary-keys)
 - [Check whether `count()` is valid](#countable)
@@ -99,7 +99,7 @@ It guarantees neither element types, `count()`, indexed access nor repeated trav
 
 <a id="generator-delegation"></a>
 
-## Join streams with yield from
+## Join streams with `yield from`
 
 **PHP 7.0+ | Core** | [PHP](https://www.php.net/manual/en/language.generators.syntax.php)
 
@@ -139,7 +139,7 @@ It throws before normal completion; breaking out of `foreach` does not reach the
 
 <a id="unpacking"></a>
 
-## Build arrays with ... and understand collisions
+## Build arrays with `...` and understand collisions
 
 **PHP 7.4+ | Core** | [PHP](https://www.php.net/manual/en/language.types.array.php#language.types.array.unpacking)
 

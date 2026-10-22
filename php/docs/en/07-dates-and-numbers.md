@@ -1,6 +1,6 @@
 # Dates and numbers
 
-[English](../en/07-dates-and-numbers.md) | [Українська](../uk/07-dates-and-numbers.md) | [Русский](../ru/07-dates-and-numbers.md)
+[EN](../en/07-dates-and-numbers.md) | [UK](../uk/07-dates-and-numbers.md) | [RU](../ru/07-dates-and-numbers.md)
 
 [Contents](../../README.md)
 
@@ -23,7 +23,7 @@ Date calculations depend on parsing rules and timezones; numeric calculations de
 
 **PHP 7.0+ | Core** | [PHP](https://www.php.net/manual/en/function.intdiv.php)
 
-`intdiv()` returns an integer quotient without an intermediate float, useful for complete units such as minutes or pages.
+`intdiv()` returns an integer quotient without an intermediate `float`, useful for complete units such as minutes or pages.
 
 ```php
 $minutes = intdiv( 125, 60 ); # 2
@@ -134,7 +134,7 @@ The start is included, so `R2` yields three dates. Only a subset of ISO 8601 is 
 
 **PHP 8.4+ | date** | [PHP](https://www.php.net/manual/en/datetimeimmutable.createfromtimestamp.php) | [PHP](https://www.php.net/manual/en/datetimeimmutable.setmicrosecond.php)
 
-`createFromTimestamp()` accepts integer or float Unix timestamps; microsecond accessors expose the fractional component without formatting and reparsing it.
+`createFromTimestamp()` accepts integer or `float` Unix timestamps; microsecond accessors expose the fractional component without formatting and reparsing it.
 
 ```php
 $date = DateTimeImmutable::createFromTimestamp( 1_700_000_000.125 );
@@ -152,7 +152,7 @@ The immutable setter returns a copy, while `DateTime` mutates. Floats may alread
 
 **PHP 8.4+ | Core** | [PHP](https://www.php.net/manual/en/enum.roundingmode.php)
 
-`RoundingMode` names the rounding policy shared by `round()`, `bcround()` and `BcMath\Number::round()`. HalfEven resolves ties to an even result; HalfAwayFromZero resolves them away from zero.
+`RoundingMode` names the rounding policy shared by `round()`, `bcround()` and `BcMath\Number::round()`. `HalfEven` resolves ties to an even result; `HalfAwayFromZero` resolves them away from zero.
 
 ```php
 $even = round( 2.5, 0, RoundingMode::HalfEven ); # 2
@@ -160,7 +160,7 @@ $away = round( 2.5, 0, RoundingMode::HalfAwayFromZero ); # 3
 $truncated = round( -2.9, 0, RoundingMode::TowardsZero ); # -2
 ```
 
-A rounding mode does not make binary floats decimal-exact. Choose the numeric representation and the point of rounding as well as the mode; TowardsZero truncates at the selected precision.
+A rounding mode does not make binary floats decimal-exact. Choose the numeric representation and the point of rounding as well as the mode; `TowardsZero` truncates at the selected precision.
 
 <a id="bcmath-number"></a>
 
@@ -168,7 +168,7 @@ A rounding mode does not make binary floats decimal-exact. Choose the numeric re
 
 **PHP 8.4+ | bcmath** | [PHP](https://www.php.net/manual/en/class.bcmath-number.php)
 
-`BcMath\Number` provides immutable arbitrary-precision decimals with arithmetic operators and explicit methods. Construct values from strings or integers so they have not already passed through float rounding.
+`BcMath\Number` provides immutable arbitrary-precision decimals with arithmetic operators and explicit methods. Construct values from strings or integers so they have not already passed through `float` rounding.
 
 ```php
 $price = new BcMath\Number( '19.995' );
@@ -185,7 +185,7 @@ $equal = $total->compare( $expected ) === 0; # true
 
 **PHP 8.4+ | bcmath** | [PHP](https://www.php.net/manual/en/function.bcround.php) | [PHP](https://www.php.net/manual/en/function.bcdivmod.php)
 
-`bcround()`, `bcfloor()` and `bcceil()` round decimal strings without float conversion. `bcdivmod()` returns the quotient and remainder together, ready for destructuring.
+`bcround()`, `bcfloor()` and `bcceil()` round decimal strings without `float` conversion. `bcdivmod()` returns the quotient and remainder together, ready for destructuring.
 
 ```php
 $rounded = bcround( '19.995', 2, RoundingMode::HalfAwayFromZero ); # '20.00'

@@ -1,17 +1,17 @@
 # Події, hooks і повідомлення
 
-[English](../en/06-events-hooks-and-messages.md) | [Українська](../uk/06-events-hooks-and-messages.md) | [Русский](../ru/06-events-hooks-and-messages.md) | [Зміст](../../README.uk.md)
+[EN](../en/06-events-hooks-and-messages.md) | [UK](../uk/06-events-hooks-and-messages.md) | [RU](../ru/06-events-hooks-and-messages.md) | [Зміст](../../README.uk.md)
 
 Робочі нотатки про момент виклику callback, доступні йому дані та сенс результату. Приклади незалежні; ігрові протоколи й окремі модулі позначені.
 
 - [Обираємо потрібний рівень](#which-hook)
-- [Фільтри подій і read_data](#filtered-events)
+- [Фільтри подій і `read_data`](#filtered-events)
 - [Події журналу мають власні аргументи](#log-events)
 - [Змінюємо повідомлення, а не ігровий стан](#message-hooks)
 - [Pre змінює виклик, post бачить його результат](#pre-and-post)
 - [Ham: змінюємо параметри явно](#ham-parameters)
 - [Ham: статус hook і результат функції](#ham-return)
-- [Fakemeta використовує FMRES_*](#fakemeta-status)
+- [Fakemeta використовує `FMRES_*`](#fakemeta-status)
 - [Вмикаємо hooks за потреби](#hook-lifetime)
 - [ReAPI hookchains, окремий модуль](#reapi-hookchains)
 
@@ -34,7 +34,7 @@
 Джерела: [AMXX events](https://www.amxmodx.org/api/amxmodx/register_event_ex), [message hooks](https://www.amxmodx.org/api/messages/register_message), [Ham](https://www.amxmodx.org/api/hamsandwich/RegisterHam).
 
 <a id="filtered-events"></a>
-## Фільтри подій і read_data
+## Фільтри подій і `read_data`
 
 **CS 1.6.** `DeathMsg` містить убивцю, жертву, ознаку headshot і назву зброї. Фільтр `3=1` залишає лише сповіщення про вбивства в голову.
 
@@ -59,7 +59,7 @@ public on_headshot()
 
 Аргументи повідомлення починаються з `1`. Читай їх усередині callback: вони належать поточній події. Убивця може дорівнювати `0` для шкоди від світу, тому перевіряй його перед player natives. Типізовані прапорці за потреби поєднуються через `|`.
 
-Джерела: [register_event_ex](https://www.amxmodx.org/api/amxmodx/register_event_ex), [read_data](https://www.amxmodx.org/api/amxmodx/read_data).
+Джерела: [`register_event_ex`](https://www.amxmodx.org/api/amxmodx/register_event_ex), [`read_data`](https://www.amxmodx.org/api/amxmodx/read_data).
 
 <a id="log-events"></a>
 ## Події журналу мають власні аргументи
@@ -85,7 +85,7 @@ public on_round_start()
 
 Аргументи журналу починаються з `0`; тут аргумент `1` дорівнює `Round_Start`. `argsnum = 2` задає кількість розібраних аргументів журналу, а не параметрів callback. Потрібен `read_logargv`, а не `read_data`. `HLTV`, `Round_Start` і успішний spawn гравця відповідають різним етапам раунду.
 
-Джерела: [register_logevent](https://www.amxmodx.org/api/amxmodx/register_logevent), [read_logargv](https://www.amxmodx.org/api/amxmodx/read_logargv).
+Джерела: [`register_logevent`](https://www.amxmodx.org/api/amxmodx/register_logevent), [`read_logargv`](https://www.amxmodx.org/api/amxmodx/read_logargv).
 
 <a id="message-hooks"></a>
 ## Змінюємо повідомлення, а не ігровий стан
@@ -114,7 +114,7 @@ public on_hide_weapon( message_id, destination, receiver )
 
 У message hook використовуй `get_msg_arg_*`, а не `read_data`. Повернення `PLUGIN_HANDLED` блокує повідомлення повністю. `receiver` може дорівнювати `0` для розсилки, тому це не завжди індекс гравця. Приклад працює лише під час надсилання `HideWeapon` і сам не надсилає клієнту негайне оновлення.
 
-Джерела: [register_message](https://www.amxmodx.org/api/messages/register_message), [set_msg_arg_int](https://www.amxmodx.org/api/messages/set_msg_arg_int), [CS HUD flags](https://github.com/rehlds/ReGameDLL_CS/blob/master/regamedll/dlls/cdll_dll.h).
+Джерела: [`register_message`](https://www.amxmodx.org/api/messages/register_message), [`set_msg_arg_int`](https://www.amxmodx.org/api/messages/set_msg_arg_int), [CS HUD flags](https://github.com/rehlds/ReGameDLL_CS/blob/master/regamedll/dlls/cdll_dll.h).
 
 <a id="pre-and-post"></a>
 ## Pre змінює виклик, post бачить його результат
@@ -143,7 +143,7 @@ public on_player_spawn_post( player )
 
 У post зміна вхідного параметра не поверне оригінальну операцію назад. `RegisterHam` перехоплює таблицю віртуальних функцій класу, а не лише поточних гравців. Сигнатуру визначає обраний `Ham_*`; callback від іншої функції може отримати некоректні аргументи.
 
-Джерела: [RegisterHam](https://www.amxmodx.org/api/hamsandwich/RegisterHam), [Ham signatures](https://www.amxmodx.org/api/ham_const).
+Джерела: [`RegisterHam`](https://www.amxmodx.org/api/hamsandwich/RegisterHam), [Ham signatures](https://www.amxmodx.org/api/ham_const).
 
 <a id="ham-parameters"></a>
 ## Ham: змінюємо параметри явно
@@ -172,7 +172,7 @@ public on_damage_pre( victim, inflictor, attacker, Float:damage, damage_bits )
 
 Це зменшує вдвічі значення, передане оригінальній функції. Фактична втрата здоров’я ще залежить від броні, правил шкоди та інших hooks. Обирай `SetHamParam*` відповідно до типу параметра; сама сутність має номер `1`.
 
-Джерела: [SetHamParamFloat](https://www.amxmodx.org/api/hamsandwich/SetHamParamFloat), [Ham_TakeDamage](https://www.amxmodx.org/api/ham_const).
+Джерела: [`SetHamParamFloat`](https://www.amxmodx.org/api/hamsandwich/SetHamParamFloat), [`Ham_TakeDamage`](https://www.amxmodx.org/api/ham_const).
 
 <a id="ham-return"></a>
 ## Ham: статус hook і результат функції
@@ -198,10 +198,10 @@ public on_heal_pre( player, Float:amount, damage_bits )
 
 `HAM_IGNORED` не втручається у виклик. `HAM_HANDLED` теж дозволяє оригінал. `HAM_OVERRIDE` підміняє результат зі збереженням оригінального виклику, а `HAM_SUPERCEDE` у pre блокує оригінальний виклик. Тип підміни має відповідати типу результату функції. Це не блокує окремі прямі setters здоров’я.
 
-Джерела: [Ham return constants](https://www.amxmodx.org/api/ham_const), [SetHamReturnInteger](https://www.amxmodx.org/api/hamsandwich/SetHamReturnInteger).
+Джерела: [Ham return constants](https://www.amxmodx.org/api/ham_const), [`SetHamReturnInteger`](https://www.amxmodx.org/api/hamsandwich/SetHamReturnInteger).
 
 <a id="fakemeta-status"></a>
-## Fakemeta використовує FMRES_*
+## Fakemeta використовує `FMRES_*`
 
 Fakemeta forwards мають власні константи статусу. Цей pre hook блокує виклик `ClientKill` у game DLL, який зазвичай викликається клієнтською командою `kill`.
 
@@ -223,7 +223,7 @@ public on_client_kill_pre( player )
 
 `FMRES_IGNORED`, `FMRES_HANDLED`, `FMRES_OVERRIDE` і `FMRES_SUPERCEDE` виражають схожі з Ham рішення, але належать іншому API. Для підміни не-void результату потрібні відповідний `forward_return( FMV_*, ... )` і статус. Приклад блокує саме цей callback, а не всі можливі причини самогубства чи смерті.
 
-Джерела: [register_forward](https://www.amxmodx.org/api/fakemeta/register_forward), [forward_return](https://www.amxmodx.org/api/fakemeta/forward_return).
+Джерела: [`register_forward`](https://www.amxmodx.org/api/fakemeta/register_forward), [`forward_return`](https://www.amxmodx.org/api/fakemeta/forward_return).
 
 <a id="hook-lifetime"></a>
 ## Вмикаємо hooks за потреби
@@ -261,7 +261,7 @@ public on_spawn_post( player )
 
 Реєструй один раз, далі перемикай цю реєстрацію. `ExecuteHamB` викликає Ham hooks і може створити рекурсію всередині того самого hook. `ExecuteHam` ці Ham hooks не викликає; обирай поведінку свідомо. `RegisterHamFromEntity` теж перехоплює таблицю класу, а не лише передану сутність.
 
-Джерела: [DisableHamForward](https://www.amxmodx.org/api/hamsandwich/DisableHamForward), [ExecuteHamB](https://www.amxmodx.org/api/hamsandwich/ExecuteHamB), [RegisterHamFromEntity](https://www.amxmodx.org/api/hamsandwich/RegisterHamFromEntity).
+Джерела: [`DisableHamForward`](https://www.amxmodx.org/api/hamsandwich/DisableHamForward), [`ExecuteHamB`](https://www.amxmodx.org/api/hamsandwich/ExecuteHamB), [`RegisterHamFromEntity`](https://www.amxmodx.org/api/hamsandwich/RegisterHamFromEntity).
 
 <a id="reapi-hookchains"></a>
 ## ReAPI hookchains, окремий модуль
@@ -288,6 +288,6 @@ public on_damage_pre( victim, inflictor, attacker, Float:damage, damage_bits )
 }
 ```
 
-`SetHookChainArg` змінює вхідні параметри у pre; `SetHookChainReturn` задає результат функції. `HC_SUPERCEDE` блокує оригінальний виклик. `HC_BREAK` також зупиняє виклик наступних callbacks, тому може завадити іншим плагінам. Перевіряй точну сигнатуру в enum і потрібні версії ReAPI / ReGameDLL, а не перекладай Ham hook механічно.
+`SetHookChainArg` змінює вхідні параметри у pre; `SetHookChainReturn` задає результат функції. `HC_SUPERCEDE` блокує оригінальний виклик. `HC_BREAK` також зупиняє виклик наступних callbacks, тому може завадити іншим плагінам. Перевіряй точну сигнатуру в `enum` і потрібні версії ReAPI / ReGameDLL, а не перекладай Ham hook механічно.
 
 Джерела: [ReAPI hookchain API](https://github.com/rehlds/ReAPI/blob/master/reapi/extra/amxmodx/scripting/include/reapi.inc), [game DLL signatures](https://github.com/rehlds/ReAPI/blob/master/reapi/extra/amxmodx/scripting/include/reapi_gamedll_const.inc).

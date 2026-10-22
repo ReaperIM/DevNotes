@@ -1,6 +1,6 @@
 # Строки и Unicode
 
-[English](../en/05-strings-and-unicode.md) | [Українська](../uk/05-strings-and-unicode.md) | [Русский](../ru/05-strings-and-unicode.md)
+[EN](../en/05-strings-and-unicode.md) | [UK](../uk/05-strings-and-unicode.md) | [RU](../ru/05-strings-and-unicode.md)
 
 [Содержание](../../README.ru.md)
 

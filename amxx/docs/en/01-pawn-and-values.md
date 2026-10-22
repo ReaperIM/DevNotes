@@ -1,25 +1,25 @@
 # Pawn and values
 
-[English](../en/01-pawn-and-values.md) | [Українська](../uk/01-pawn-and-values.md) | [Русский](../ru/01-pawn-and-values.md)
+[EN](../en/01-pawn-and-values.md) | [UK](../uk/01-pawn-and-values.md) | [RU](../ru/01-pawn-and-values.md)
 
 [Contents](../../README.md)
 
 - [Cells and tags](#cells-and-tags)
 - [Convert a value, or only change its tag?](#float-conversion)
-- [Integer division before Float conversion](#division-and-rounding)
+- [Integer division before `Float` conversion](#division-and-rounding)
 - [Comparisons, booleans and short-circuiting](#conditions-and-comparisons)
-- [Constants and enum values](#constants-and-enums)
+- [Constants and `enum` values](#constants-and-enums)
 - [Output values through reference parameters](#reference-parameters)
 - [Default and named arguments](#default-and-named-arguments)
 - [Bit flags: set, test and clear](#bit-flags)
-- [Local new vs static](#static-storage)
-- [switch without fall-through](#switch-and-ranges)
-- [public callbacks and stock helpers](#function-visibility)
+- [Local `new` vs `static`](#static-storage)
+- [`switch` without fall-through](#switch-and-ranges)
+- [`public` callbacks and `stock` helpers](#function-visibility)
 
 <a id="cells-and-tags"></a>
 ## Cells and tags
 
-In AMXX, an ordinary integer, a boolean and a Float each occupy one 32-bit cell. A tag tells the compiler how to interpret a value and which operators to use; it does not create a separate boxed object.
+In AMXX, an ordinary integer, a boolean and a `Float` each occupy one 32-bit cell. A tag tells the compiler how to interpret a value and which operators to use; it does not create a separate boxed object.
 
 ```pawn
 #include <amxmodx>
@@ -42,7 +42,7 @@ A tag mismatch is a warning worth fixing. Silencing it with `_:` can leave the w
 <a id="float-conversion"></a>
 ## Convert a value, or only change its tag?
 
-`float()` converts an integer to a Float. `Float:` only reinterprets the existing bits. The reverse conversion is explicit too: choose the rounding rule with `floatround()`.
+`float()` converts an integer to a `Float`. `Float:` only reinterprets the existing bits. The reverse conversion is explicit too: choose the rounding rule with `floatround()`.
 
 ```pawn
 #include <amxmodx>
@@ -59,14 +59,14 @@ public plugin_init()
 }
 ```
 
-Use bit reinterpretation only when an API explicitly transports Float bits in an untagged cell. It is not a replacement for numeric conversion.
+Use bit reinterpretation only when an API explicitly transports `Float` bits in an untagged cell. It is not a replacement for numeric conversion.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/float/floatround)
 
 <a id="division-and-rounding"></a>
-## Integer division before Float conversion
+## Integer division before `Float` conversion
 
-The operands determine how division runs. Assigning the result to a Float does not recover a fractional part already discarded by integer division.
+The operands determine how division runs. Assigning the result to a `Float` does not recover a fractional part already discarded by integer division.
 
 ```pawn
 #include <amxmodx>
@@ -111,9 +111,9 @@ The bounds check must come before the array access. For strings, use `equal()` o
 [AMXX / Pawn](https://wiki.alliedmods.net/Pawn_Tutorial#Expressions)
 
 <a id="constants-and-enums"></a>
-## Constants and enum values
+## Constants and `enum` values
 
-Use named constants for limits and enum values for a closed set of states. An enum can carry a tag, which helps catch mixing unrelated values.
+Use named constants for limits and `enum` values for a closed set of states. An `enum` can carry a tag, which helps catch mixing unrelated values.
 
 ```pawn
 #include <amxmodx>
@@ -226,7 +226,7 @@ public plugin_init()
 [AMXX / Pawn](https://wiki.alliedmods.net/Pawn_Tutorial#Expressions)
 
 <a id="static-storage"></a>
-## Local new vs static
+## Local `new` vs `static`
 
 A local `new` variable starts fresh on each call. A local `static` is initialized once and keeps its value across calls, while its name remains local to the function.
 
@@ -246,14 +246,14 @@ next_sequence()
 }
 ```
 
-A static buffer is shared by every call of that function. Reset the parts that belong to one operation, and do not treat it as per-player storage or safe scratch space during recursion.
+A `static` buffer is shared by every call of that function. Reset the parts that belong to one operation, and do not treat it as per-player storage or safe scratch space during recursion.
 
 [AMXX / Pawn](https://wiki.alliedmods.net/Pawn_Tutorial#Variables)
 
 <a id="switch-and-ranges"></a>
-## switch without fall-through
+## `switch` without fall-through
 
-Pawn `switch` supports several values in one case and inclusive ranges. A matching case finishes without a `break`; it does not continue into the next case.
+Pawn `switch` supports several values in one `case` and inclusive ranges. A matching `case` finishes without a `break`; it does not continue into the next `case`.
 
 ```pawn
 #include <amxmodx>
@@ -273,14 +273,14 @@ public plugin_init()
 }
 ```
 
-Use braces when a case performs several statements. Case labels are constant integer values, not arbitrary runtime conditions.
+Use braces when a `case` performs several statements. Case labels are constant integer values, not arbitrary runtime conditions.
 
 [AMXX / Pawn](https://wiki.alliedmods.net/Pawn_Tutorial#Switch_Statements)
 
 <a id="function-visibility"></a>
-## public callbacks and stock helpers
+## `public` callbacks and `stock` helpers
 
-AMXX finds callbacks by their public name. An internal helper called directly does not need `public`. A `stock` helper is omitted from the compiled plugin when nothing uses it.
+AMXX finds callbacks by their `public` name. An internal helper called directly does not need `public`. A `stock` helper is omitted from the compiled plugin when nothing uses it.
 
 ```pawn
 #include <amxmodx>
@@ -302,6 +302,6 @@ stock double_value( value )
 }
 ```
 
-A callback registered as a string must keep the exact name and required signature. Marking it stock does not make it visible to AMXX.
+A callback registered as a string must keep the exact name and required signature. Marking it `stock` does not make it visible to AMXX.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/amxmodx/register_srvcmd)

@@ -1,6 +1,6 @@
 # JSON, XML, HTML и сериализация
 
-[English](../en/06-json-xml-and-serialization.md) | [Українська](../uk/06-json-xml-and-serialization.md) | [Русский](../ru/06-json-xml-and-serialization.md)
+[EN](../en/06-json-xml-and-serialization.md) | [UK](../uk/06-json-xml-and-serialization.md) | [RU](../ru/06-json-xml-and-serialization.md)
 
 [Содержание](../../README.ru.md)
 
@@ -80,7 +80,7 @@ $invalid = json_validate( '{"active":}' ); # false
 
 **PHP 7.3+ | json | Контекст** | [PHP](https://www.php.net/manual/en/json.constants.php) | [PHP](https://www.php.net/manual/en/function.json-decode.php)
 
-Декодирование может вернуть скаляр, список, объект или `null`, поэтому проверяйте структуру, которую принимает API. `JSON_BIGINT_AS_STRING` сохраняет слишком большие для платформы целые числа, не превращая идентификаторы во float.
+Декодирование может вернуть скаляр, список, объект или `null`, поэтому проверяйте структуру, которую принимает API. `JSON_BIGINT_AS_STRING` сохраняет слишком большие для платформы целые числа, не превращая идентификаторы во `float`.
 
 ```php
 $json = '{"id":123456789012345678901234567890,"name":"Ada"}';

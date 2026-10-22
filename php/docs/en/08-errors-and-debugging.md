@@ -1,30 +1,30 @@
 # Errors and debugging
 
-[English](../en/08-errors-and-debugging.md) | [Українська](../uk/08-errors-and-debugging.md) | [Русский](../ru/08-errors-and-debugging.md)
+[EN](../en/08-errors-and-debugging.md) | [UK](../uk/08-errors-and-debugging.md) | [RU](../ru/08-errors-and-debugging.md)
 
 [Contents](../../README.md)
 
 **On this page**
 
-- [Throwable covers Exception and Error](#throwable)
-- [One catch for several exception types](#multi-catch)
-- [catch without an unused variable](#catch-without-variable)
-- [ValueError versus TypeError](#value-error)
-- [Exceptions thrown by __toString()](#to-string-exceptions)
-- [Identify a resource with get_resource_id()](#resource-id)
-- [Readable runtime types with get_debug_type()](#debug-types)
+- [`Throwable` covers `Exception` and `Error`](#throwable)
+- [One `catch` for several exception types](#multi-catch)
+- [`catch` without an unused variable](#catch-without-variable)
+- [`ValueError` versus `TypeError`](#value-error)
+- [Exceptions thrown by `__toString()`](#to-string-exceptions)
+- [Identify a resource with `get_resource_id()`](#resource-id)
+- [Readable runtime types with `get_debug_type()`](#debug-types)
 - [Understand a failed regular expression](#regex-errors)
 - [Distinguish an unmatched group from an empty match](#unmatched-groups)
 - [Map regex patterns to replacement callbacks](#regex-callback-map)
 - [Keep secret arguments out of stack traces](#sensitive-parameter)
-- [Mark an old API with #[Deprecated]](#deprecated-attribute)
-- [Notice ignored results with #[NoDiscard]](#nodiscard)
+- [Mark an old API with `#[Deprecated]`](#deprecated-attribute)
+- [Notice ignored results with `#[NoDiscard]`](#nodiscard)
 - [Inspect the current error and exception handlers](#current-handlers)
 - [Backtraces for fatal errors](#fatal-backtraces)
-- [Read PHP source with PhpToken](#php-token)
+- [Read PHP source with `PhpToken`](#php-token)
 
 <a id="throwable"></a>
-## Throwable covers Exception and Error
+## `Throwable` covers `Exception` and `Error`
 
 **PHP 7.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/class.throwable.php)
 
@@ -44,7 +44,7 @@ catch( Throwable $error )
 Ordinary warnings are not automatically exceptions, and some fatal conditions remain unrecoverable.
 
 <a id="multi-catch"></a>
-## One catch for several exception types
+## One `catch` for several exception types
 
 **PHP 7.1+ | Core** | [PHP documentation](https://www.php.net/exceptions)
 
@@ -64,7 +64,7 @@ catch( InvalidArgumentException | RuntimeException $error )
 Only the first matching handler runs, so put specific types before broader parent types.
 
 <a id="catch-without-variable"></a>
-## catch without an unused variable
+## `catch` without an unused variable
 
 **PHP 8.0+ | Core** | [PHP documentation](https://www.php.net/exceptions)
 
@@ -82,7 +82,7 @@ catch( DivisionByZeroError )
 ```
 
 <a id="value-error"></a>
-## ValueError versus TypeError
+## `ValueError` versus `TypeError`
 
 **PHP 8.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/class.valueerror.php)
 
@@ -102,7 +102,7 @@ catch( ValueError $error )
 This is API-specific: some functions still report failure with `false` or another documented result.
 
 <a id="to-string-exceptions"></a>
-## Exceptions thrown by __toString()
+## Exceptions thrown by `__toString()`
 
 **PHP 7.4+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.magic.php#object.tostring)
 
@@ -131,7 +131,7 @@ catch( RuntimeException $error )
 Earlier versions treated throwing during this conversion as a fatal error.
 
 <a id="resource-id"></a>
-## Identify a resource with get_resource_id()
+## Identify a resource with `get_resource_id()`
 
 **PHP 8.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/function.get-resource-id.php)
 
@@ -150,7 +150,7 @@ fclose( $stream );
 It identifies the resource within the current process, not across runs, and is not an operating-system file descriptor.
 
 <a id="debug-types"></a>
-## Readable runtime types with get_debug_type()
+## Readable runtime types with `get_debug_type()`
 
 **PHP 8.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/function.get-debug-type.php)
 
@@ -238,7 +238,7 @@ function authenticate( #[SensitiveParameter] string $password ): void
 It does not hide values printed explicitly or included in exception messages.
 
 <a id="deprecated-attribute"></a>
-## Mark an old API with #[Deprecated]
+## Mark an old API with `#[Deprecated]`
 
 **PHP 8.4+ | Core** | [PHP documentation](https://www.php.net/manual/en/class.deprecated.php)
 
@@ -255,7 +255,7 @@ function old_name(): string
 `since` describes your API version or date, and the diagnostic does not prevent execution.
 
 <a id="nodiscard"></a>
-## Notice ignored results with #[NoDiscard]
+## Notice ignored results with `#[NoDiscard]`
 
 **PHP 8.5+ | Core** | [PHP documentation](https://www.php.net/manual/en/class.nodiscard.php)
 
@@ -278,9 +278,9 @@ The attribute is not inherited automatically by overriding implementations.
 <a id="current-handlers"></a>
 ## Inspect the current error and exception handlers
 
-**PHP 8.5+ | Core** | [PHP documentation](https://www.php.net/manual/en/function.get-error-handler.php) | [get_exception_handler()](https://www.php.net/manual/en/function.get-exception-handler.php)
+**PHP 8.5+ | Core** | [PHP documentation](https://www.php.net/manual/en/function.get-error-handler.php) | [`get_exception_handler()`](https://www.php.net/manual/en/function.get-exception-handler.php)
 
-`get_error_handler()` and `get_exception_handler()` read the registered callable without changing handler stacks.
+`get_error_handler()` and `get_exception_handler()` read the registered `callable` without changing handler stacks.
 
 ```php
 $error_handler = static function( int $level, string $message ): bool
@@ -323,7 +323,7 @@ $trace = $last_error['trace'] ?? [];
 This does not make fatal errors catchable; uncaught exceptions retain their own traces and do not add this entry.
 
 <a id="php-token"></a>
-## Read PHP source with PhpToken
+## Read PHP source with `PhpToken`
 
 **PHP 8.0+ | tokenizer** | [PHP documentation](https://www.php.net/manual/en/class.phptoken.php)
 

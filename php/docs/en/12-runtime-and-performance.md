@@ -1,6 +1,6 @@
 # Runtime and performance
 
-[English](../en/12-runtime-and-performance.md) | [Українська](../uk/12-runtime-and-performance.md) | [Русский](../ru/12-runtime-and-performance.md)
+[EN](../en/12-runtime-and-performance.md) | [UK](../uk/12-runtime-and-performance.md) | [RU](../ru/12-runtime-and-performance.md)
 
 [Contents](../../README.md)
 
@@ -11,7 +11,7 @@
 - [Suspend and resume a call stack](#fibers)
 - [Preload stable application code](#preloading)
 - [JIT and OPcache are different tools](#jit)
-- [FFI for explicit C interoperability](#ffi)
+- [`FFI` for explicit C interoperability](#ffi)
 - [Parse PHP ini quantities](#ini-quantities)
 - [Reset memory peaks for a measured stage](#measure-memory)
 - [Environment defaults, log mode and batch lint](#ini-and-cli)
@@ -61,7 +61,7 @@ Values are held strongly, so a value referencing its own key can keep the key al
 
 **PHP 8.1+ | Core** [PHP manual](https://www.php.net/manual/en/language.fibers.php)
 
-A Fiber preserves a resumable call stack, allowing a deeply called function to suspend it. `resume()` supplies the value returned by `suspend()`, while `getReturn()` reads the final function return.
+A `Fiber` preserves a resumable call stack, allowing a deeply called function to suspend it. `resume()` supplies the value returned by `suspend()`, while `getReturn()` reads the final function return.
 
 ```php
 $fiber = new Fiber( function(): int
@@ -83,7 +83,7 @@ Fibers are cooperative: blocking I/O still blocks without a scheduler and non-bl
 
 **PHP 7.4+ | OPcache** [PHP manual](https://www.php.net/manual/en/opcache.preloading.php)
 
-Point `opcache.preload` in php.ini to a startup script that loads selected functions and classes once for later requests in persistent processes.
+Point `opcache.preload` in `php.ini` to a startup script that loads selected functions and classes once for later requests in persistent processes.
 
 <!-- example: fragment -->
 ```php
@@ -111,11 +111,11 @@ Availability and benefit depend on build, settings and workload; inspect `opcach
 
 <a id="ffi"></a>
 
-## FFI for explicit C interoperability
+## `FFI` for explicit C interoperability
 
 **PHP 7.4+ | FFI** [PHP manual](https://www.php.net/manual/en/book.ffi.php)
 
-FFI describes native C types and functions; this example allocates a C integer without loading a library.
+`FFI` describes native C types and functions; this example allocates a C integer without loading a library.
 
 <!-- example: fragment -->
 ```php
@@ -133,7 +133,7 @@ var_dump( $value->cdata ); # int(42)
 
 **PHP 8.2+ | Core** [PHP manual](https://www.php.net/manual/en/function.ini-parse-quantity.php)
 
-`ini_parse_quantity()` parses PHP ini quantities with K, M and G multipliers based on 1024.
+`ini_parse_quantity()` parses PHP ini quantities with `K`, `M` and `G` multipliers based on 1024.
 
 ```php
 var_dump( ini_parse_quantity('128M') ); # int(134217728)
@@ -168,7 +168,7 @@ The peak is still an absolute process value, and resetting does not free memory.
 
 **PHP 8.2+ log mode / PHP 8.3+ ini fallback and batch lint** [PHP manual](https://www.php.net/manual/en/configuration.file.php)
 
-PHP 8.3 adds php.ini environment fallbacks and multi-file `php -l`; PHP 8.2 adds `error_log_mode`.
+PHP 8.3 adds `php.ini` environment fallbacks and multi-file `php -l`; PHP 8.2 adds `error_log_mode`.
 
 ```ini
 max_execution_time = ${PHP_MAX_EXECUTION_TIME:-30}
@@ -225,4 +225,4 @@ $elapsed_ms = ($finished_at - $started_at) / 1000000;
 var_dump( $elapsed_ms ); # Elapsed milliseconds; varies each run.
 ```
 
-With `true`, nanoseconds use int on 64-bit and float on 32-bit platforms; the unit does not guarantee nanosecond hardware precision.
+With `true`, nanoseconds use `int` on 64-bit and `float` on 32-bit platforms; the unit does not guarantee nanosecond hardware precision.

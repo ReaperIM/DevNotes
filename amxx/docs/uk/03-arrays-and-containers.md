@@ -1,21 +1,21 @@
 # Масиви та контейнери
 
-[English](../en/03-arrays-and-containers.md) | [Українська](../uk/03-arrays-and-containers.md) | [Русский](../ru/03-arrays-and-containers.md)
+[EN](../en/03-arrays-and-containers.md) | [UK](../uk/03-arrays-and-containers.md) | [RU](../ru/03-arrays-and-containers.md)
 
 [Зміст](../../README.uk.md)
 
 - [Фіксовані масиви та допустимі індекси](#fixed-array-bounds)
-- [Рядки, стовпці та sizeof](#multidimensional-size)
-- [Масиви-записи з полями enum](#enum-records)
-- [Array: місткість не дорівнює розміру](#dynamic-cell-array)
+- [Рядки, стовпці та `sizeof`](#multidimensional-size)
+- [Масиви-записи з полями `enum`](#enum-records)
+- [`Array`: місткість не дорівнює розміру](#dynamic-cell-array)
 - [Динамічні масиви рядків](#dynamic-strings)
 - [Прочитати, змінити та записати динамічний запис](#dynamic-records)
 - [Видалення без пропуску наступного елемента](#delete-while-iterating)
 - [Клонувати дані та звільняти кожен handle](#clone-and-ownership)
-- [Пошук у Trie: відсутність не є нулем](#trie-presence-and-zero)
-- [Знімок ключів Trie](#trie-snapshot)
-- [Готове сортування цілих чисел та Array](#built-in-sorting)
-- [Callbacks ArraySort та ArraySortEx](#custom-sorting)
+- [Пошук у `Trie`: відсутність не є нулем](#trie-presence-and-zero)
+- [Знімок ключів `Trie`](#trie-snapshot)
+- [Готове сортування цілих чисел та `Array`](#built-in-sorting)
+- [Callbacks `ArraySort` та `ArraySortEx`](#custom-sorting)
 
 <a id="fixed-array-bounds"></a>
 ## Фіксовані масиви та допустимі індекси
@@ -41,7 +41,7 @@ public plugin_init()
 [AMXX / Pawn](https://wiki.alliedmods.net/Pawn_Tutorial#Arrays)
 
 <a id="multidimensional-size"></a>
-## Рядки, стовпці та sizeof
+## Рядки, стовпці та `sizeof`
 
 Для багатовимірного масиву `sizeof array` дає перший вимір, а `sizeof array[]` другий. Розміри циклів і текстових буферів можна прив’язати до оголошення.
 
@@ -68,7 +68,7 @@ public plugin_init()
 [AMXX / Pawn](https://wiki.alliedmods.net/Pawn_Tutorial#Two_Dimensional_Arrays)
 
 <a id="enum-records"></a>
-## Масиви-записи з полями enum
+## Масиви-записи з полями `enum`
 
 Enum може описувати зміщення та розміри полів одного запису. Так пов’язані дані зберігаються разом без паралельних масивів, а доступ до полів має зрозумілі імена.
 
@@ -94,12 +94,12 @@ public plugin_init()
 }
 ```
 
-Це все ще схема масиву, а не клас чи C struct. Буфер для native повинен мати очікуваний розмір; enum не додає перевірку під час виконання.
+Це все ще схема масиву, а не клас чи C struct. Буфер для native повинен мати очікуваний розмір; `enum` не додає перевірку під час виконання.
 
 [AMXX / Pawn](https://wiki.alliedmods.net/Pawn_Tutorial#Arrays)
 
 <a id="dynamic-cell-array"></a>
-## Array: місткість не дорівнює розміру
+## `Array`: місткість не дорівнює розміру
 
 `ArrayCreate(1, 8)` створює порожній динамічний масив з однокомірковими елементами та резервом на вісім записів. Доступні лише елементи, додані через Push або Resize.
 
@@ -120,14 +120,14 @@ public plugin_init()
 }
 ```
 
-Для невеликої відомої межі підійде фіксований масив. Динамічний Array потрібен для змінної кількості записів; він додає native-виклики та володіння handle, а не прискорює прямий доступ.
+Для невеликої відомої межі підійде фіксований масив. Динамічний `Array` потрібен для змінної кількості записів; він додає native-виклики та володіння handle, а не прискорює прямий доступ.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/cellarray/ArrayCreate)
 
 <a id="dynamic-strings"></a>
 ## Динамічні масиви рядків
 
-Для текстових елементів cellsize є місткістю кожного рядка разом із термінатором. Узгоджуйте її з буферами, які використовуються для запису й читання тексту.
+Для текстових елементів `cellsize` є місткістю кожного рядка разом із термінатором. Узгоджуйте її з буферами, які використовуються для запису й читання тексту.
 
 ```pawn
 #include <amxmodx>
@@ -146,7 +146,7 @@ public plugin_init()
 }
 ```
 
-Однокомірковий Array не підходить для довільних рядків. Великий вихідний буфер не поверне текст, який уже обрізано через місткість запису.
+Однокомірковий `Array` не підходить для довільних рядків. Великий вихідний буфер не поверне текст, який уже обрізано через місткість запису.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/cellarray/ArrayPushString)
 
@@ -184,14 +184,14 @@ public plugin_init()
 }
 ```
 
-З типовим розміром копіювання локальний запис має вміщувати весь cellsize елемента. Менший буфер не стає безпечним через збіг назви поля enum.
+З типовим розміром копіювання локальний запис має вміщувати весь `cellsize` елемента. Менший буфер не стає безпечним через збіг назви поля `enum`.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/cellarray/ArrayGetArray)
 
 <a id="delete-while-iterating"></a>
 ## Видалення без пропуску наступного елемента
 
-Після видалення запису Array наступні елементи зсуваються ліворуч. Під час видалення за умовою проходьте з кінця, щоб зсунуті значення вже були оброблені.
+Після видалення запису `Array` наступні елементи зсуваються ліворуч. Під час видалення за умовою проходьте з кінця, щоб зсунуті значення вже були оброблені.
 
 ```pawn
 #include <amxmodx>
@@ -224,7 +224,7 @@ public plugin_init()
 <a id="clone-and-ownership"></a>
 ## Клонувати дані та звільняти кожен handle
 
-Присвоєння handle Array копіює його ідентифікатор, а не дані. `ArrayClone()` створює окремий контейнер; обидва handle після цього потребують власного звільнення.
+Присвоєння handle `Array` копіює його ідентифікатор, а не дані. `ArrayClone()` створює окремий контейнер; обидва handle після цього потребують власного звільнення.
 
 ```pawn
 #include <amxmodx>
@@ -249,9 +249,9 @@ Destroy скидає передану за посиланням змінну, а
 [AMXX / Pawn](https://www.amxmodx.org/api/cellarray/ArrayClone)
 
 <a id="trie-presence-and-zero"></a>
-## Пошук у Trie: відсутність не є нулем
+## Пошук у `Trie`: відсутність не є нулем
 
-Trie зберігає значення за рядковими ключами. `TrieGetCell()` окремо повідомляє про успіх читання, тому нуль залишається допустимим значенням.
+`Trie` зберігає значення за рядковими ключами. `TrieGetCell()` окремо повідомляє про успіх читання, тому нуль залишається допустимим значенням.
 
 ```pawn
 #include <amxmodx>
@@ -277,9 +277,9 @@ public plugin_init()
 [AMXX / Pawn](https://www.amxmodx.org/api/celltrie/TrieGetCell)
 
 <a id="trie-snapshot"></a>
-## Знімок ключів Trie
+## Знімок ключів `Trie`
 
-Знімок Trie фіксує список ключів, а не значення. Подальші додавання й видалення список не змінюють, тому читання значення з поточної мапи має знову перевіряти ключ.
+Знімок `Trie` фіксує список ключів, а не значення. Подальші додавання й видалення список не змінюють, тому читання значення з поточної мапи має знову перевіряти ключ.
 
 ```pawn
 #include <amxmodx>
@@ -312,7 +312,7 @@ public plugin_init()
 [AMXX / Pawn](https://www.amxmodx.org/api/celltrie/TrieSnapshotCreate)
 
 <a id="built-in-sorting"></a>
-## Готове сортування цілих чисел та Array
+## Готове сортування цілих чисел та `Array`
 
 Для звичайного числового чи рядкового порядку використовуйте готове сортування. Так стандартна операція не потребує власного callback порівняння.
 
@@ -342,9 +342,9 @@ public plugin_init()
 [AMXX / Pawn](https://www.amxmodx.org/api/sorting/SortADTArray)
 
 <a id="custom-sorting"></a>
-## Callbacks ArraySort та ArraySortEx
+## Callbacks `ArraySort` та `ArraySortEx`
 
-`ArraySort()` передає callback індекси записів. `ArraySortEx()` передає самі записи: скалярні значення для cellsize 1, масиви для більшого cellsize. Ці контракти не можна змішувати.
+`ArraySort()` передає callback індекси записів. `ArraySortEx()` передає самі записи: скалярні значення для `cellsize` 1, масиви для більшого `cellsize`. Ці контракти не можна змішувати.
 
 ```pawn
 #include <amxmodx>

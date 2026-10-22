@@ -1,24 +1,24 @@
 # Strings and text
 
-[English](../en/02-strings-and-text.md) | [Українська](../uk/02-strings-and-text.md) | [Русский](../ru/02-strings-and-text.md)
+[EN](../en/02-strings-and-text.md) | [UK](../uk/02-strings-and-text.md) | [RU](../ru/02-strings-and-text.md)
 
 [Contents](../../README.md)
 
-- [Buffer size and charsmax](#buffers-and-charsmax)
+- [Buffer size and `charsmax`](#buffers-and-charsmax)
 - [Format values into a buffer](#format-values)
-- [format when input and output overlap](#overlapping-buffers)
+- [`format` when input and output overlap](#overlapping-buffers)
 - [Build text with a write offset](#append-with-offset)
 - [Caret escaping in Pawn source](#caret-escaping)
 - [String comparison and substring position](#comparison-and-search)
-- [parse for a known number of fields](#parse-fields)
+- [`parse` for a known number of fields](#parse-fields)
 - [First argument plus the remaining text](#argbreak-and-argparse)
 - [Trim outer whitespace and quotes](#trim-and-remove-quotes)
 - [Parse a whole numeric token](#number-parsing)
 - [UTF-8 bytes and case conversion](#unicode-bytes)
-- [Dictionary messages with %L](#multilingual-messages)
+- [Dictionary messages with `%L`](#multilingual-messages)
 
 <a id="buffers-and-charsmax"></a>
-## Buffer size and charsmax
+## Buffer size and `charsmax`
 
 An ordinary AMXX string is an array terminated by a zero cell. A buffer of 16 cells holds at most 15 bytes of text plus the terminator. `charsmax()` gives that usable text capacity.
 
@@ -41,7 +41,7 @@ Use the length convention of the specific API: many string natives take a maximu
 <a id="format-values"></a>
 ## Format values into a buffer
 
-`formatex()` writes a bounded result directly into the destination. Match the format specifier to the value: `%d` for integers, `%f` for Float and `%s` for strings.
+`formatex()` writes a bounded result directly into the destination. Match the format specifier to the value: `%d` for integers, `%f` for `Float` and `%s` for strings.
 
 ```pawn
 #include <amxmodx>
@@ -63,7 +63,7 @@ Pass external text as a value: `server_print( "%s", text )`. If it becomes the f
 [AMXX / Pawn](https://www.amxmodx.org/api/string/formatex)
 
 <a id="overlapping-buffers"></a>
-## format when input and output overlap
+## `format` when input and output overlap
 
 `formatex()` cannot read from the buffer it is currently overwriting. For an in-place transformation with overlapping source and destination, `format()` provides the necessary copy-back handling.
 
@@ -156,7 +156,7 @@ Do not write `if( containi(...) )`: it rejects position 0 and accepts the failur
 [AMXX / Pawn](https://www.amxmodx.org/api/string/containi)
 
 <a id="parse-fields"></a>
-## parse for a known number of fields
+## `parse` for a known number of fields
 
 `parse()` splits whitespace-separated fields while preserving quoted groups. Supply a separate buffer and maximum text length for every output field.
 
@@ -221,7 +221,7 @@ public plugin_init()
 }
 ```
 
-The order matters here: trim first so the quotes become the actual outer characters. If the quote contents may have meaningful whitespace, do not trim again after removing the quotes.
+The order matters here: `trim` first so the quotes become the actual outer characters. If the quote contents may have meaningful whitespace, do not `trim` again after removing the quotes.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/string/remove_quotes)
 
@@ -274,7 +274,7 @@ Changing case can change byte length, so pass the actual writable capacity. Cutt
 [AMXX / Pawn](https://www.amxmodx.org/api/string/mb_strtoupper)
 
 <a id="multilingual-messages"></a>
-## Dictionary messages with %L
+## Dictionary messages with `%L`
 
 Register a dictionary once, then let `%L` resolve its key for a language target. This example uses the standard `common.txt` dictionary, where `YES` is already defined.
 

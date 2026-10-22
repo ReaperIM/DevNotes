@@ -1,30 +1,30 @@
 # Ошибки и отладка
 
-[English](../en/08-errors-and-debugging.md) | [Українська](../uk/08-errors-and-debugging.md) | [Русский](../ru/08-errors-and-debugging.md)
+[EN](../en/08-errors-and-debugging.md) | [UK](../uk/08-errors-and-debugging.md) | [RU](../ru/08-errors-and-debugging.md)
 
 [Содержание](../../README.ru.md)
 
 **На этой странице**
 
-- [Throwable объединяет Exception и Error](#throwable)
-- [Один catch для нескольких типов исключений](#multi-catch)
-- [catch без неиспользуемой переменной](#catch-without-variable)
-- [ValueError и TypeError](#value-error)
-- [Исключения из __toString()](#to-string-exceptions)
-- [Идентификатор ресурса через get_resource_id()](#resource-id)
-- [Понятные типы во время выполнения через get_debug_type()](#debug-types)
+- [`Throwable` объединяет `Exception` и `Error`](#throwable)
+- [Один `catch` для нескольких типов исключений](#multi-catch)
+- [`catch` без неиспользуемой переменной](#catch-without-variable)
+- [`ValueError` и `TypeError`](#value-error)
+- [Исключения из `__toString()`](#to-string-exceptions)
+- [Идентификатор ресурса через `get_resource_id()`](#resource-id)
+- [Понятные типы во время выполнения через `get_debug_type()`](#debug-types)
 - [Как понять ошибку регулярного выражения](#regex-errors)
 - [Как отличить отсутствующую группу от пустого совпадения](#unmatched-groups)
 - [Свой callback замены для каждого шаблона](#regex-callback-map)
 - [Скрытие секретных аргументов в стеке](#sensitive-parameter)
-- [Пометка старого API через #[Deprecated]](#deprecated-attribute)
-- [Выявление проигнорированного результата через #[NoDiscard]](#nodiscard)
+- [Пометка старого API через `#[Deprecated]`](#deprecated-attribute)
+- [Выявление проигнорированного результата через `#[NoDiscard]`](#nodiscard)
 - [Проверка текущих обработчиков ошибок и исключений](#current-handlers)
 - [Стек вызовов для фатальных ошибок](#fatal-backtraces)
-- [Чтение PHP-кода через PhpToken](#php-token)
+- [Чтение PHP-кода через `PhpToken`](#php-token)
 
 <a id="throwable"></a>
-## Throwable объединяет Exception и Error
+## `Throwable` объединяет `Exception` и `Error`
 
 **PHP 7.0+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/class.throwable.php)
 
@@ -44,7 +44,7 @@ catch( Throwable $error )
 Обычные предупреждения не становятся исключениями автоматически, а некоторые фатальные состояния остаются невосстановимыми.
 
 <a id="multi-catch"></a>
-## Один catch для нескольких типов исключений
+## Один `catch` для нескольких типов исключений
 
 **PHP 7.1+ | Ядро** | [Документация PHP](https://www.php.net/exceptions)
 
@@ -64,7 +64,7 @@ catch( InvalidArgumentException | RuntimeException $error )
 Выполняется только первый подходящий обработчик, поэтому конкретные типы ставьте перед более общими родительскими.
 
 <a id="catch-without-variable"></a>
-## catch без неиспользуемой переменной
+## `catch` без неиспользуемой переменной
 
 **PHP 8.0+ | Ядро** | [Документация PHP](https://www.php.net/exceptions)
 
@@ -82,7 +82,7 @@ catch( DivisionByZeroError )
 ```
 
 <a id="value-error"></a>
-## ValueError и TypeError
+## `ValueError` и `TypeError`
 
 **PHP 8.0+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/class.valueerror.php)
 
@@ -102,7 +102,7 @@ catch( ValueError $error )
 Это зависит от API: некоторые функции всё ещё сообщают о неудаче через `false` или другой документированный результат.
 
 <a id="to-string-exceptions"></a>
-## Исключения из __toString()
+## Исключения из `__toString()`
 
 **PHP 7.4+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.magic.php#object.tostring)
 
@@ -131,7 +131,7 @@ catch( RuntimeException $error )
 Более ранние версии считали исключение при таком преобразовании фатальной ошибкой.
 
 <a id="resource-id"></a>
-## Идентификатор ресурса через get_resource_id()
+## Идентификатор ресурса через `get_resource_id()`
 
 **PHP 8.0+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/function.get-resource-id.php)
 
@@ -150,7 +150,7 @@ fclose( $stream );
 Он идентифицирует ресурс в текущем процессе, а не между запусками, и не является файловым дескриптором операционной системы.
 
 <a id="debug-types"></a>
-## Понятные типы во время выполнения через get_debug_type()
+## Понятные типы во время выполнения через `get_debug_type()`
 
 **PHP 8.0+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/function.get-debug-type.php)
 
@@ -238,7 +238,7 @@ function authenticate( #[SensitiveParameter] string $password ): void
 Атрибут не скрывает явно выведенные значения или значения в сообщениях исключений.
 
 <a id="deprecated-attribute"></a>
-## Пометка старого API через #[Deprecated]
+## Пометка старого API через `#[Deprecated]`
 
 **PHP 8.4+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/class.deprecated.php)
 
@@ -255,7 +255,7 @@ function old_name(): string
 `since` обозначает версию или дату вашего API, а сообщение не останавливает выполнение.
 
 <a id="nodiscard"></a>
-## Выявление проигнорированного результата через #[NoDiscard]
+## Выявление проигнорированного результата через `#[NoDiscard]`
 
 **PHP 8.5+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/class.nodiscard.php)
 
@@ -278,9 +278,9 @@ var_dump( $is_valid ); # bool(true)
 <a id="current-handlers"></a>
 ## Проверка текущих обработчиков ошибок и исключений
 
-**PHP 8.5+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/function.get-error-handler.php) | [get_exception_handler()](https://www.php.net/manual/en/function.get-exception-handler.php)
+**PHP 8.5+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/function.get-error-handler.php) | [`get_exception_handler()`](https://www.php.net/manual/en/function.get-exception-handler.php)
 
-`get_error_handler()` и `get_exception_handler()` читают зарегистрированный callable без изменения стеков обработчиков.
+`get_error_handler()` и `get_exception_handler()` читают зарегистрированный `callable` без изменения стеков обработчиков.
 
 ```php
 $error_handler = static function( int $level, string $message ): bool
@@ -323,7 +323,7 @@ $trace = $last_error['trace'] ?? [];
 Это не делает фатальные ошибки доступными для перехвата; неперехваченные исключения имеют собственный стек и не добавляют этот элемент.
 
 <a id="php-token"></a>
-## Чтение PHP-кода через PhpToken
+## Чтение PHP-кода через `PhpToken`
 
 **PHP 8.0+ | tokenizer** | [Документация PHP](https://www.php.net/manual/en/class.phptoken.php)
 

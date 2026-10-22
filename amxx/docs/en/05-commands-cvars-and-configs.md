@@ -1,6 +1,6 @@
 # Commands, cvars and configs
 
-[English](../en/05-commands-cvars-and-configs.md) | [Українська](../uk/05-commands-cvars-and-configs.md) | [Русский](../ru/05-commands-cvars-and-configs.md)
+[EN](../en/05-commands-cvars-and-configs.md) | [UK](../uk/05-commands-cvars-and-configs.md) | [RU](../ru/05-commands-cvars-and-configs.md)
 
 [Contents](../../README.md)
 
@@ -16,8 +16,8 @@ Command entry points, access checks and settings that remain predictable after c
 - [Describe cvars and give numeric values bounds](#cvar-bounds)
 - [Bind live settings to global variables](#cvar-bindings)
 - [React to a cvar change](#cvar-hooks)
-- [Generate a plugin config with AutoExecConfig()](#auto-config)
-- [Use final config values in OnConfigsExecuted()](#configs-executed)
+- [Generate a plugin config with `AutoExecConfig()`](#auto-config)
+- [Use final config values in `OnConfigsExecuted()`](#configs-executed)
 - [Keep player text out of executable command strings](#safe-command-values)
 
 <a id="command-routes"></a>
@@ -85,7 +85,7 @@ public command_mode( id, level, command_id )
 }
 ```
 
-`cmd_access()` checks privileges and the minimum count, not argument validity. Its normal flag check accepts any matching bit; if an operation needs every flag in a mask, use `(get_user_flags( id ) & mask) == mask`. Server-console access has its own treatment in the stock.
+`cmd_access()` checks privileges and the minimum count, not argument validity. Its normal flag check accepts any matching bit; if an operation needs every flag in a mask, use `(get_user_flags( id ) & mask) == mask`. Server-console access has its own treatment in the `stock`.
 
 <a id="read-arguments"></a>
 
@@ -264,7 +264,7 @@ Changing the same cvar from its own hook can recurse indefinitely. Prefer creati
 
 <a id="auto-config"></a>
 
-## Generate a plugin config with AutoExecConfig()
+## Generate a plugin config with `AutoExecConfig()`
 
 [AMX Mod X API](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc)
 
@@ -285,7 +285,7 @@ This uses `addons/amxmodx/configs/plugins/notes.cfg`. Pass the base name without
 
 <a id="configs-executed"></a>
 
-## Use final config values in OnConfigsExecuted()
+## Use final config values in `OnConfigsExecuted()`
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/OnConfigsExecuted)
 

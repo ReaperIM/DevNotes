@@ -1,6 +1,6 @@
 # Entities and gameplay
 
-[English](../en/08-entities-and-gameplay.md) | [Українська](../uk/08-entities-and-gameplay.md) | [Русский](../ru/08-entities-and-gameplay.md) | [Contents](../../README.md)
+[EN](../en/08-entities-and-gameplay.md) | [UK](../uk/08-entities-and-gameplay.md) | [RU](../ru/08-entities-and-gameplay.md) | [Contents](../../README.md)
 
 Entity lifetime, typed fields, triggers and the boundary between changing data and calling game behavior. Each code block is independent; functions with arguments show reusable operations rather than automatic command registration.
 
@@ -8,8 +8,8 @@ Entity lifetime, typed fields, triggers and the boundary between changing data a
 - [Read entvars with the matching type](#entvars-and-vectors)
 - [Move through an origin API](#moving-entities)
 - [Create a real class, then configure it](#create-and-spawn)
-- [Touch: validate both sides and consume once](#touch-and-consume)
-- [Think uses an absolute game time](#think-scheduling)
+- [`Touch`: validate both sides and consume once](#touch-and-consume)
+- [`Think` uses an absolute game time](#think-scheduling)
 - [Models need precache and bounds](#models-and-precache)
 - [Search narrowly and remove only your entities](#search-and-remove)
 - [An owner slot can be reused too](#owner-lifetime)
@@ -38,7 +38,7 @@ public bool:is_same_entity( entity, serial )
 
 Save the serial when capturing the entity, not when the delayed callback begins. `pev_valid` returns `0` for invalid, `1` for an existing edict and `2` when private data also exists. `pev_valid == 2` permits private-data access in principle; it does not prove that the entity belongs to the class expected by an offset.
 
-Sources: [pev_valid](https://www.amxmodx.org/api/fakemeta/pev_valid), [pev_serial](https://www.amxmodx.org/api/fakemeta/pev_serial).
+Sources: [`pev_valid`](https://www.amxmodx.org/api/fakemeta/pev_valid), [`pev_serial`](https://www.amxmodx.org/api/fakemeta/pev_serial).
 
 <a id="entvars-and-vectors"></a>
 ## Read entvars with the matching type
@@ -66,7 +66,7 @@ public describe_entity( entity )
 
 Vectors use three `Float` cells, not three rounded integer coordinates. Velocity is a direction-and-speed vector; angles use a different field and meaning. With Engine, the equivalent families are `entity_get_int`, `entity_get_float`, `entity_get_vector`, `entity_get_string` and `entity_get_edict`.
 
-Sources: [pev](https://www.amxmodx.org/api/fakemeta/pev), [entity_get_vector](https://www.amxmodx.org/api/engine/entity_get_vector).
+Sources: [`pev`](https://www.amxmodx.org/api/fakemeta/pev), [`entity_get_vector`](https://www.amxmodx.org/api/engine/entity_get_vector).
 
 <a id="moving-entities"></a>
 ## Move through an origin API
@@ -92,7 +92,7 @@ public move_entity_up( entity )
 
 This moves the entity by 32 units on Z. It does not check whether the destination is inside a wall. Player teleportation additionally needs a suitable hull trace and a deliberate policy for velocity and ground state; a position setter alone does not find a safe destination.
 
-Sources: [entity_set_origin](https://www.amxmodx.org/api/engine/entity_set_origin), [engine function constants](https://www.amxmodx.org/api/fakemeta_const).
+Sources: [`entity_set_origin`](https://www.amxmodx.org/api/engine/entity_set_origin), [engine function constants](https://www.amxmodx.org/api/fakemeta_const).
 
 <a id="create-and-spawn"></a>
 ## Create a real class, then configure it
@@ -123,10 +123,10 @@ public create_marker( const Float:origin[3] )
 
 The result is an invisible trigger, not a visible pickup model. For game entities configured by keyvalues, set the required keyvalues before `DispatchSpawn`; spawn may overwrite fields or remove an unusable entity. Order depends on that class, so do not reuse the trigger recipe unchanged for doors, weapons or brush entities.
 
-Sources: [create_entity](https://www.amxmodx.org/api/engine/create_entity), [DispatchSpawn](https://www.amxmodx.org/api/engine/DispatchSpawn), [DispatchKeyValue](https://www.amxmodx.org/api/engine/DispatchKeyValue).
+Sources: [`create_entity`](https://www.amxmodx.org/api/engine/create_entity), [`DispatchSpawn`](https://www.amxmodx.org/api/engine/DispatchSpawn), [`DispatchKeyValue`](https://www.amxmodx.org/api/engine/DispatchKeyValue).
 
 <a id="touch-and-consume"></a>
-## Touch: validate both sides and consume once
+## `Touch`: validate both sides and consume once
 
 A trigger may touch a player repeatedly. This handler accepts only living players and removes the custom marker before applying its one-time reward. It is meant for the `notes_marker` trigger from the previous section.
 
@@ -156,10 +156,10 @@ public on_marker_touch( marker, player )
 
 After removal, do not read fields from `marker`. The example consumes the marker even when the player already has 100 health; move that policy check before removal if full-health players should leave it behind. An `owner` field is game data, not an automatic access-control rule.
 
-Sources: [register_touch](https://www.amxmodx.org/api/engine/register_touch), [remove_entity](https://www.amxmodx.org/api/engine/remove_entity), [set_user_health](https://www.amxmodx.org/api/fun/set_user_health).
+Sources: [`register_touch`](https://www.amxmodx.org/api/engine/register_touch), [`remove_entity`](https://www.amxmodx.org/api/engine/remove_entity), [`set_user_health`](https://www.amxmodx.org/api/fun/set_user_health).
 
 <a id="think-scheduling"></a>
-## Think uses an absolute game time
+## `Think` uses an absolute game time
 
 `nextthink` is a timestamp, not an interval. Schedule the first call with `get_gametime() + delay`; schedule the next call again if the entity should keep thinking.
 
@@ -190,7 +190,7 @@ public on_marker_think( marker )
 
 This schedules a roughly one-second cadence; execution follows server frames, not a hard real-time timer. Keep work proportional to the number of active entities. Do not scan every player or every entity from every thinker when the needed data can be saved at creation or updated by events.
 
-Sources: [register_think](https://www.amxmodx.org/api/engine/register_think), [get_gametime](https://www.amxmodx.org/api/amxmodx/get_gametime).
+Sources: [`register_think`](https://www.amxmodx.org/api/engine/register_think), [`get_gametime`](https://www.amxmodx.org/api/amxmodx/get_gametime).
 
 <a id="models-and-precache"></a>
 ## Models need precache and bounds
@@ -221,7 +221,7 @@ public apply_marker_model( marker )
 
 The grenade model does not make the entity a grenade: behavior still comes from its real class and callbacks. For a custom resource, verify its path and deploy it to the server. Do not build an unbounded precache list from arbitrary client input.
 
-Sources: [precache_model](https://www.amxmodx.org/api/amxmodx/precache_model), [entity_set_model](https://www.amxmodx.org/api/engine/entity_set_model), [entity_set_size](https://www.amxmodx.org/api/engine/entity_set_size).
+Sources: [`precache_model`](https://www.amxmodx.org/api/amxmodx/precache_model), [`entity_set_model`](https://www.amxmodx.org/api/engine/entity_set_model), [`entity_set_size`](https://www.amxmodx.org/api/engine/entity_set_size).
 
 <a id="search-and-remove"></a>
 ## Search narrowly and remove only your entities
@@ -246,9 +246,9 @@ public remove_markers()
 }
 ```
 
-Do this on a meaningful lifecycle event, such as your mode ending. A world-wide scan every frame is rarely justified. Do not remove players, worldspawn or all entities of a common game classname just to clean up a plugin feature.
+Do this on a meaningful lifecycle event, such as your mode ending. A world-wide scan every frame is rarely justified. Do not remove players, `worldspawn` or all entities of a common game classname just to clean up a plugin feature.
 
-Sources: [find_ent_by_class](https://www.amxmodx.org/api/engine/find_ent_by_class), [remove_entity](https://www.amxmodx.org/api/engine/remove_entity).
+Sources: [`find_ent_by_class`](https://www.amxmodx.org/api/engine/find_ent_by_class), [`remove_entity`](https://www.amxmodx.org/api/engine/remove_entity).
 
 <a id="owner-lifetime"></a>
 ## An owner slot can be reused too
@@ -288,7 +288,7 @@ public get_marker_owner( marker )
 
 Decide separately whether disconnect should remove the marker, transfer it or leave it neutral. Do not overwrite `iuser*` fields belonging to game entities or another plugin. Entity ownership can also affect collision behavior, so it is not always suitable as an arbitrary metadata slot.
 
-Sources: [get_user_userid](https://www.amxmodx.org/api/amxmodx/get_user_userid), [entity_set_edict](https://www.amxmodx.org/api/engine/entity_set_edict).
+Sources: [`get_user_userid`](https://www.amxmodx.org/api/amxmodx/get_user_userid), [`entity_set_edict`](https://www.amxmodx.org/api/engine/entity_set_edict).
 
 <a id="private-data"></a>
 ## Private data: units, class and platform matter
@@ -317,7 +317,7 @@ public inspect_active_item( player )
 
 **CS 1.6 gamedata example.** `get_ent_data_*` resolves a named member from AMXX gamedata and checks its declared type. It avoids baking raw offsets into the plugin, but still needs matching gamedata and the correct class. A missing pointer can return `-1`; validate the returned entity before reading it.
 
-Sources: [get_pdata_int](https://www.amxmodx.org/api/fakemeta/get_pdata_int), [get_pdata_ent](https://www.amxmodx.org/api/fakemeta/get_pdata_ent), [get_ent_data_entity](https://www.amxmodx.org/api/fakemeta/get_ent_data_entity).
+Sources: [`get_pdata_int`](https://www.amxmodx.org/api/fakemeta/get_pdata_int), [`get_pdata_ent`](https://www.amxmodx.org/api/fakemeta/get_pdata_ent), [`get_ent_data_entity`](https://www.amxmodx.org/api/fakemeta/get_ent_data_entity).
 
 <a id="reapi-members"></a>
 ## ReAPI named members, optional
@@ -375,4 +375,4 @@ For respawn, **CS-specific** `ExecuteHamB( Ham_CS_RoundRespawn, player )` or opt
 
 For death, setting health to zero, `user_kill`, applying damage and calling `Ham_Killed` have different effects on damage hooks, attribution and game rules. Choose the operation you need; none is a universal substitute for the others.
 
-Sources: [give_item](https://www.amxmodx.org/api/fun/give_item), [cs_set_user_bpammo](https://www.amxmodx.org/api/cstrike/cs_set_user_bpammo), [Ham functions](https://www.amxmodx.org/api/ham_const), [user_kill](https://www.amxmodx.org/api/amxmodx/user_kill).
+Sources: [`give_item`](https://www.amxmodx.org/api/fun/give_item), [`cs_set_user_bpammo`](https://www.amxmodx.org/api/cstrike/cs_set_user_bpammo), [Ham functions](https://www.amxmodx.org/api/ham_const), [`user_kill`](https://www.amxmodx.org/api/amxmodx/user_kill).

@@ -1,17 +1,17 @@
 # Events, hooks and messages
 
-[English](../en/06-events-hooks-and-messages.md) | [Українська](../uk/06-events-hooks-and-messages.md) | [Русский](../ru/06-events-hooks-and-messages.md) | [Contents](../../README.md)
+[EN](../en/06-events-hooks-and-messages.md) | [UK](../uk/06-events-hooks-and-messages.md) | [RU](../ru/06-events-hooks-and-messages.md) | [Contents](../../README.md)
 
 Working notes on when a callback runs, which data it owns and what its return value actually controls. Examples are independent; game-specific protocols and optional modules are marked.
 
 - [Choose the layer you need](#which-hook)
-- [Filtered events and read_data](#filtered-events)
+- [Filtered events and `read_data`](#filtered-events)
 - [Log events have their own arguments](#log-events)
 - [Change a message without replacing game state](#message-hooks)
 - [Pre changes the call, post observes its result](#pre-and-post)
 - [Ham: change parameters explicitly](#ham-parameters)
 - [Ham: return status and function result](#ham-return)
-- [Fakemeta uses FMRES_*](#fakemeta-status)
+- [Fakemeta uses `FMRES_*`](#fakemeta-status)
 - [Enable hooks when they are needed](#hook-lifetime)
 - [ReAPI hookchains, optional](#reapi-hookchains)
 
@@ -34,7 +34,7 @@ A message hook changes what the client receives. It does not undo damage, restor
 Sources: [AMXX events](https://www.amxmodx.org/api/amxmodx/register_event_ex), [message hooks](https://www.amxmodx.org/api/messages/register_message), [Ham](https://www.amxmodx.org/api/hamsandwich/RegisterHam).
 
 <a id="filtered-events"></a>
-## Filtered events and read_data
+## Filtered events and `read_data`
 
 **CS 1.6.** `DeathMsg` contains killer, victim, headshot flag and weapon name. Filtering `3=1` lets AMXX call this handler only for headshot notifications.
 
@@ -59,7 +59,7 @@ public on_headshot()
 
 Message arguments start at `1`. Read them inside this callback; they belong to the current event. A killer can be `0` for world damage, so validate it before using player natives. Flags are typed bit flags; combine them with `|` when needed.
 
-Sources: [register_event_ex](https://www.amxmodx.org/api/amxmodx/register_event_ex), [read_data](https://www.amxmodx.org/api/amxmodx/read_data).
+Sources: [`register_event_ex`](https://www.amxmodx.org/api/amxmodx/register_event_ex), [`read_data`](https://www.amxmodx.org/api/amxmodx/read_data).
 
 <a id="log-events"></a>
 ## Log events have their own arguments
@@ -85,7 +85,7 @@ public on_round_start()
 
 Log arguments start at `0`; here argument `1` is `Round_Start`. `argsnum = 2` matches the number of parsed log arguments, not the number of handler parameters. Use `read_logargv`, not `read_data`. `HLTV`, `Round_Start` and a successful player spawn represent different stages of the round.
 
-Sources: [register_logevent](https://www.amxmodx.org/api/amxmodx/register_logevent), [read_logargv](https://www.amxmodx.org/api/amxmodx/read_logargv).
+Sources: [`register_logevent`](https://www.amxmodx.org/api/amxmodx/register_logevent), [`read_logargv`](https://www.amxmodx.org/api/amxmodx/read_logargv).
 
 <a id="message-hooks"></a>
 ## Change a message without replacing game state
@@ -114,7 +114,7 @@ public on_hide_weapon( message_id, destination, receiver )
 
 In message hooks use `get_msg_arg_*`, not `read_data`. Returning `PLUGIN_HANDLED` blocks the message entirely. `receiver` can be `0` for broadcast destinations; it is not always a usable player index. This example acts only when a `HideWeapon` message is sent and does not immediately update a client by itself.
 
-Sources: [register_message](https://www.amxmodx.org/api/messages/register_message), [set_msg_arg_int](https://www.amxmodx.org/api/messages/set_msg_arg_int), [CS HUD flags](https://github.com/rehlds/ReGameDLL_CS/blob/master/regamedll/dlls/cdll_dll.h).
+Sources: [`register_message`](https://www.amxmodx.org/api/messages/register_message), [`set_msg_arg_int`](https://www.amxmodx.org/api/messages/set_msg_arg_int), [CS HUD flags](https://github.com/rehlds/ReGameDLL_CS/blob/master/regamedll/dlls/cdll_dll.h).
 
 <a id="pre-and-post"></a>
 ## Pre changes the call, post observes its result
@@ -143,7 +143,7 @@ public on_player_spawn_post( player )
 
 In post, changing an input parameter cannot rewind the original operation. `RegisterHam` hooks a class virtual table, not just the players currently on the server. Its signature comes from the selected `Ham_*` entry; copying a callback from another function can produce invalid arguments.
 
-Sources: [RegisterHam](https://www.amxmodx.org/api/hamsandwich/RegisterHam), [Ham signatures](https://www.amxmodx.org/api/ham_const).
+Sources: [`RegisterHam`](https://www.amxmodx.org/api/hamsandwich/RegisterHam), [Ham signatures](https://www.amxmodx.org/api/ham_const).
 
 <a id="ham-parameters"></a>
 ## Ham: change parameters explicitly
@@ -172,7 +172,7 @@ public on_damage_pre( victim, inflictor, attacker, Float:damage, damage_bits )
 
 This halves the amount passed into the original function. Final health loss can still differ because armor, damage rules or other hooks participate later. Choose the correct `SetHamParam*` for the declared parameter type; parameter numbering includes the entity itself as `1`.
 
-Sources: [SetHamParamFloat](https://www.amxmodx.org/api/hamsandwich/SetHamParamFloat), [Ham_TakeDamage](https://www.amxmodx.org/api/ham_const).
+Sources: [`SetHamParamFloat`](https://www.amxmodx.org/api/hamsandwich/SetHamParamFloat), [`Ham_TakeDamage`](https://www.amxmodx.org/api/ham_const).
 
 <a id="ham-return"></a>
 ## Ham: return status and function result
@@ -198,10 +198,10 @@ public on_heal_pre( player, Float:amount, damage_bits )
 
 `HAM_IGNORED` leaves the call alone. `HAM_HANDLED` still permits the original. `HAM_OVERRIDE` replaces the return value while allowing the original, and `HAM_SUPERCEDE` skips the original in pre. A return override must match the function return type. Blocking this function does not block unrelated direct health setters.
 
-Sources: [Ham return constants](https://www.amxmodx.org/api/ham_const), [SetHamReturnInteger](https://www.amxmodx.org/api/hamsandwich/SetHamReturnInteger).
+Sources: [Ham return constants](https://www.amxmodx.org/api/ham_const), [`SetHamReturnInteger`](https://www.amxmodx.org/api/hamsandwich/SetHamReturnInteger).
 
 <a id="fakemeta-status"></a>
-## Fakemeta uses FMRES_*
+## Fakemeta uses `FMRES_*`
 
 Fakemeta forwards use their own status constants. This pre hook suppresses the game DLL `ClientKill` callback, normally reached through the client `kill` command.
 
@@ -223,7 +223,7 @@ public on_client_kill_pre( player )
 
 `FMRES_IGNORED`, `FMRES_HANDLED`, `FMRES_OVERRIDE` and `FMRES_SUPERCEDE` express similar decisions to Ham, but belong to a different API. For a non-void return override, use the matching `forward_return( FMV_*, ... )` and status. This example blocks this callback, not every possible cause of suicide or death.
 
-Sources: [register_forward](https://www.amxmodx.org/api/fakemeta/register_forward), [forward_return](https://www.amxmodx.org/api/fakemeta/forward_return).
+Sources: [`register_forward`](https://www.amxmodx.org/api/fakemeta/register_forward), [`forward_return`](https://www.amxmodx.org/api/fakemeta/forward_return).
 
 <a id="hook-lifetime"></a>
 ## Enable hooks when they are needed
@@ -261,7 +261,7 @@ public on_spawn_post( player )
 
 Register once, then toggle that registration. `ExecuteHamB` triggers Ham hooks and can recurse when called from the same hook. `ExecuteHam` does not trigger those Ham hooks; this difference should be an intentional choice. `RegisterHamFromEntity` still hooks the virtual table of its class, not that single entity only.
 
-Sources: [DisableHamForward](https://www.amxmodx.org/api/hamsandwich/DisableHamForward), [ExecuteHamB](https://www.amxmodx.org/api/hamsandwich/ExecuteHamB), [RegisterHamFromEntity](https://www.amxmodx.org/api/hamsandwich/RegisterHamFromEntity).
+Sources: [`DisableHamForward`](https://www.amxmodx.org/api/hamsandwich/DisableHamForward), [`ExecuteHamB`](https://www.amxmodx.org/api/hamsandwich/ExecuteHamB), [`RegisterHamFromEntity`](https://www.amxmodx.org/api/hamsandwich/RegisterHamFromEntity).
 
 <a id="reapi-hookchains"></a>
 ## ReAPI hookchains, optional
@@ -288,6 +288,6 @@ public on_damage_pre( victim, inflictor, attacker, Float:damage, damage_bits )
 }
 ```
 
-`SetHookChainArg` changes inputs in pre; `SetHookChainReturn` sets the function result. `HC_SUPERCEDE` skips the original. `HC_BREAK` additionally skips following hook callbacks, so it can interfere with other plugins. Read the exact function enum signature and required ReAPI / ReGameDLL versions rather than mechanically translating a Ham hook.
+`SetHookChainArg` changes inputs in pre; `SetHookChainReturn` sets the function result. `HC_SUPERCEDE` skips the original. `HC_BREAK` additionally skips following hook callbacks, so it can interfere with other plugins. Read the exact function `enum` signature and required ReAPI / ReGameDLL versions rather than mechanically translating a Ham hook.
 
 Sources: [ReAPI hookchain API](https://github.com/rehlds/ReAPI/blob/master/reapi/extra/amxmodx/scripting/include/reapi.inc), [game DLL signatures](https://github.com/rehlds/ReAPI/blob/master/reapi/extra/amxmodx/scripting/include/reapi_gamedll_const.inc).

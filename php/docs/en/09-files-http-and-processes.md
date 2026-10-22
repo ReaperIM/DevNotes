@@ -1,23 +1,23 @@
 # Files, HTTP and processes
 
-[English](../en/09-files-http-and-processes.md) | [Українська](../uk/09-files-http-and-processes.md) | [Русский](../ru/09-files-http-and-processes.md)
+[EN](../en/09-files-http-and-processes.md) | [UK](../uk/09-files-http-and-processes.md) | [RU](../ru/09-files-http-and-processes.md)
 
 [Contents](../../README.md)
 
 **In this chapter**
 
 - [Process arguments as an array](#process-arguments)
-- [Flush file data with fsync()](#flush-to-disk)
+- [Flush file data with `fsync()`](#flush-to-disk)
 - [Several stream options in one call](#stream-options)
-- [Parse form bodies outside POST](#request-body)
+- [Parse form bodies outside `POST`](#request-body)
 - [Read and modify URI objects](#uri-objects)
 - [cURL handles are objects](#curl-objects)
 - [Upload a string as a file](#curl-string-file)
 - [Reuse cURL data between requests](#persistent-curl-share)
 - [List handles in a multi handle](#multi-handles)
 - [Read the last stream response headers](#http-response-headers)
-- [Directory uploads and full_path](#upload-paths)
-- [Cookie options and Partitioned](#cookie-options)
+- [Directory uploads and `full_path`](#upload-paths)
+- [Cookie options and `Partitioned`](#cookie-options)
 - [Read a session and release its lock](#read-only-session)
 
 <a id="process-arguments"></a>
@@ -45,7 +45,7 @@ On Windows, array argument escaping assumes VC runtime rules; program options st
 
 <a id="flush-to-disk"></a>
 
-## Flush file data with fsync()
+## Flush file data with `fsync()`
 
 **PHP 8.1+ | standard** [PHP manual](https://www.php.net/manual/en/function.fsync.php)
 
@@ -83,11 +83,11 @@ The older singular `stream_context_set_option()` already supported an array over
 
 <a id="request-body"></a>
 
-## Parse form bodies outside POST
+## Parse form bodies outside `POST`
 
 **PHP 8.4+ | standard** [PHP manual](https://www.php.net/manual/en/function.request-parse-body.php)
 
-`request_parse_body()` returns form fields and uploads for handlers such as PUT and PATCH, without populating superglobals.
+`request_parse_body()` returns form fields and uploads for handlers such as `PUT` and `PATCH`, without populating superglobals.
 
 <!-- example: fragment -->
 ```php
@@ -125,7 +125,7 @@ Malformed input can throw `Uri\InvalidUriException`.
 
 **PHP 8.0+ | curl** [PHP manual](https://www.php.net/manual/en/function.curl-init.php)
 
-cURL easy, multi and share handles have classes instead of resource types.
+cURL easy, multi and share handles have classes instead of `resource` types.
 
 ```php
 $handle = curl_init();
@@ -226,7 +226,7 @@ Redirects can produce multiple response-header blocks.
 
 <a id="upload-paths"></a>
 
-## Directory uploads and full_path
+## Directory uploads and `full_path`
 
 **PHP 8.1+ | standard** [PHP manual](https://www.php.net/manual/en/features.file-upload.multiple.php)
 
@@ -243,9 +243,9 @@ This is untrusted metadata: reject absolute paths and traversal components befor
 
 <a id="cookie-options"></a>
 
-## Cookie options and Partitioned
+## Cookie options and `Partitioned`
 
-**PHP 7.3+ options / PHP 8.5+ partitioned | standard** [PHP manual](https://www.php.net/manual/en/function.setcookie.php)
+**PHP 7.3+ options / PHP 8.5+ `partitioned` | standard** [PHP manual](https://www.php.net/manual/en/function.setcookie.php)
 
 Cookie options use named array entries; PHP 8.5 adds `partitioned` for storage partitioned by the top-level site in supporting clients.
 
@@ -261,7 +261,7 @@ setcookie( 'widget_session', $token, [
 ] );
 ```
 
-`partitioned` requires `secure` or PHP throws `ValueError`; clients also require Secure for `SameSite=None`.
+`partitioned` requires `secure` or PHP throws `ValueError`; clients also require `Secure` for `SameSite=None`.
 
 <a id="read-only-session"></a>
 

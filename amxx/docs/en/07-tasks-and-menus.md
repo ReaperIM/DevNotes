@@ -1,27 +1,27 @@
 # Tasks, clocks and menus
 
-[English](../en/07-tasks-and-menus.md) | [Українська](../uk/07-tasks-and-menus.md) | [Русский](../ru/07-tasks-and-menus.md)
+[EN](../en/07-tasks-and-menus.md) | [UK](../uk/07-tasks-and-menus.md) | [RU](../ru/07-tasks-and-menus.md)
 
 [Contents](../../README.md)
 
-Delayed work and interactive menus share the same trap: the world can change before the callback runs. Keep ownership, identity and cleanup visible. Examples use AMXX 1.9; the Think example also uses Engine.
+Delayed work and interactive menus share the same trap: the world can change before the callback runs. Keep ownership, identity and cleanup visible. Examples use AMXX 1.9; the `Think` example also uses Engine.
 
 **In this chapter**
 
-- [Call a public function later](#one-shot-task)
-- [Readable repeat flags with set_task_ex()](#repeat-flags)
+- [Call a `public` function later](#one-shot-task)
+- [Readable repeat flags with `set_task_ex()`](#repeat-flags)
 - [Keep unrelated task IDs separate](#task-id-ownership)
 - [A delayed player action needs connection identity](#player-task-identity)
 - [Start and stop a repeating task explicitly](#stop-repeat-task)
 - [Use a deadline for a cooldown](#cooldowns-and-clocks)
-- [Attach timing to an entity with Think](#entity-think)
+- [Attach timing to an entity with `Think`](#entity-think)
 - [Destroy a dynamic menu on every completion path](#dynamic-menu)
 - [A shared menu has a different lifetime](#shared-menu)
 - [Recheck permissions when an item is selected](#menu-access)
 
 <a id="one-shot-task"></a>
 
-## Call a public function later
+## Call a `public` function later
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/set_task)
 
@@ -47,11 +47,11 @@ The message appears on a later server frame, roughly two seconds later. Tasks ar
 
 <a id="repeat-flags"></a>
 
-## Readable repeat flags with set_task_ex()
+## Readable repeat flags with `set_task_ex()`
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmisc/set_task_ex)
 
-`set_task_ex()` is the `amxmisc` stock with named task flags. `SetTask_RepeatTimes` repeats a fixed number of times; `SetTask_Repeat` keeps running until stopped. The older `set_task()` uses `"a"` and `"b"` for the same modes.
+`set_task_ex()` is the `amxmisc` `stock` with named task flags. `SetTask_RepeatTimes` repeats a fixed number of times; `SetTask_Repeat` keeps running until stopped. The older `set_task()` uses `"a"` and `"b"` for the same modes.
 
 ```pawn
 #include <amxmodx>
@@ -228,11 +228,11 @@ The slot state is reset for a new connection. Game time is constant during one e
 
 <a id="entity-think"></a>
 
-## Attach timing to an entity with Think
+## Attach timing to an entity with `Think`
 
 [AMX Mod X API](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/engine.inc)
 
-When the timed behavior belongs to an entity, its `nextthink` can express ownership directly. This example creates one invisible `info_target`, gives it a distinct classname and schedules its next Think after each call. It requires the Engine module.
+When the timed behavior belongs to an entity, its `nextthink` can express ownership directly. This example creates one invisible `info_target`, gives it a distinct classname and schedules its next `Think` after each call. It requires the Engine module.
 
 ```pawn
 #include <amxmodx>
@@ -257,7 +257,7 @@ public on_clock_think( entity )
 }
 ```
 
-Think does not repeat unless you schedule another `nextthink`. Removing the entity removes this owner of the timer. It is still frame-driven server work, not a background thread or a reason to create one entity per simple cooldown.
+`Think` does not repeat unless you schedule another `nextthink`. Removing the entity removes this owner of the timer. It is still frame-driven server work, not a background thread or a reason to create one entity per simple cooldown.
 
 <a id="dynamic-menu"></a>
 

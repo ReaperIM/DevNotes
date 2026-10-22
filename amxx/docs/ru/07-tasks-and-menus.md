@@ -1,27 +1,27 @@
 # Задачи, время и меню
 
-[English](../en/07-tasks-and-menus.md) | [Українська](../uk/07-tasks-and-menus.md) | [Русский](../ru/07-tasks-and-menus.md)
+[EN](../en/07-tasks-and-menus.md) | [UK](../uk/07-tasks-and-menus.md) | [RU](../ru/07-tasks-and-menus.md)
 
 [Содержание](../../README.ru.md)
 
-У отложенных действий и интерактивных меню общая ловушка: до callback состояние может измениться. Владелец ресурса, идентичность и освобождение должны быть очевидны. Примеры для AMXX 1.9; пример Think также требует Engine.
+У отложенных действий и интерактивных меню общая ловушка: до callback состояние может измениться. Владелец ресурса, идентичность и освобождение должны быть очевидны. Примеры для AMXX 1.9; пример `Think` также требует Engine.
 
 **В этой главе**
 
-- [Вызови public-функцию позже](#one-shot-task)
-- [Понятные флаги повторения через set_task_ex()](#repeat-flags)
+- [Вызови `public`-функцию позже](#one-shot-task)
+- [Понятные флаги повторения через `set_task_ex()`](#repeat-flags)
 - [Разделяй ID разных задач](#task-id-ownership)
 - [Отложенному действию нужна идентичность подключения](#player-task-identity)
 - [Явно запускай и останавливай повторяющуюся задачу](#stop-repeat-task)
 - [Для cooldown храни время окончания](#cooldowns-and-clocks)
-- [Привяжи таймер к entity через Think](#entity-think)
+- [Привяжи таймер к entity через `Think`](#entity-think)
 - [Освобождай динамическое меню при любом завершении](#dynamic-menu)
 - [У общего меню другой срок жизни](#shared-menu)
 - [Повторно проверяй права при выборе пункта](#menu-access)
 
 <a id="one-shot-task"></a>
 
-## Вызови public-функцию позже
+## Вызови `public`-функцию позже
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/set_task)
 
@@ -47,11 +47,11 @@ public task_ready( task_id )
 
 <a id="repeat-flags"></a>
 
-## Понятные флаги повторения через set_task_ex()
+## Понятные флаги повторения через `set_task_ex()`
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmisc/set_task_ex)
 
-`set_task_ex()` является stock из `amxmisc` с именованными флагами. `SetTask_RepeatTimes` повторяет заданное число раз, `SetTask_Repeat` работает до остановки. Старый `set_task()` использует `"a"` и `"b"` для тех же режимов.
+`set_task_ex()` является `stock` из `amxmisc` с именованными флагами. `SetTask_RepeatTimes` повторяет заданное число раз, `SetTask_Repeat` работает до остановки. Старый `set_task()` использует `"a"` и `"b"` для тех же режимов.
 
 ```pawn
 #include <amxmodx>
@@ -228,11 +228,11 @@ public command_ping( id )
 
 <a id="entity-think"></a>
 
-## Привяжи таймер к entity через Think
+## Привяжи таймер к entity через `Think`
 
 [AMX Mod X API](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/engine.inc)
 
-Если действие принадлежит entity, её `nextthink` может прямо описать эту связь. Пример создаёт один невидимый `info_target`, задаёт отдельный classname и планирует следующий Think после каждого вызова. Нужен модуль Engine.
+Если действие принадлежит entity, её `nextthink` может прямо описать эту связь. Пример создаёт один невидимый `info_target`, задаёт отдельный classname и планирует следующий `Think` после каждого вызова. Нужен модуль Engine.
 
 ```pawn
 #include <amxmodx>
@@ -257,7 +257,7 @@ public on_clock_think( entity )
 }
 ```
 
-Think не повторяется без следующего `nextthink`. Удаление entity убирает владельца таймера. Это тоже работа в кадрах сервера, не фоновый поток и не повод создавать entity на каждый простой cooldown.
+`Think` не повторяется без следующего `nextthink`. Удаление entity убирает владельца таймера. Это тоже работа в кадрах сервера, не фоновый поток и не повод создавать entity на каждый простой cooldown.
 
 <a id="dynamic-menu"></a>
 

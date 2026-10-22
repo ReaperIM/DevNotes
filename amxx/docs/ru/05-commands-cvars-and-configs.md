@@ -1,6 +1,6 @@
 # Команды, cvar и конфиги
 
-[English](../en/05-commands-cvars-and-configs.md) | [Українська](../uk/05-commands-cvars-and-configs.md) | [Русский](../ru/05-commands-cvars-and-configs.md)
+[EN](../en/05-commands-cvars-and-configs.md) | [UK](../uk/05-commands-cvars-and-configs.md) | [RU](../ru/05-commands-cvars-and-configs.md)
 
 [Содержание](../../README.ru.md)
 
@@ -16,8 +16,8 @@
 - [Описание cvar и границы числовых значений](#cvar-bounds)
 - [Привяжи текущие настройки к глобальным переменным](#cvar-bindings)
 - [Реагируй на изменение cvar](#cvar-hooks)
-- [Создай конфиг плагина через AutoExecConfig()](#auto-config)
-- [Читай окончательные значения в OnConfigsExecuted()](#configs-executed)
+- [Создай конфиг плагина через `AutoExecConfig()`](#auto-config)
+- [Читай окончательные значения в `OnConfigsExecuted()`](#configs-executed)
 - [Не вставляй текст игрока в выполняемые команды](#safe-command-values)
 
 <a id="command-routes"></a>
@@ -85,7 +85,7 @@ public command_mode( id, level, command_id )
 }
 ```
 
-`cmd_access()` проверяет права и минимальное количество, но не правильность аргументов. Обычная проверка флагов принимает любое совпадение бита; если нужны все флаги маски, проверяй `(get_user_flags( id ) & mask) == mask`. Серверная консоль в stock обрабатывается отдельно.
+`cmd_access()` проверяет права и минимальное количество, но не правильность аргументов. Обычная проверка флагов принимает любое совпадение бита; если нужны все флаги маски, проверяй `(get_user_flags( id ) & mask) == mask`. Серверная консоль в `stock` обрабатывается отдельно.
 
 <a id="read-arguments"></a>
 
@@ -264,7 +264,7 @@ public on_enabled_changed( cvar, const old_value[], const new_value[] )
 
 <a id="auto-config"></a>
 
-## Создай конфиг плагина через AutoExecConfig()
+## Создай конфиг плагина через `AutoExecConfig()`
 
 [AMX Mod X API](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc)
 
@@ -285,7 +285,7 @@ public plugin_init()
 
 <a id="configs-executed"></a>
 
-## Читай окончательные значения в OnConfigsExecuted()
+## Читай окончательные значения в `OnConfigsExecuted()`
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/OnConfigsExecuted)
 

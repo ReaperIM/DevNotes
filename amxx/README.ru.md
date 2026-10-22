@@ -1,6 +1,6 @@
 # Заметки AMXX / Pawn
 
-[English](README.md) | [Українська](README.uk.md) | [Русский](README.ru.md)
+[EN](README.md) | [UK](README.uk.md) | [RU](README.ru.md)
 
 Черновые рабочие заметки об AMX Mod X: полезные API, примеры и нюансы, которые влияют на работу плагина. Основная версия английская; украинская и русская охватывают тот же материал.
 
@@ -27,4 +27,4 @@
 <a id="earlier"></a>
 ## Прежние заметки
 
-[functions.md](functions.md) | [offsets.md](offsets.md)
+[`functions.md`](functions.md) | [`offsets.md`](offsets.md)

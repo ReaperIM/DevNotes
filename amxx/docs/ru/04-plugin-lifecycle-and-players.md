@@ -1,13 +1,13 @@
 # Жизненный цикл плагина и игроки
 
-[English](../en/04-plugin-lifecycle-and-players.md) | [Українська](../uk/04-plugin-lifecycle-and-players.md) | [Русский](../ru/04-plugin-lifecycle-and-players.md)
+[EN](../en/04-plugin-lifecycle-and-players.md) | [UK](../uk/04-plugin-lifecycle-and-players.md) | [RU](../ru/04-plugin-lifecycle-and-players.md)
 
 [Содержание](../../README.ru.md)
 
 Настройка карты, идентификация игроков и очистка. Главное различать слот, который можно занять повторно, и конкретное подключение.
 
 - [Регистрация один раз на карту](#registration)
-- [plugin_cfg не означает конец настройки](#initialization-order)
+- [`plugin_cfg` не означает конец настройки](#initialization-order)
 - [Авторизация и вход в игру происходят отдельно](#authorization-order)
 - [Проверка индекса перед доступом к состоянию игрока](#player-index)
 - [Userid для текущего подключения](#userid)
@@ -41,11 +41,11 @@ public command_ready( id )
 
 Глобальные переменные относятся к текущему экземпляру плагина, а не к постоянному хранилищу. Смена карты не заменяет сохранение данных.
 
-[plugin_init](https://www.amxmodx.org/api/amxmodx/plugin_init)
+[`plugin_init`](https://www.amxmodx.org/api/amxmodx/plugin_init)
 
 <a id="initialization-order"></a>
 
-## plugin_cfg не означает конец настройки
+## `plugin_cfg` не означает конец настройки
 
 `plugin_cfg()` вызывается после всех `plugin_init()`. Для итоговых значений конфигурации AMXX есть `OnConfigsExecuted()`: команды в буфере ещё могут ждать выполнения.
 
@@ -67,7 +67,7 @@ public OnConfigsExecuted()
 
 Это штатная фаза настройки AMXX, а не произвольный поздний `exec` другого плагина. См. [привязки cvar и изменения конфигурации](05-commands-cvars-and-configs.md).
 
-[OnConfigsExecuted](https://www.amxmodx.org/api/amxmodx/OnConfigsExecuted)
+[`OnConfigsExecuted`](https://www.amxmodx.org/api/amxmodx/OnConfigsExecuted)
 
 <a id="authorization-order"></a>
 
@@ -103,7 +103,7 @@ public client_putinserver( id )
 
 Действие выполняется в том forward, который пришёл вторым. Боты тоже авторизуются; сама эта проверка не определяет человека и не даёт прав доступа.
 
-[client_authorized](https://www.amxmodx.org/api/amxmodx/client_authorized)
+[`client_authorized`](https://www.amxmodx.org/api/amxmodx/client_authorized)
 
 <a id="player-index"></a>
 
@@ -131,7 +131,7 @@ public command_health( id )
 
 Pawn поддерживает цепочки сравнений, но явное `id >= 1 && id <= MaxClients` проще читать и переносить. Не каждый индекс сущности является игроком.
 
-[is_user_alive](https://www.amxmodx.org/api/amxmodx/is_user_alive)
+[`is_user_alive`](https://www.amxmodx.org/api/amxmodx/is_user_alive)
 
 <a id="userid"></a>
 
@@ -159,7 +159,7 @@ public show_welcome( const data[] )
 
 Userid не является ключом аккаунта для сохранения прогресса. То же правило действует для SQL callbacks и целей меню. [Жизненный цикл tasks](07-tasks-and-menus.md).
 
-[get_user_userid](https://www.amxmodx.org/api/amxmodx/get_user_userid)
+[`get_user_userid`](https://www.amxmodx.org/api/amxmodx/get_user_userid)
 
 <a id="authid"></a>
 
@@ -181,7 +181,7 @@ public client_authorized( id, const authid[] )
 
 Гарантии идентификации зависят от настройки авторизации сервера. Префикс `STEAM_` сам по себе не даёт прав; auth бота: `BOT`.
 
-[get_user_authid](https://www.amxmodx.org/api/amxmodx/get_user_authid)
+[`get_user_authid`](https://www.amxmodx.org/api/amxmodx/get_user_authid)
 
 <a id="player-list"></a>
 
@@ -211,7 +211,7 @@ public command_players()
 
 `players[index]` является слотом, `index` только позицией в списке. Пустой результат означает ноль итераций.
 
-[get_players_ex](https://www.amxmodx.org/api/amxmisc/get_players_ex)
+[`get_players_ex`](https://www.amxmodx.org/api/amxmisc/get_players_ex)
 
 <a id="disconnect-cleanup"></a>
 
@@ -238,7 +238,7 @@ public client_disconnected( id )
 
 `client_remove()` вызывается позже, после удаления сущности. Сохраните нужные данные перед очисткой; в `client_disconnected()` не следует ожидать, что `is_user_connected()` уже возвращает false.
 
-[client_disconnected](https://www.amxmodx.org/api/amxmodx/client_disconnected)
+[`client_disconnected`](https://www.amxmodx.org/api/amxmodx/client_disconnected)
 
 <a id="handle-cleanup"></a>
 
@@ -264,4 +264,4 @@ public plugin_end()
 
 Закрытие собственного handle отличается от освобождения заимствованного handle callback. В частности, handle потокового SQL-запроса принадлежит SQLX. [Хранилища](09-files-vault-and-sql.md).
 
-[plugin_end](https://www.amxmodx.org/api/amxmodx/plugin_end)
+[`plugin_end`](https://www.amxmodx.org/api/amxmodx/plugin_end)

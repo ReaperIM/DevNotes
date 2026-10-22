@@ -1,23 +1,23 @@
 # Типы
 
-[English](../en/02-types.md) | [Українська](../uk/02-types.md) | [Русский](../ru/02-types.md)
+[EN](../en/02-types.md) | [UK](../uk/02-types.md) | [RU](../ru/02-types.md)
 
 [Содержание](../../README.ru.md)
 
 - [Скалярные параметры и результат](#scalar-types)
-- [strict_types](#strict-types)
+- [`strict_types`](#strict-types)
 - [Nullable-типы](#nullable)
-- [void](#void)
-- [iterable / object](#iterable-object)
+- [`void`](#void)
+- [`iterable` / `object`](#iterable-object)
 - [Типизированные свойства](#typed-properties)
 - [Ковариантность / контравариантность](#variance)
-- [Union: A|B](#union)
-- [mixed](#mixed)
-- [Тип результата static](#static-return)
-- [Intersection: A&B](#intersection)
-- [never](#never)
-- [DNF: (A&B)|C](#dnf)
-- [Отдельные true / false / null](#literal-types)
+- [Union: `A|B`](#union)
+- [`mixed`](#mixed)
+- [Тип результата `static`](#static-return)
+- [Intersection: `A&B`](#intersection)
+- [`never`](#never)
+- [DNF: `(A&B)|C`](#dnf)
+- [Отдельные `true` / `false` / `null`](#literal-types)
 - [Типизированные константы](#typed-constants)
 - [PHPDoc и нативные типы](#native-type-limits)
 
@@ -40,7 +40,7 @@ echo line_total( 12.5, 3 ); # 37.5
 Скалярные типы: `int`, `float`, `string` и `bool`; правила преобразования зависят от `strict_types`.
 
 <a id="strict-types"></a>
-## strict_types
+## `strict_types`
 
 **PHP 7.0+** | [PHP](https://www.php.net/manual/en/language.types.declarations.php#language.types.declarations.strict)
 
@@ -79,7 +79,7 @@ echo display_name(); # Guest
 `string|null` является другим вариантом записи с 8.0. Неявная форма `string $name = null` устарела с 8.4.
 
 <a id="void"></a>
-## void
+## `void`
 
 **PHP 7.1+** | [PHP](https://www.php.net/manual/en/language.types.void.php)
 
@@ -96,7 +96,7 @@ function print_status( bool $visible ): void
 ```
 
 <a id="iterable-object"></a>
-## iterable / object
+## `iterable` / `object`
 
 **PHP 7.1 / 7.2+** | [PHP](https://www.php.net/manual/en/language.types.iterable.php)
 
@@ -136,7 +136,7 @@ $profile = new Profile();
 var_dump( isset($profile->id), $profile->email ); # false, null
 ```
 
-Чтение id до присваивания вызывает `Error`. `isset()` безопасен, но не отличает неинициализированное состояние от `null`. `callable` не является типом свойства; для сохранённого замыкания есть `Closure`.
+Чтение `id` до присваивания вызывает `Error`. `isset()` безопасен, но не отличает неинициализированное состояние от `null`. `callable` не является типом свойства; для сохранённого замыкания есть `Closure`.
 
 <a id="variance"></a>
 ## Ковариантность / контравариантность
@@ -163,7 +163,7 @@ class CustomFactory implements Factory
 7.2 уже позволял убрать тип параметра. Обычные свойства с чтением и записью остаются инвариантными.
 
 <a id="union"></a>
-## Union: A|B
+## Union: `A|B`
 
 **PHP 8.0+** | [PHP](https://www.php.net/manual/en/language.types.type-system.php)
 
@@ -178,10 +178,10 @@ function find_position( string $text, string $needle ): int|false
 echo find_position( 'php', 'p' ); # 0
 ```
 
-`false` разрешён в union с 8.0, отдельно с 8.2. Проверяйте неудачу через !== `false`, чтобы не потерять нулевую позицию.
+`false` разрешён в union с 8.0, отдельно с 8.2. Проверяйте неудачу через `!== false`, чтобы не потерять нулевую позицию.
 
 <a id="mixed"></a>
-## mixed
+## `mixed`
 
 **PHP 8.0+** | [PHP](https://www.php.net/manual/en/language.types.mixed.php)
 
@@ -199,7 +199,7 @@ echo describe_value( ['id' => 42] ); # array
 `mixed` уже включает `null`, поэтому `?mixed` и `mixed|null` недопустимы.
 
 <a id="static-return"></a>
-## Тип результата static
+## Тип результата `static`
 
 **PHP 8.0+** | [PHP](https://www.php.net/manual/en/language.types.relative-class-types.php)
 
@@ -219,14 +219,14 @@ class UserRecord extends Record {}
 echo get_class( UserRecord::create() ); # UserRecord
 ```
 
-8.5: переопределение в final-классе может заменить `static` на `self` или имя этого класса.
+8.5: переопределение в `final`-классе может заменить `static` на `self` или имя этого класса.
 
 <a id="intersection"></a>
-## Intersection: A&B
+## Intersection: `A&B`
 
 **PHP 8.1+** | [PHP](https://www.php.net/manual/en/language.types.declarations.php#language.types.declarations.composite.intersection)
 
-A&B требует, чтобы один объект соответствовал обоим контрактам. `Countable&Iterator` уместен, когда функции нужны методы итерации и количество элементов.
+`A&B` требует, чтобы один объект соответствовал обоим контрактам. `Countable&Iterator` уместен, когда функции нужны методы итерации и количество элементов.
 
 ```php
 function item_count( Countable&Iterator $items ): int
@@ -240,7 +240,7 @@ echo item_count( new ArrayIterator([10, 20]) ); # 2
 Скалярные пересечения `int&string` недопустимы.
 
 <a id="never"></a>
-## never
+## `never`
 
 **PHP 8.1+** | [PHP](https://www.php.net/manual/en/language.types.never.php)
 
@@ -256,7 +256,7 @@ function reject_request(): never
 Даже `return` без значения запрещён; достижение конца вызывает `TypeError`.
 
 <a id="dnf"></a>
-## DNF: (A&B)|C
+## DNF: `(A&B)|C`
 
 **PHP 8.2+** | [PHP](https://www.php.net/manual/en/migration82.new-features.php)
 
@@ -275,7 +275,7 @@ echo optional_count( new ArrayIterator([1, 2]) ); # 2
 Скобки вокруг групп пересечения обязательны. `A&(B|C)` не поддерживается.
 
 <a id="literal-types"></a>
-## Отдельные true / false / null
+## Отдельные `true` / `false` / `null`
 
 **PHP 8.2+** | [PHP](https://www.php.net/manual/en/language.types.singleton.php)
 
