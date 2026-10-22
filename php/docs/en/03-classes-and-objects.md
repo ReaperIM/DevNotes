@@ -4,8 +4,6 @@
 
 [Contents](../../README.md)
 
-From local anonymous implementations to enums, readonly values, hooks and lazy initialization. Each example is independent. Use the version labels to distinguish the original feature from later improvements mentioned in the text.
-
 **On this page**
 
 - [Anonymous classes](#anonymous-classes)
@@ -39,45 +37,28 @@ From local anonymous implementations to enums, readonly values, hooks and lazy i
 <a id="anonymous-classes"></a>
 ## Anonymous classes
 
-**PHP 7.0+ | Core**
+**PHP 7.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.anonymous.php)
 
-An anonymous class creates an object whose implementation is needed locally. It can implement an interface or extend another class, making it useful for a small test double or a callback object with state.
+Anonymous classes create local implementations and can extend a class or implement an interface.
 
 ```php
-interface LabelProvider
+$provider = new class
 {
-	public function label(): string;
-}
-
-$provider = new class( 'draft' ) implements LabelProvider
-{
-	private $status;
-
-	public function __construct( string $status )
-	{
-		$this->status = $status;
-	}
-
 	public function label(): string
 	{
-		return strtoupper( $this->status );
+		return 'draft';
 	}
 };
 
-echo $provider->label();
-# DRAFT
+echo $provider->label(); # draft
 ```
-
-Keep a reusable domain object in a named class. Anonymous does not mean untyped or isolated: the object still follows inheritance, visibility and interface rules.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.anonymous.php)
 
 <a id="constructor-promotion"></a>
 ## Declare properties in the constructor
 
-**PHP 8.0+ | Core**
+**PHP 8.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.decon.php#language.oop5.decon.constructor.promotion)
 
-A constructor parameter with a visibility modifier declares a property and assigns the argument to it. This removes the repeated property declaration and `$this->name = $name` assignment for simple data objects.
+A constructor parameter with visibility declares and initializes a property.
 
 ```php
 class User
@@ -89,20 +70,17 @@ class User
 }
 
 $user = new User( 7, 'Ada' );
-echo $user->id, ':', $user->name;
-# 7:Ada
+echo $user->id, ':', $user->name; # 7:Ada
 ```
 
-You may mix promoted and ordinary parameters. The assignments happen before the constructor body runs, so that body can validate or normalize the stored values. A public property is still public; promotion alone does not provide immutability or validation.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.decon.php#language.oop5.decon.constructor.promotion)
+Promoted and ordinary parameters may coexist; assignment happens before the constructor body.
 
 <a id="new-initializers"></a>
 ## Objects as default parameter values
 
-**PHP 8.1+ | Core**
+**PHP 8.1+ | Core** | [PHP documentation](https://www.php.net/manual/en/migration81.new-features.php)
 
-A default parameter can construct an object with `new`. This is useful when a dependency has a small sensible default and callers should still be able to supply another instance.
+`new` is allowed in parameter defaults, attribute arguments, local static initializers and global constants.
 
 ```php
 class Prefix
@@ -115,20 +93,17 @@ function label( string $text, Prefix $prefix = new Prefix() ): string
 	return $prefix->value . ':' . $text;
 }
 
-echo label( 'types' );
-# note:types
+echo label( 'types' ); # note:types
 ```
 
-When the default is used, the object is evaluated for that call; it is not one shared mutable default for every call. PHP 8.1 also permits `new` in attribute arguments, local static initializers and global constants, with syntax restrictions. An ordinary property declaration still cannot use `new` as its default.
-
-[PHP documentation](https://www.php.net/manual/en/migration81.new-features.php)
+A used parameter default creates an object for that call; ordinary property defaults still cannot use `new`.
 
 <a id="attributes"></a>
 ## Attributes and reading their metadata
 
-**PHP 8.0+ | Core**
+**PHP 8.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.attributes.overview.php)
 
-Attributes attach structured metadata to declarations. Define an attribute class, place it on a supported declaration, then read it through reflection. Application-defined attributes only do something when application code interprets them.
+Attributes provide reflection-readable metadata; target flags and `IS_REPEATABLE` constrain usage, checked by `newInstance()`.
 
 ```php
 #[Attribute( Attribute::TARGET_METHOD )]
@@ -140,30 +115,23 @@ class Description
 class Report
 {
 	#[Description( 'Exports a report' )]
-	public function export(): string
-	{
-		return 'report';
-	}
+	public function export(): void {}
 }
 
 $method = new ReflectionMethod( Report::class, 'export' );
-$attributes = $method->getAttributes( Description::class );
-$description = $attributes[0]->newInstance();
+$description = $method->getAttributes( Description::class )[0]->newInstance();
 
-echo $description->text;
-# Exports a report
+echo $description->text; # Exports a report
 ```
 
-Use target flags and `Attribute::IS_REPEATABLE` deliberately. `newInstance()` constructs the attribute and validates its usage; a metadata marker alone does not enforce permissions. PHP 8.5 adds `#[DelayedTargetValidation]` for advanced attribute tooling: it defers invalid-target checks for built-in or extension attributes until reflection instantiates them. See also [diagnostic attributes](08-errors-and-debugging.md#deprecated-attribute) and [global constant attributes](01-syntax-and-functions.md#global-constant-attributes).
-
-[PHP documentation](https://www.php.net/manual/en/language.attributes.overview.php)
+PHP 8.5 adds `#[DelayedTargetValidation]`, deferring invalid-target checks for built-in or extension attributes until reflection instantiates them; see also [diagnostic attributes](08-errors-and-debugging.md#deprecated-attribute) and [global constants](01-syntax-and-functions.md#global-constant-attributes).
 
 <a id="stringable"></a>
 ## The Stringable interface
 
-**PHP 8.0+ | Core**
+**PHP 8.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/class.stringable.php)
 
-An object with `__toString()` implicitly implements `Stringable`. A union such as `string|Stringable` can express that an API accepts either a plain string or an object with a string representation.
+A class with `__toString()` implicitly implements `Stringable`; `string|Stringable` accepts either representation.
 
 ```php
 class Label
@@ -183,16 +151,14 @@ echo render_label( new Label() );
 # draft
 ```
 
-`Stringable` is not the same type as `string`, especially with strict typing. The explicit cast above is the boundary where the representation is requested. Conversion may throw; see [exceptions from __toString()](08-errors-and-debugging.md#to-string-exceptions).
-
-[PHP documentation](https://www.php.net/manual/en/class.stringable.php)
+`Stringable` is not `string` under strict typing, and conversion [may throw](08-errors-and-debugging.md#to-string-exceptions).
 
 <a id="enums"></a>
 ## Enums for a closed set of states
 
-**PHP 8.1+ | Core**
+**PHP 8.1+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.enumerations.backed.php)
 
-An enum defines a finite set of named objects. A backed enum adds a unique `string` or `int` value for storage or external data. Application code can use a typed state while the database stores a small scalar.
+Enums define named case objects; backed enums add unique `int` or `string` values through `->value`, while all cases have `->name`.
 
 ```php
 enum Status: string
@@ -202,24 +168,22 @@ enum Status: string
 }
 
 $status = Status::from( 'published' );
-echo $status->name, ':', $status->value, PHP_EOL;
-var_dump( Status::tryFrom('missing') );
-echo count( Status::cases() );
-# Published:published
-# NULL
-# 2
+$missing = Status::tryFrom( 'missing' ); # null
+$cases = Status::cases();
+
+echo $status->name, ':', $status->value, PHP_EOL; # Published:published
+var_dump( $missing ); # NULL
+echo count( $cases ); # 2
 ```
 
-`from()` throws `ValueError` for an unknown backing value; `tryFrom()` returns `null`. Invalid argument types can still cause `TypeError`, so `tryFrom()` is not a universal validator. A case is an object: `Status::Draft !== 'draft'`. Use `->value` only at the scalar boundary. Pure enums have cases and `->name`, but no backing `->value`, `from()` or `tryFrom()`.
-
-[PHP documentation](https://www.php.net/manual/en/language.enumerations.backed.php)
+`from()` throws `ValueError` for unknown values and `tryFrom()` returns `null` but may still throw `TypeError` for invalid types; pure enums have no backing value or conversion methods.
 
 <a id="enum-constants"></a>
 ## Enum properties in constant expressions
 
-**PHP 8.2+ | Core**
+**PHP 8.2+ | Core** | [PHP documentation](https://www.php.net/manual/en/migration82.new-features.php)
 
-The `name` and `value` of an enum case can be read in constant expressions. This avoids repeating the scalar spelling beside the enum declaration.
+Enum case `name` and backed case `value` may be read in constant expressions.
 
 ```php
 enum Format: string
@@ -230,20 +194,17 @@ enum Format: string
 const DEFAULT_FORMAT = Format::Json->value;
 const DEFAULT_CASE_NAME = Format::Json->name;
 
-echo DEFAULT_CASE_NAME, ':', DEFAULT_FORMAT;
-# Json:json
+echo DEFAULT_CASE_NAME, ':', DEFAULT_FORMAT; # Json:json
 ```
 
-A pure enum has no `value` property. These expressions read the built-in enum metadata; they do not allow arbitrary object property access or method execution in constants.
-
-[PHP documentation](https://www.php.net/manual/en/migration82.new-features.php)
+This does not allow arbitrary object property reads or method calls in constants.
 
 <a id="readonly-properties"></a>
 ## Readonly properties and shallow immutability
 
-**PHP 8.1+ | Core**
+**PHP 8.1+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.properties.php#language.oop5.properties.readonly-properties)
 
-A `readonly` property can be initialized once and cannot normally be reassigned or modified afterward. It is useful for identity and value objects, but an object stored in that property can still have mutable state.
+A typed, non-static `readonly` property permits initialization once, but an object stored in it can remain mutable.
 
 ```php
 class Snapshot
@@ -251,24 +212,20 @@ class Snapshot
 	public function __construct( public readonly stdClass $data ) {}
 }
 
-$data = (object)['count' => 1];
-$snapshot = new Snapshot( $data );
+$snapshot = new Snapshot( (object)['count' => 1] );
 $snapshot->data->count++;
 
-echo $snapshot->data->count;
-# 2
+echo $snapshot->data->count; # 2
 ```
 
-The property must be typed and cannot be static. Incrementing a readonly scalar or modifying an array entry is forbidden; changing the contents of a referenced object is a different operation. Before PHP 8.4 initialization was implicitly private to the declaring class; from PHP 8.4 the default is `protected(set)`, allowing initialization from child scope unless narrowed explicitly.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.properties.php#language.oop5.properties.readonly-properties)
+Before PHP 8.4 initialization was implicitly private to the declaring class; from 8.4 the default is `protected(set)` unless narrowed, while scalar increments and array-entry writes remain forbidden.
 
 <a id="readonly-classes"></a>
 ## Readonly classes
 
-**PHP 8.2+ | Core**
+**PHP 8.2+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.basic.php#language.oop5.basic.class.readonly)
 
-A readonly class applies readonly rules to all its instance properties. This keeps a data object concise and prevents a new property from accidentally being mutable.
+A readonly class makes all instance properties readonly.
 
 ```php
 readonly class Point
@@ -277,20 +234,17 @@ readonly class Point
 }
 
 $point = new Point( 3, 4 );
-echo $point->x, ':', $point->y;
-# 3:4
+echo $point->x, ':', $point->y; # 3:4
 ```
 
-Properties must be typed; static and dynamic properties are unavailable. Inheritance must respect readonly class rules. As with one readonly property, nested mutable objects do not become immutable automatically.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.basic.php#language.oop5.basic.class.readonly)
+Properties must be typed, static and dynamic properties are forbidden, inheritance must obey readonly rules, and nested objects can still be mutable.
 
 <a id="readonly-cloning"></a>
 ## Reinitialize readonly properties during __clone()
 
-**PHP 8.3+ | Core**
+**PHP 8.3+ | Core** | [PHP documentation](https://www.php.net/manual/en/migration83.new-features.php)
 
-During cloning, readonly properties may be reinitialized so that a copied object can receive its own nested objects. This solves a common shallow-copy problem without making the original property generally writable.
+`__clone()` may reinitialize readonly properties to detach nested objects in the copy.
 
 ```php
 readonly class Schedule
@@ -311,16 +265,14 @@ echo $original->date->format( 'Y-m-d' ), ':', $copy->date->format( 'Y-m-d' );
 # 2025-01-01:2025-01-02
 ```
 
-This is a controlled cloning-time exception to the normal write restriction, not permission to repeatedly update the property. Cloning remains shallow unless you explicitly clone the nested objects that require independent state.
-
-[PHP documentation](https://www.php.net/manual/en/migration83.new-features.php)
+This is a controlled cloning-time exception; unlisted nested objects remain shared by an ordinary shallow clone.
 
 <a id="readonly-anonymous"></a>
 ## Readonly anonymous classes
 
-**PHP 8.3+ | Core**
+**PHP 8.3+ | Core** | [PHP documentation](https://www.php.net/manual/en/migration83.new-features.php)
 
-A local anonymous object can now follow the same readonly rules as a named readonly class. This is useful for a small immutable value that does not need a reusable public class name.
+Anonymous classes may also be readonly.
 
 ```php
 $value = new readonly class( 7 )
@@ -328,47 +280,36 @@ $value = new readonly class( 7 )
 	public function __construct( public int $id ) {}
 };
 
-echo $value->id;
-# 7
+echo $value->id; # 7
 ```
 
-This adds readonly to anonymous classes; ordinary anonymous classes have existed since PHP 7.0. The restrictions on typed properties and nested mutable state still apply.
-
-[PHP documentation](https://www.php.net/manual/en/migration83.new-features.php)
+They retain the typed-property and shallow-immutability restrictions of named readonly classes.
 
 <a id="constant-visibility-final"></a>
 ## Visibility and final class constants
 
-**PHP 7.1+ | Core**
+**PHP 7.1+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.constants.php)
 
-PHP 7.1 allows class constants to be public, protected or private. PHP 8.1 adds `final` constants, preventing a subclass from replacing a value that belongs to the parent’s contract.
+PHP 7.1 adds class-constant visibility; PHP 8.1 adds declarations such as `final public const PAGE_SIZE = 20;` to forbid redeclaration in children.
 
 ```php
 class Limits
 {
 	private const INTERNAL_FACTOR = 2;
 	public const PAGE_SIZE = 20;
-
-	public static function batch_size(): int
-	{
-		return self::PAGE_SIZE * self::INTERNAL_FACTOR;
-	}
 }
 
-echo Limits::batch_size();
-# 40
+echo Limits::PAGE_SIZE; # 20
 ```
 
-For PHP 8.1+, the declaration can be `final public const PAGE_SIZE = 20;` if overriding it would violate the design. Visibility controls access; final controls redeclaration. [Typed class constants](02-types.md#typed-constants) are a separate PHP 8.3 addition.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.constants.php)
+[Typed class constants](02-types.md#typed-constants) arrive separately in PHP 8.3.
 
 <a id="dynamic-constants"></a>
 ## A class constant selected by name
 
-**PHP 8.3+ | Core**
+**PHP 8.3+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.constants.php)
 
-`ClassName::{$name}` reads a class constant using a variable name. It avoids building a `ClassName::CONSTANT` string for `constant()` when the class is already known.
+`ClassName::{$name}` reads a class constant selected by name; `$object::class` has returned an object’s class name since PHP 8.0.
 
 ```php
 class Format
@@ -377,30 +318,24 @@ class Format
 }
 
 $name = 'JSON';
-echo Format::{$name};
-# application/json
+$mime = Format::{$name};
+
+echo $mime; # application/json
 ```
 
-The same visibility checks still apply, and an unknown constant produces an error. An external name should come from an allowed set. Since PHP 8.0, `$object::class` also obtains an object’s class name without a separate `get_class()` call.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.constants.php)
+Constant visibility still applies, and unknown names produce an error.
 
 <a id="trait-constants"></a>
 ## Constants declared in traits
 
-**PHP 8.2+ | Core**
+**PHP 8.2+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.traits.php)
 
-A trait can declare constants alongside the behavior that uses them. This is useful when a shared implementation has a small fixed option or protocol value.
+Traits may declare constants, accessed through the consuming class, with compatibility rules for conflicting declarations.
 
 ```php
 trait HasFormat
 {
 	public const FORMAT = 'json';
-
-	public function format(): string
-	{
-		return self::FORMAT;
-	}
 }
 
 class Exporter
@@ -408,20 +343,19 @@ class Exporter
 	use HasFormat;
 }
 
-echo (new Exporter())->format();
-# json
+$format = Exporter::FORMAT;
+
+echo $format; # json
 ```
 
-Access constants through the class using the trait. Conflicting declarations must satisfy PHP’s compatibility rules. A related PHP 8.3 change affects static trait properties: when a child explicitly uses the same trait again, its static property is separate from the parent’s; do not assume both counters share storage.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.traits.php)
+Since PHP 8.3, a child explicitly reusing a trait has separate static trait-property storage from its parent.
 
 <a id="trait-final"></a>
 ## Import a trait method as final
 
-**PHP 8.3+ | Core**
+**PHP 8.3+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.traits.php)
 
-A class can mark an imported trait method as final in the adaptation block. The shared trait remains reusable, while this class prevents its children from overriding the imported behavior.
+A trait adaptation may import a method as `final`.
 
 ```php
 trait HasIdentifier
@@ -440,31 +374,25 @@ class Report
 	}
 }
 
-echo (new Report())->identifier();
-# report
+echo (new Report())->identifier(); # report
 ```
 
-This constrains overriding in subclasses; it does not make the entire class final or freeze object properties. Use it for behavior that is intentionally fixed by the class contract.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.traits.php)
+This prevents overriding that method in subclasses of the consuming class without changing the trait itself.
 
 <a id="override"></a>
 ## Check overridden methods with #[Override]
 
-**PHP 8.3+ | Core**
+**PHP 8.3+ | Core** | [PHP documentation](https://www.php.net/manual/en/class.override.php)
 
-The attribute records that a method is intended to replace an inherited method or implement an interface method. A typo or an upstream rename then causes a compile-time error instead of silently creating an unrelated method.
+`#[Override]` verifies at compile time that a method overrides an inherited or interface declaration.
 
 ```php
-class Exporter
+interface Exporter
 {
-	public function format(): string
-	{
-		return 'text';
-	}
+	public function format(): string;
 }
 
-class JsonExporter extends Exporter
+class JsonExporter implements Exporter
 {
 	#[Override]
 	public function format(): string
@@ -473,20 +401,17 @@ class JsonExporter extends Exporter
 	}
 }
 
-echo (new JsonExporter())->format();
-# json
+echo (new JsonExporter())->format(); # json
 ```
 
-The attribute verifies the existence of the overridden declaration, not the correctness of its implementation. It cannot be applied to `__construct()`. [Property overrides](#override-properties) gain the same annotation in PHP 8.5.
-
-[PHP documentation](https://www.php.net/manual/en/class.override.php)
+It cannot annotate `__construct()`; [property overrides](#override-properties) gain support in PHP 8.5.
 
 <a id="property-hooks"></a>
 ## Property hooks: backed and virtual values
 
-**PHP 8.4+ | Core**
+**PHP 8.4+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.property-hooks.php)
 
-A property can customize reading with `get` and writing with `set`. A backed property stores a value; a virtual property computes its value through hooks without its own storage.
+Property hooks customize reads and writes: `name` is backed, while `display_name` is virtual.
 
 ```php
 class Contact
@@ -504,20 +429,17 @@ class Contact
 
 $contact = new Contact();
 $contact->name = ' Ada ';
-echo $contact->name, ':', $contact->display_name;
-# Ada:ADA
+echo $contact->name, ':', $contact->display_name; # Ada:ADA
 ```
 
-The expression form of `set` automatically stores its result in the backing value. A virtual get-only property is not writable. Hooks are available for non-static properties and cannot be combined with `readonly`. Put business operations involving several objects in methods; a property accessor should remain easy to understand.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.property-hooks.php)
+Expression `set` stores its result automatically; virtual get-only properties are unwritable, and hooks cannot be static or combined with `readonly`.
 
 <a id="setter-validation"></a>
 ## A full setter must assign the backing value
 
-**PHP 8.4+ | Core**
+**PHP 8.4+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.property-hooks.php)
 
-A block-form `set` hook can validate input before storing it. Unlike the expression form, the block must explicitly assign the accepted value to the property.
+A block-form `set` hook must explicitly assign the accepted value.
 
 ```php
 class Product
@@ -527,7 +449,7 @@ class Product
 		set
 		{
 			if( $value < 0 )
-				throw new InvalidArgumentException( 'Quantity cannot be negative' );
+				throw new InvalidArgumentException( 'Negative quantity' );
 
 			$this->quantity = $value;
 		}
@@ -536,38 +458,22 @@ class Product
 
 $product = new Product();
 $product->quantity = 5;
-
-try
-{
-	$product->quantity = -1;
-}
-catch( InvalidArgumentException )
-{
-	echo $product->quantity;
-}
-# 5
+echo $product->quantity; # 5
 ```
 
-Within this hook, `$this->quantity` accesses the backing storage rather than recursively calling the same hook. Validation runs before the assignment, so a rejected update leaves the previous value intact. A property default is not a substitute for validating later writes.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.property-hooks.php)
+Inside its own hook, `$this->quantity` accesses backing storage without recursion; rejecting before assignment preserves the previous value.
 
 <a id="asymmetric-visibility"></a>
 ## Different visibility for reading and writing
 
-**PHP 8.4+ | Core**
+**PHP 8.4+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.visibility.php#language.oop5.visibility-members)
 
-`public private(set)` lets outside code read a property while only the declaring class can write it. It keeps a simple public read interface without making all assignments public.
+`public private(set)` permits public reading and repeated writes inside the declaring class.
 
 ```php
 class Article
 {
-	public private(set) string $title;
-
-	public function __construct( string $title )
-	{
-		$this->title = $title;
-	}
+	public function __construct( public private(set) string $title ) {}
 
 	public function rename( string $title ): void
 	{
@@ -577,20 +483,17 @@ class Article
 
 $article = new Article( 'Draft' );
 $article->rename( ' Published ' );
-echo $article->title;
-# Published
+echo $article->title; # Published
 ```
 
-The write visibility cannot be wider than the read visibility. `private(set)` also makes the property final, so a child cannot redeclare it to bypass the restriction. It is not readonly: the permitted class may write again. Obtaining a reference or modifying an array element also follows write visibility.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.visibility.php#language.oop5.visibility-members)
+Write visibility cannot exceed read visibility, `private(set)` makes the property final, and references or array-entry changes also require write access.
 
 <a id="interface-properties"></a>
 ## Property contracts in interfaces
 
-**PHP 8.4+ | Core**
+**PHP 8.4+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.interfaces.php)
 
-An interface can require a readable or writable public property using hook-shaped declarations. The implementation may use a normal property or hooks as long as the required operations are available.
+Interfaces can require public property reads or writes through `{ get; }` or `{ get; set; }`.
 
 ```php
 interface HasTitle
@@ -603,25 +506,18 @@ class Article implements HasTitle
 	public function __construct( public string $title ) {}
 }
 
-function title_of( HasTitle $item ): string
-{
-	return $item->title;
-}
-
-echo title_of( new Article('Notes') );
-# Notes
+$article = new Article( 'Notes' );
+echo $article->title; # Notes
 ```
 
-A `get` requirement does not force the implementation to forbid writes; it only promises reading. Similarly, `{ get; set; }` requires both operations. Respect the type-variance rules when refining a contract.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.interfaces.php)
+A normal property or hooks may satisfy the contract, subject to type-variance rules. A `get` requirement still allows the implementation to provide writes.
 
 <a id="lazy-objects"></a>
 ## Lazy ghosts and lazy proxies
 
-**PHP 8.4+ | Core**
+**PHP 8.4+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.lazy-objects.php)
 
-Reflection can create an object whose initialization waits until its state is used. A lazy ghost is initialized in place; a lazy proxy asks a factory for a separate real instance and forwards state operations to it.
+Reflection can defer an object’s initialization until its state is used. A ghost initializes in place; a proxy obtains a separate real instance from its factory.
 
 ```php
 class Document
@@ -652,32 +548,29 @@ echo $proxy->title;
 # proxy
 ```
 
-This delays work; it does not run it in parallel. Proxy identity differs from its real instance, which matters for identity maps and strict object comparisons. The mechanism targets user-defined classes and `stdClass`, not arbitrary internal classes. Use it where deferred initialization solves a real lifetime or loading problem.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.lazy-objects.php)
+Proxy identity differs from the real instance, and support targets user-defined classes and `stdClass`, not arbitrary internal classes.
 
 <a id="new-chaining"></a>
 ## Call a method directly after new
 
-**PHP 8.4+ | Core**
+**PHP 8.4+ | Core** | [PHP documentation](https://www.php.net/manual/en/migration84.new-features.php)
 
-An object created with constructor parentheses can be used immediately without wrapping the whole `new` expression in another pair of parentheses. It makes a short create-and-use expression lighter.
+A `new` expression with constructor parentheses can be followed directly by member access.
 
 ```php
-echo new DateTimeImmutable( '2025-01-02' )->format( 'Y-m-d' );
-# 2025-01-02
+$date = new DateTimeImmutable( '2025-01-02' )->format( 'Y-m-d' );
+
+echo $date; # 2025-01-02
 ```
 
-The older `(new DateTimeImmutable(...))->format(...)` form remains valid. Keep a variable when several later steps need the object or when the one-liner obscures an important lifecycle.
-
-[PHP documentation](https://www.php.net/manual/en/migration84.new-features.php)
+The older `(new ClassName(...))->method()` syntax remains valid.
 
 <a id="override-properties"></a>
 ## Check property overrides with #[Override]
 
-**PHP 8.5+ | Core**
+**PHP 8.5+ | Core** | [PHP documentation](https://www.php.net/manual/en/class.override.php)
 
-The override check extends from methods to properties. This is especially useful for a virtual property whose inherited computation is being specialized.
+`#[Override]` also verifies inherited or interface properties at compile time.
 
 ```php
 class Record
@@ -697,20 +590,17 @@ class Report extends Record
 	}
 }
 
-echo new Report()->label;
-# report
+echo new Report()->label; # report
 ```
 
-If the expected parent or interface property disappears, the declaration produces a compile-time error. Other rules still apply: the attribute cannot make an incompatible or final property override legal.
-
-[PHP documentation](https://www.php.net/manual/en/class.override.php)
+It does not permit incompatible overrides or overriding a final property.
 
 <a id="static-visibility"></a>
 ## Asymmetric visibility for static properties
 
-**PHP 8.5+ | Core**
+**PHP 8.5+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.visibility.php)
 
-Static properties can also have narrower write visibility. A shared counter can be observed externally while updates stay inside the class that owns the operation.
+Static properties can have narrower write visibility.
 
 ```php
 class Counter
@@ -724,20 +614,17 @@ class Counter
 }
 
 Counter::count_call();
-echo Counter::$calls;
-# 1
+echo Counter::$calls; # 1
 ```
 
-This controls access, not request isolation or concurrency. In long-running processes, static state survives successive operations. Readonly static properties are a different concept and remain unsupported.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.visibility.php)
+This controls access rather than state lifetime; readonly static properties remain unsupported.
 
 <a id="final-promotion"></a>
 ## Final promoted properties
 
-**PHP 8.5+ | Core**
+**PHP 8.5+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.final.php)
 
-Final properties were introduced in PHP 8.4; PHP 8.5 allows the modifier directly on a promoted constructor property. It prevents a child from redeclaring the property.
+PHP 8.5 permits `final` on promoted properties, extending final properties introduced in PHP 8.4.
 
 ```php
 class Ticket
@@ -747,20 +634,18 @@ class Ticket
 
 $ticket = new Ticket( 'A' );
 $ticket->code = 'B';
-echo $ticket->code;
-# B
+
+echo $ticket->code; # B
 ```
 
-Final does not mean readonly: the public property above can still be reassigned. Choose final for inheritance restrictions and readonly for value-write restrictions; they solve different problems.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.final.php)
+It prevents child redeclarations but does not forbid reassignment like `readonly` does.
 
 <a id="clone-with"></a>
 ## Clone an object with selected property changes
 
-**PHP 8.5+ | Core**
+**PHP 8.5+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.cloning.php)
 
-The function form `clone( $object, $changes )` creates a copy and applies a map of property values. It is useful for a `with_*()` method returning an updated readonly value object.
+`clone( $object, $changes )` creates a copy and applies property overrides after `__clone()`.
 
 ```php
 readonly class Color
@@ -786,16 +671,14 @@ echo $original->alpha, ':', $copy->alpha;
 # 255:128
 ```
 
-Overrides happen after `__clone()` and respect property write visibility. Place readonly updates in an allowed class scope. The constructor is not rerun, so validate changed values before cloning; constructor validation alone is insufficient. Unlisted nested objects still follow ordinary shallow-clone rules.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.cloning.php)
+Overrides respect write visibility, so readonly updates need a permitted class scope. The constructor is not rerun: validate changed values explicitly; other nested objects retain shallow-clone behavior.
 
 <a id="dynamic-properties"></a>
 ## Dynamic properties are deprecated
 
-**PHP 8.2+ | Core**
+**PHP 8.2+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.properties.php#language.oop5.properties.dynamic-properties)
 
-Creating an undeclared property on an ordinary class now emits a deprecation diagnostic. This catches misspellings and makes the object’s actual shape easier to inspect.
+Creating an undeclared property on an ordinary class emits a deprecation diagnostic.
 
 ```php
 class User
@@ -813,6 +696,4 @@ echo $user->name, ':', $metadata->tag;
 # Grace:draft
 ```
 
-Declare known fields. For intentionally arbitrary data use an array or `stdClass`. Exceptions include classes explicitly allowing dynamic properties with `#[AllowDynamicProperties]`, their children, and classes using `__set()`; an implementation that creates undeclared properties inside `__set()` can still trigger the diagnostic. Do not add the attribute everywhere just to hide typos.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.properties.php#language.oop5.properties.dynamic-properties)
+Exceptions include `stdClass`, `#[AllowDynamicProperties]` classes and their children, and `__set()` handling, but creating an undeclared property inside `__set()` can still trigger the diagnostic.

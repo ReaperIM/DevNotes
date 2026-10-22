@@ -1,10 +1,8 @@
-# Features by PHP version
+# PHP versions
 
 [English](../en/VERSIONS.md) | [Українська](../uk/VERSIONS.md) | [Русский](../ru/VERSIONS.md)
 
 [Contents](../../README.md)
-
-Use this index to find additions and behavior changes by version, then follow the link for examples and limitations. Related improvements may lead to the same section. Older background topics remain in their thematic chapters. These are feature-availability labels, not support-status recommendations.
 
 - [PHP 7.0](#php-70)
 - [PHP 7.1](#php-71)
@@ -26,7 +24,7 @@ Use this index to find additions and behavior changes by version, then follow th
 - [Grouped namespace imports](01-syntax-and-functions.md#group-use)
 - [Temporarily binding a closure with call()](01-syntax-and-functions.md#closure-call)
 - [Scalar parameters and return types](02-types.md#scalar-types)
-- [strict_types: control scalar coercion](02-types.md#strict-types)
+- [strict_types](02-types.md#strict-types)
 - [Anonymous classes](03-classes-and-objects.md#anonymous-classes)
 - [Join streams with yield from](04-arrays-and-iteration.md#generator-delegation)
 - [Get a generator’s final result](04-arrays-and-iteration.md#generator-return)
@@ -43,7 +41,7 @@ Use this index to find additions and behavior changes by version, then follow th
 
 - [Convert a callable with Closure::fromCallable()](01-syntax-and-functions.md#closure-from-callable)
 - [Nullable types](02-types.md#nullable)
-- [void: finish without a result](02-types.md#void)
+- [void](02-types.md#void)
 - [The iterable type](02-types.md#iterable-object)
 - [Class constant visibility](03-classes-and-objects.md#constant-visibility-final)
 - [Unpack a row into variables](04-arrays-and-iteration.md#destructuring)
@@ -86,8 +84,8 @@ Use this index to find additions and behavior changes by version, then follow th
 - [Fill missing configuration with ??=](01-syntax-and-functions.md#null-coalescing-assignment)
 - [Arrow functions and captured values](01-syntax-and-functions.md#arrow-functions)
 - [Readable numeric literals](01-syntax-and-functions.md#numeric-literals)
-- [Typed properties and uninitialized state](02-types.md#typed-properties)
-- [Covariance and contravariance](02-types.md#variance)
+- [Typed properties](02-types.md#typed-properties)
+- [Covariance / contravariance](02-types.md#variance)
 - [Build arrays with ... and understand collisions](04-arrays-and-iteration.md#unpacking)
 - [Merge zero or more arrays](04-arrays-and-iteration.md#merge-empty)
 - [Split a multibyte string by code points](05-strings-and-unicode.md#mb-split)
@@ -112,9 +110,9 @@ Use this index to find additions and behavior changes by version, then follow th
 - [match returns a value and compares strictly](01-syntax-and-functions.md#match)
 - [A nullable object chain with ?->](01-syntax-and-functions.md#nullsafe)
 - [throw inside an expression](01-syntax-and-functions.md#throw-expression)
-- [Union types: one of several alternatives](02-types.md#union)
-- [mixed: an explicitly unrestricted value](02-types.md#mixed)
-- [static return type](02-types.md#static-return)
+- [Union: A|B](02-types.md#union)
+- [mixed](02-types.md#mixed)
+- [Return type static](02-types.md#static-return)
 - [Declare properties in the constructor](03-classes-and-objects.md#constructor-promotion)
 - [Attributes and reading their metadata](03-classes-and-objects.md#attributes)
 - [The Stringable interface](03-classes-and-objects.md#stringable)
@@ -141,8 +139,8 @@ Use this index to find additions and behavior changes by version, then follow th
 
 - [Named arguments after unpacking](01-syntax-and-functions.md#named-after-unpacking)
 - [First-class callable syntax: function_name(...)](01-syntax-and-functions.md#first-class-callables)
-- [Intersection types: all contracts at once](02-types.md#intersection)
-- [never: no normal return](02-types.md#never)
+- [Intersection: A&B](02-types.md#intersection)
+- [never](02-types.md#never)
 - [Objects as default parameter values](03-classes-and-objects.md#new-initializers)
 - [Enums for a closed set of states](03-classes-and-objects.md#enums)
 - [Readonly properties and shallow immutability](03-classes-and-objects.md#readonly-properties)
@@ -165,8 +163,8 @@ Use this index to find additions and behavior changes by version, then follow th
 <a id="php-82"></a>
 ## PHP 8.2
 
-- [DNF: intersections plus alternatives](02-types.md#dnf)
-- [Standalone true, false and null](02-types.md#literal-types)
+- [DNF: (A&B)|C](02-types.md#dnf)
+- [Standalone true / false / null](02-types.md#literal-types)
 - [Enum properties in constant expressions](03-classes-and-objects.md#enum-constants)
 - [Readonly classes](03-classes-and-objects.md#readonly-classes)
 - [Constants declared in traits](03-classes-and-objects.md#trait-constants)
@@ -186,7 +184,7 @@ Use this index to find additions and behavior changes by version, then follow th
 ## PHP 8.3
 
 - [Expressions in static local initializers](01-syntax-and-functions.md#static-initializers)
-- [Typed class constants](02-types.md#typed-constants)
+- [Typed constants](02-types.md#typed-constants)
 - [Reinitialize readonly properties during __clone()](03-classes-and-objects.md#readonly-cloning)
 - [Readonly anonymous classes](03-classes-and-objects.md#readonly-anonymous)
 - [A class constant selected by name](03-classes-and-objects.md#dynamic-constants)

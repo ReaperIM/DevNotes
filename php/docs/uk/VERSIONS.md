@@ -1,10 +1,8 @@
-# Можливості за версіями PHP
+# Версії PHP
 
 [English](../en/VERSIONS.md) | [Українська](../uk/VERSIONS.md) | [Русский](../ru/VERSIONS.md)
 
 [Зміст](../../README.uk.md)
-
-Цей покажчик допомагає знайти доповнення та зміни поведінки за версіями, а потім перейти до прикладів і обмежень. Пов'язані доповнення можуть вести до одного розділу. Старіші пояснення залишаються в тематичних главах. Позначки означають доступність можливості, а не рекомендацію щодо підтримуваної версії.
 
 - [PHP 7.0](#php-70)
 - [PHP 7.1](#php-71)
@@ -25,8 +23,8 @@
 - [Сортування оператором <=>](01-syntax-and-functions.md#spaceship)
 - [Групування імпортів простору імен](01-syntax-and-functions.md#group-use)
 - [Тимчасова прив’язка замикання через call()](01-syntax-and-functions.md#closure-call)
-- [Скалярні параметри й тип результату](02-types.md#scalar-types)
-- [strict_types: керування перетворенням типів](02-types.md#strict-types)
+- [Скалярні параметри й результат](02-types.md#scalar-types)
+- [strict_types](02-types.md#strict-types)
 - [Анонімні класи](03-classes-and-objects.md#anonymous-classes)
 - [Об’єднання потоків через yield from](04-arrays-and-iteration.md#generator-delegation)
 - [Підсумковий результат генератора](04-arrays-and-iteration.md#generator-return)
@@ -43,10 +41,10 @@
 
 - [Перетворення callable через Closure::fromCallable()](01-syntax-and-functions.md#closure-from-callable)
 - [Nullable-типи](02-types.md#nullable)
-- [void: завершення без результату](02-types.md#void)
+- [void](02-types.md#void)
 - [Тип iterable](02-types.md#iterable-object)
 - [Доступ до констант класу](03-classes-and-objects.md#constant-visibility-final)
-- [Розкладання рядка на змінні](04-arrays-and-iteration.md#destructuring)
+- [Розкладання масиву за змінними](04-arrays-and-iteration.md#destructuring)
 - [Читання вибраних іменованих полів](04-arrays-and-iteration.md#keyed-destructuring)
 - [Масиви та ітератори через `iterable`](04-arrays-and-iteration.md#iterable)
 - [Читання з кінця через від’ємні індекси](05-strings-and-unicode.md#negative-offsets)
@@ -86,8 +84,8 @@
 - [Доповнення налаштувань через ??=](01-syntax-and-functions.md#null-coalescing-assignment)
 - [Стрілкові функції та захоплені значення](01-syntax-and-functions.md#arrow-functions)
 - [Читабельні числові літерали](01-syntax-and-functions.md#numeric-literals)
-- [Типізовані властивості та неініціалізований стан](02-types.md#typed-properties)
-- [Коваріантність і контраваріантність](02-types.md#variance)
+- [Типізовані властивості](02-types.md#typed-properties)
+- [Коваріантність / контраваріантність](02-types.md#variance)
 - [Побудова масивів через ... і повторні ключі](04-arrays-and-iteration.md#unpacking)
 - [Злиття нуля або більше масивів](04-arrays-and-iteration.md#merge-empty)
 - [Поділ багатобайтового рядка за кодовими точками](05-strings-and-unicode.md#mb-split)
@@ -112,8 +110,8 @@
 - [match повертає значення та порівнює строго](01-syntax-and-functions.md#match)
 - [Ланцюжок необов’язкових об’єктів через ?->](01-syntax-and-functions.md#nullsafe)
 - [throw усередині виразу](01-syntax-and-functions.md#throw-expression)
-- [Union-типи: один із кількох варіантів](02-types.md#union)
-- [mixed: явно довільне значення](02-types.md#mixed)
+- [Union: A|B](02-types.md#union)
+- [mixed](02-types.md#mixed)
 - [Тип результату static](02-types.md#static-return)
 - [Оголошення властивостей у конструкторі](03-classes-and-objects.md#constructor-promotion)
 - [Атрибути та читання їхніх метаданих](03-classes-and-objects.md#attributes)
@@ -141,8 +139,8 @@
 
 - [Іменовані аргументи після розпакування](01-syntax-and-functions.md#named-after-unpacking)
 - [Синтаксис посилання на функцію: function_name(...)](01-syntax-and-functions.md#first-class-callables)
-- [Intersection-типи: усі контракти одночасно](02-types.md#intersection)
-- [never: без звичайного повернення](02-types.md#never)
+- [Intersection: A&B](02-types.md#intersection)
+- [never](02-types.md#never)
 - [Об’єкти як значення параметрів за замовчуванням](03-classes-and-objects.md#new-initializers)
 - [Enum для закритого набору станів](03-classes-and-objects.md#enums)
 - [Readonly-властивості та поверхнева незмінюваність](03-classes-and-objects.md#readonly-properties)
@@ -165,8 +163,8 @@
 <a id="php-82"></a>
 ## PHP 8.2
 
-- [DNF: перетини та альтернативи](02-types.md#dnf)
-- [Окремі типи true, false та null](02-types.md#literal-types)
+- [DNF: (A&B)|C](02-types.md#dnf)
+- [Окремі true / false / null](02-types.md#literal-types)
 - [Властивості enum у константних виразах](03-classes-and-objects.md#enum-constants)
 - [Readonly-класи](03-classes-and-objects.md#readonly-classes)
 - [Константи, оголошені у traits](03-classes-and-objects.md#trait-constants)
@@ -186,7 +184,7 @@
 ## PHP 8.3
 
 - [Вирази в ініціалізаторах статичних локальних змінних](01-syntax-and-functions.md#static-initializers)
-- [Типізовані константи класу](02-types.md#typed-constants)
+- [Типізовані константи](02-types.md#typed-constants)
 - [Повторна ініціалізація readonly у __clone()](03-classes-and-objects.md#readonly-cloning)
 - [Анонімні readonly-класи](03-classes-and-objects.md#readonly-anonymous)
 - [Вибір константи класу за назвою](03-classes-and-objects.md#dynamic-constants)

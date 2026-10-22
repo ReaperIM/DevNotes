@@ -1,10 +1,8 @@
-# Возможности по версиям PHP
+# Версии PHP
 
 [English](../en/VERSIONS.md) | [Українська](../uk/VERSIONS.md) | [Русский](../ru/VERSIONS.md)
 
 [Содержание](../../README.ru.md)
-
-Этот указатель помогает найти дополнения и изменения поведения по версиям, а затем перейти к примерам и ограничениям. Связанные дополнения могут вести к одному разделу. Более старые пояснения остаются в тематических главах. Метки означают доступность возможности, а не рекомендацию поддерживаемой версии.
 
 - [PHP 7.0](#php-70)
 - [PHP 7.1](#php-71)
@@ -25,8 +23,8 @@
 - [Сортировка оператором <=>](01-syntax-and-functions.md#spaceship)
 - [Группировка импортов пространства имён](01-syntax-and-functions.md#group-use)
 - [Временная привязка замыкания через call()](01-syntax-and-functions.md#closure-call)
-- [Скалярные параметры и тип результата](02-types.md#scalar-types)
-- [strict_types: управление преобразованием типов](02-types.md#strict-types)
+- [Скалярные параметры и результат](02-types.md#scalar-types)
+- [strict_types](02-types.md#strict-types)
 - [Анонимные классы](03-classes-and-objects.md#anonymous-classes)
 - [Объединение потоков через yield from](04-arrays-and-iteration.md#generator-delegation)
 - [Итоговый результат генератора](04-arrays-and-iteration.md#generator-return)
@@ -43,10 +41,10 @@
 
 - [Преобразование callable через Closure::fromCallable()](01-syntax-and-functions.md#closure-from-callable)
 - [Nullable-типы](02-types.md#nullable)
-- [void: завершение без результата](02-types.md#void)
+- [void](02-types.md#void)
 - [Тип iterable](02-types.md#iterable-object)
 - [Доступ к константам класса](03-classes-and-objects.md#constant-visibility-final)
-- [Разбор строки массива на переменные](04-arrays-and-iteration.md#destructuring)
+- [Разбор массива по переменным](04-arrays-and-iteration.md#destructuring)
 - [Чтение выбранных именованных полей](04-arrays-and-iteration.md#keyed-destructuring)
 - [Массивы и итераторы через `iterable`](04-arrays-and-iteration.md#iterable)
 - [Чтение с конца через отрицательные индексы](05-strings-and-unicode.md#negative-offsets)
@@ -86,8 +84,8 @@
 - [Дополнение настроек через ??=](01-syntax-and-functions.md#null-coalescing-assignment)
 - [Стрелочные функции и захваченные значения](01-syntax-and-functions.md#arrow-functions)
 - [Читаемые числовые литералы](01-syntax-and-functions.md#numeric-literals)
-- [Типизированные свойства и неинициализированное состояние](02-types.md#typed-properties)
-- [Ковариантность и контравариантность](02-types.md#variance)
+- [Типизированные свойства](02-types.md#typed-properties)
+- [Ковариантность / контравариантность](02-types.md#variance)
 - [Создание массивов через ... и повторяющиеся ключи](04-arrays-and-iteration.md#unpacking)
 - [Слияние нуля или более массивов](04-arrays-and-iteration.md#merge-empty)
 - [Разбиение многобайтовой строки по кодовым точкам](05-strings-and-unicode.md#mb-split)
@@ -112,8 +110,8 @@
 - [match возвращает значение и сравнивает строго](01-syntax-and-functions.md#match)
 - [Цепочка необязательных объектов через ?->](01-syntax-and-functions.md#nullsafe)
 - [throw внутри выражения](01-syntax-and-functions.md#throw-expression)
-- [Union-типы: один из нескольких вариантов](02-types.md#union)
-- [mixed: явно произвольное значение](02-types.md#mixed)
+- [Union: A|B](02-types.md#union)
+- [mixed](02-types.md#mixed)
 - [Тип результата static](02-types.md#static-return)
 - [Объявление свойств в конструкторе](03-classes-and-objects.md#constructor-promotion)
 - [Атрибуты и чтение их метаданных](03-classes-and-objects.md#attributes)
@@ -141,8 +139,8 @@
 
 - [Именованные аргументы после распаковки](01-syntax-and-functions.md#named-after-unpacking)
 - [Синтаксис ссылки на функцию: function_name(...)](01-syntax-and-functions.md#first-class-callables)
-- [Intersection-типы: все контракты одновременно](02-types.md#intersection)
-- [never: без обычного возврата](02-types.md#never)
+- [Intersection: A&B](02-types.md#intersection)
+- [never](02-types.md#never)
 - [Объекты как значения параметров по умолчанию](03-classes-and-objects.md#new-initializers)
 - [Enum для закрытого набора состояний](03-classes-and-objects.md#enums)
 - [Readonly-свойства и поверхностная неизменяемость](03-classes-and-objects.md#readonly-properties)
@@ -165,8 +163,8 @@
 <a id="php-82"></a>
 ## PHP 8.2
 
-- [DNF: пересечения и альтернативы](02-types.md#dnf)
-- [Отдельные типы true, false и null](02-types.md#literal-types)
+- [DNF: (A&B)|C](02-types.md#dnf)
+- [Отдельные true / false / null](02-types.md#literal-types)
 - [Свойства enum в константных выражениях](03-classes-and-objects.md#enum-constants)
 - [Readonly-классы](03-classes-and-objects.md#readonly-classes)
 - [Константы, объявленные в traits](03-classes-and-objects.md#trait-constants)
@@ -186,7 +184,7 @@
 ## PHP 8.3
 
 - [Выражения в инициализаторах статических локальных переменных](01-syntax-and-functions.md#static-initializers)
-- [Типизированные константы класса](02-types.md#typed-constants)
+- [Типизированные константы](02-types.md#typed-constants)
 - [Повторная инициализация readonly в __clone()](03-classes-and-objects.md#readonly-cloning)
 - [Анонимные readonly-классы](03-classes-and-objects.md#readonly-anonymous)
 - [Выбор константы класса по имени](03-classes-and-objects.md#dynamic-constants)

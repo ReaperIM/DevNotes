@@ -4,7 +4,7 @@
 
 [Contents](../../README.md)
 
-Choose a byte operation for binary or ASCII data and a Unicode-aware operation for human text. The distinction matters more than the length of the function name. Examples containing mb_ require mbstring; grapheme_ and Locale examples require intl.
+String APIs differ in the unit they operate on: bytes, code points or grapheme clusters. Pick that unit before choosing a search, split or length operation.
 
 - [UTF-8: bytes, code points and grapheme clusters](#byte-codepoint-grapheme)
 - [Read from the end with negative offsets](#negative-offsets)
@@ -25,171 +25,149 @@ Choose a byte operation for binary or ASCII data and a Unicode-aware operation f
 
 ## UTF-8: bytes, code points and grapheme clusters
 
-**PHP 7.0+ | Core / mbstring / intl | Background**
+**PHP 7.0+ | Core / mbstring / intl | Background** | [PHP](https://www.php.net/manual/en/migration70.new-features.php) | [PHP](https://www.php.net/manual/en/function.grapheme-strlen.php)
 
-A PHP string stores bytes. Different operations can count bytes, Unicode code points, or user-perceived characters called grapheme clusters. Unicode escapes in double-quoted strings were added in PHP 7.0 and make invisible combining characters explicit.
+A PHP string stores bytes; `strlen()`, `mb_strlen()` and `grapheme_strlen()` count bytes, code points and grapheme clusters respectively in this UTF-8 example. Unicode escapes appeared in 7.0.
 
 ```php
-$text = "e\u{0301}"; # e + combining acute accent
-echo strlen( $text ) . PHP_EOL; # 3 bytes
-echo mb_strlen( $text, 'UTF-8' ) . PHP_EOL; # 2 code points
-echo grapheme_strlen( $text ) . PHP_EOL; # 1 grapheme cluster
+$text = "e\u{0301}";
+$bytes = strlen( $text ); # 3
+$code_points = mb_strlen( $text, 'UTF-8' ); # 2
+$graphemes = grapheme_strlen( $text ); # 1
 ```
 
-**Remember:** Choose the unit before cutting, padding or validating length. Grapheme clusters still do not equal terminal column width. mbstring and intl must be installed and enabled for their respective calls.
-
-[PHP manual: Unicode escapes](https://www.php.net/manual/en/migration70.new-features.php) | [PHP manual: grapheme_strlen()](https://www.php.net/manual/en/function.grapheme-strlen.php)
+Code points and grapheme clusters are different units, and neither guarantees terminal column width.
 
 <a id="negative-offsets"></a>
 
 ## Read from the end with negative offsets
 
-**PHP 7.1+ | Core**
+**PHP 7.1+ | Core** | [PHP](https://www.php.net/manual/en/migration71.new-features.php)
 
-Negative string offsets count back from the end. For ASCII tokens this is a clear way to read a suffix character without calculating `strlen()` - 1.
+Negative string offsets address bytes from the end.
 
 ```php
 $code = 'INV-42';
-echo $code[-1] . PHP_EOL; # 2
-echo $code[-2] . PHP_EOL; # 4
+$last = $code[-1]; # '2'
+$previous = $code[-2]; # '4'
 ```
 
-**Remember:** Offsets still address bytes. For UTF-8 text use `mb_substr()` or `grapheme_substr()`, depending on the required unit. An out-of-range offset is not an empty-field test.
-
-[PHP manual: negative offsets](https://www.php.net/manual/en/migration71.new-features.php)
+For UTF-8 text, choose `mb_substr()` for code points or `grapheme_substr()` for grapheme clusters.
 
 <a id="string-search"></a>
 
 ## Search for a substring, prefix or suffix
 
-**PHP 8.0+ | Core**
+**PHP 8.0+ | Core** | [PHP](https://www.php.net/manual/en/function.str-contains.php) | [PHP](https://www.php.net/manual/en/function.str-starts-with.php) | [PHP](https://www.php.net/manual/en/function.str-ends-with.php)
 
-`str_contains()`, `str_starts_with()` and `str_ends_with()` return a boolean for their exact question. They avoid mixing a position such as 0 with the absence marker false returned by `strpos()`.
+`str_contains()`, `str_starts_with()` and `str_ends_with()` return booleans instead of positions.
 
 ```php
 $path = '/api/users.php';
-var_dump( str_contains($path, 'users') ); # bool(true)
-var_dump( str_starts_with($path, '/api/') ); # bool(true)
-var_dump( str_ends_with($path, '.php') ); # bool(true)
-var_dump( str_contains($path, '') ); # bool(true)
+$contains = str_contains( $path, 'users' ); # true
+$starts = str_starts_with( $path, '/api/' ); # true
+$ends = str_ends_with( $path, '.php' ); # true
 ```
 
-**Remember:** These searches are case-sensitive and byte-based. An empty needle matches. Reject an empty search term separately if your application considers it invalid; a substring check is not URL or path validation.
-
-[PHP manual: str_contains()](https://www.php.net/manual/en/function.str-contains.php) | [PHP manual: str_starts_with()](https://www.php.net/manual/en/function.str-starts-with.php) | [PHP manual: str_ends_with()](https://www.php.net/manual/en/function.str-ends-with.php)
+Searches are case-sensitive and byte-based; an empty needle matches all three.
 
 <a id="mb-split"></a>
 
 ## Split a multibyte string by code points
 
-**PHP 7.4+ | mbstring**
+**PHP 7.4+ | mbstring** | [PHP](https://www.php.net/manual/en/function.mb-str-split.php)
 
-`mb_str_split()` creates chunks measured in characters of the selected encoding. It replaces byte-based `str_split()` when processing UTF-8 letters.
+`mb_str_split()` splits by characters of the selected encoding rather than bytes.
 
 ```php
-$parts = mb_str_split( 'Київ', 2, 'UTF-8' );
-echo json_encode( $parts, JSON_UNESCAPED_UNICODE ) . PHP_EOL; # ["Ки","їв"]
+$parts = mb_str_split( 'Київ', 2, 'UTF-8' ); # ['Ки', 'їв']
 ```
 
-**Remember:** A combining accent may be separated from its base letter. For user-visible character boundaries use `grapheme_str_split()` from PHP 8.4. Pass an explicit encoding for predictable text processing.
-
-[PHP manual: mb_str_split()](https://www.php.net/manual/en/function.mb-str-split.php)
+Combining marks may separate from their base; `grapheme_str_split()` preserves grapheme clusters from 8.4.
 
 <a id="mb-pad"></a>
 
 ## Pad text by code-point length
 
-**PHP 8.3+ | mbstring**
+**PHP 8.3+ | mbstring** | [PHP](https://www.php.net/manual/en/function.mb-str-pad.php)
 
-`mb_str_pad()` uses code-point length rather than byte length. A Cyrillic word and an ASCII word can therefore receive comparable character-based padding.
+`mb_str_pad()` pads by code-point length.
 
 ```php
-echo mb_str_pad( 'Київ', 6, '.', STR_PAD_RIGHT, 'UTF-8' ) . PHP_EOL; # Київ..
-echo mb_str_pad( 'PHP', 6, '.', STR_PAD_LEFT, 'UTF-8' ) . PHP_EOL; # ...PHP
+$right = mb_str_pad( 'Київ', 6, '.', STR_PAD_RIGHT, 'UTF-8' ); # Київ..
+$left = mb_str_pad( 'PHP', 6, '.', STR_PAD_LEFT, 'UTF-8' ); # ...PHP
 ```
 
-**Remember:** Padding does not truncate a longer input. Unicode code points are not visual columns, so this alone cannot align every terminal table or emoji-containing label.
-
-[PHP manual: mb_str_pad()](https://www.php.net/manual/en/function.mb-str-pad.php)
+It does not truncate longer input or measure the displayed width of emoji and other text.
 
 <a id="mb-case"></a>
 
 ## Change the first Unicode character’s case
 
-**PHP 8.4+ | mbstring**
+**PHP 8.4+ | mbstring** | [PHP](https://www.php.net/manual/en/function.mb-ucfirst.php) | [PHP](https://www.php.net/manual/en/function.mb-lcfirst.php)
 
-`mb_ucfirst()` title-cases the first character; `mb_lcfirst()` lowercases it. The remaining text is retained. This removes a small but error-prone combination of substring and case-conversion calls.
+`mb_ucfirst()` title-cases the first character; `mb_lcfirst()` lowercases it, retaining the rest.
 
 ```php
-echo mb_ucfirst( 'київ', 'UTF-8' ) . PHP_EOL; # Київ
-echo mb_lcfirst( 'Київ', 'UTF-8' ) . PHP_EOL; # київ
+$upper = mb_ucfirst( 'київ', 'UTF-8' ); # Київ
+$lower = mb_lcfirst( 'Київ', 'UTF-8' ); # київ
 ```
 
-**Remember:** This is not title capitalization for a whole sentence or a locale-specific naming policy. Unicode case mapping can change the number of code points.
-
-[PHP manual: mb_ucfirst()](https://www.php.net/manual/en/function.mb-ucfirst.php) | [PHP manual: mb_lcfirst()](https://www.php.net/manual/en/function.mb-lcfirst.php)
+Unicode case mapping may change the number of code points; this is not locale-specific title capitalization.
 
 <a id="unicode-trim"></a>
 
 ## Remove Unicode whitespace at the edges
 
-**PHP 8.4+ | mbstring**
+**PHP 8.4+ | mbstring** | [PHP](https://www.php.net/manual/en/function.mb-trim.php)
 
-`mb_trim()`, `mb_ltrim()` and `mb_rtrim()` understand multibyte characters and a broader default whitespace set than `trim()`. They are useful for text pasted from documents and web pages.
+`mb_trim()`, `mb_ltrim()` and `mb_rtrim()` remove multibyte edge characters with a broader default whitespace set than `trim()`.
 
 ```php
 $text = "\u{00A0}PHP\u{3000}";
-echo mb_trim( $text, null, 'UTF-8' ) . PHP_EOL; # PHP
+$trimmed = mb_trim( $text, null, 'UTF-8' ); # PHP
 ```
 
-**Remember:** Trimming affects only the selected edges. It neither removes internal whitespace nor validates text. A supplied character list replaces the default set; the byte-oriented `trim()` range notation is not supported.
-
-[PHP manual: mb_trim()](https://www.php.net/manual/en/function.mb-trim.php)
+A custom character list replaces the defaults and does not support `trim()` range notation.
 
 <a id="grapheme-split"></a>
 
 ## Split by visible character boundaries
 
-**PHP 8.4+ | intl**
+**PHP 8.4+ | intl** | [PHP](https://www.php.net/manual/en/function.grapheme-str-split.php)
 
-`grapheme_str_split()` keeps a base character together with its combining marks. Use it when splitting text into units that a person is likely to perceive as one character.
+`grapheme_str_split()` splits UTF-8 at grapheme boundaries, keeping combining marks with their base.
 
 ```php
 $text = "e\u{0301}x";
-$parts = grapheme_str_split( $text );
-echo count( $parts ) . PHP_EOL; # 2
-echo bin2hex( $parts[0] ) . PHP_EOL; # 65cc81
+$parts = grapheme_str_split( $text ); # ["e\u{0301}", 'x']
 ```
 
-**Remember:** Input must be valid UTF-8. The result can be false on failure, so check it before using array operations on untrusted input. The chunk size must be at least 1.
-
-[PHP manual: grapheme_str_split()](https://www.php.net/manual/en/function.grapheme-str-split.php)
+Invalid UTF-8 or another failure can return `false`; chunk size must be at least 1.
 
 <a id="string-increment"></a>
 
 ## Increment an alphanumeric ASCII label explicitly
 
-**PHP 8.3+ | Core**
+**PHP 8.3+ | Core** | [PHP](https://www.php.net/manual/en/function.str-increment.php) | [PHP](https://www.php.net/manual/en/function.str-decrement.php)
 
-`str_increment()` and `str_decrement()` make the intention explicit when advancing ASCII labels. They avoid the historical, type-dependent behavior of ++ on a string variable.
+`str_increment()` and `str_decrement()` advance alphanumeric ASCII labels explicitly.
 
 ```php
-echo str_increment( 'INV0099' ) . PHP_EOL; # INV0100
-echo str_decrement( 'INV0100' ) . PHP_EOL; # INV0099
-echo str_increment( 'ZZ' ) . PHP_EOL; # AAA
+$next = str_increment( 'INV0099' ); # INV0100
+$previous = str_decrement( 'INV0100' ); # INV0099
+$carry = str_increment( 'ZZ' ); # AAA
 ```
 
-**Remember:** Only non-empty alphanumeric ASCII strings are accepted. Punctuation and Unicode letters cause `ValueError`. This is label arithmetic, not a concurrent invoice-number allocator.
-
-[PHP manual: str_increment()](https://www.php.net/manual/en/function.str-increment.php) | [PHP manual: str_decrement()](https://www.php.net/manual/en/function.str-decrement.php)
+Empty strings, punctuation and Unicode letters cause `ValueError`.
 
 <a id="heredoc"></a>
 
 ## Indent heredoc and nowdoc naturally
 
-**PHP 7.3+ | Core**
+**PHP 7.3+ | Core** | [PHP](https://www.php.net/manual/en/language.types.string.php#language.types.string.syntax.heredoc)
 
-The closing heredoc or nowdoc marker can be indented from PHP 7.3. That indentation is stripped from the body. Multiline text can then follow the surrounding code layout.
+Indented heredoc and nowdoc closing markers strip that indentation from the body.
 
 ```php
 $name = 'Ada';
@@ -197,83 +175,67 @@ $message = <<<TEXT
 	Hello, $name.
 	PHP notes
 	TEXT;
-
-echo $message . PHP_EOL;
-# Hello, Ada.
-# PHP notes
 ```
 
-**Remember:** Heredoc interpolates variables; nowdoc uses a quoted opening marker and keeps text literal. Do not mix tabs and spaces in indentation. Interpolation does not escape HTML, SQL or shell arguments.
-
-[PHP manual: heredoc](https://www.php.net/manual/en/language.types.string.php#language.types.string.syntax.heredoc)
+Heredoc interpolates variables; nowdoc uses a quoted opening marker and stays literal; indentation cannot mix tabs and spaces.
 
 <a id="allowed-tags"></a>
 
 ## Pass allowed tag names to `strip_tags()` as an array
 
-**PHP 7.4+ | Core**
+**PHP 7.4+ | Core** | [PHP](https://www.php.net/manual/en/function.strip-tags.php)
 
-`strip_tags()` accepts an array of allowed tag names. A small explicit list is easier to read than an angle-bracket string assembled elsewhere.
+`strip_tags()` accepts an array of allowed tag names from 7.4.
 
 ```php
 $html = '<p class="note">Hello</p><script>bad()</script>';
-echo strip_tags( $html, ['p'] ) . PHP_EOL;
-# <p class="note">Hello</p>bad()
+$text = strip_tags( $html, ['p'] ); # <p class="note">Hello</p>bad()
 ```
 
-**Remember:** This is not an HTML sanitizer: attributes on allowed tags are retained and script contents can remain as text. For plain-text HTML output use context-appropriate escaping; rich untrusted HTML needs an actual sanitizer.
-
-[PHP manual: strip_tags()](https://www.php.net/manual/en/function.strip-tags.php)
+It is not a sanitizer: attributes on allowed tags survive, and script contents may remain as text.
 
 <a id="intl-lists"></a>
 
 ## Format a list using the reader’s language
 
-**PHP 8.5+ | intl**
+**PHP 8.5+ | intl** | [PHP](https://www.php.net/manual/en/class.intllistformatter.php)
 
-`IntlListFormatter` adds locale-appropriate punctuation and conjunctions. It is useful for a sentence listing selected formats, names or capabilities; `implode()` alone does not know how to join the last item.
+`IntlListFormatter` joins lists with locale-specific conjunctions; `TYPE_OR` and `TYPE_UNITS` select other styles.
 
 ```php
 $formatter = new IntlListFormatter( 'en', IntlListFormatter::TYPE_AND );
-$text = $formatter->format( ['PHP', 'HTML'] );
-echo $text . PHP_EOL; # PHP and HTML
+$text = $formatter->format( ['PHP', 'HTML'] ); # PHP and HTML
 ```
 
-**Remember:** Requires ICU 67 or later. TYPE_OR and TYPE_UNITS express other list styles. Output details depend on locale data; check false on formatting failure before using the result.
-
-[PHP manual: IntlListFormatter](https://www.php.net/manual/en/class.intllistformatter.php)
+Requires ICU 67+; output depends on locale data, and formatting may return `false`.
 
 <a id="locale-direction"></a>
 
 ## Determine a locale’s default writing direction
 
-**PHP 8.5+ | intl**
+**PHP 8.5+ | intl** | [PHP](https://www.php.net/manual/en/locale.isrighttoleft.php)
 
-`Locale::isRightToLeft()` asks ICU whether a locale’s dominant script is right-to-left. It replaces a hand-maintained list of language codes for choosing a page direction.
+`Locale::isRightToLeft()` reports the default writing direction of a locale’s dominant script.
 
 ```php
-var_dump( Locale::isRightToLeft('en') ); # bool(false)
-var_dump( Locale::isRightToLeft('ar') ); # bool(true)
+$english_rtl = Locale::isRightToLeft( 'en' ); # false
+$arabic_rtl = Locale::isRightToLeft( 'ar' ); # true
 ```
 
-**Remember:** This describes a locale, not arbitrary user-entered text. A page can still contain mixed-direction fragments that need their own markup.
-
-[PHP manual: Locale::isRightToLeft()](https://www.php.net/manual/en/locale.isrighttoleft.php)
+It describes the locale, not the direction of arbitrary text or mixed-direction fragments.
 
 <a id="grapheme-distance"></a>
 
 ## Compare Unicode text by grapheme edit distance
 
-**PHP 8.5+ | intl**
+**PHP 8.5+ | intl** | [PHP](https://www.php.net/manual/en/function.grapheme-levenshtein.php)
 
-`grapheme_levenshtein()` measures insertion, deletion and replacement distance in grapheme clusters. Canonically equivalent composed and decomposed characters can compare alike instead of being counted as unrelated bytes.
+`grapheme_levenshtein()` measures edit distance in grapheme clusters and recognizes canonical equivalence.
 
 ```php
 $composed = "\u{00E9}";
 $decomposed = "e\u{0301}";
-var_dump( grapheme_levenshtein($composed, $decomposed) ); # int(0)
+$distance = grapheme_levenshtein( $composed, $decomposed ); # 0
 ```
 
-**Remember:** A distance is a similarity hint, not identity or authorization. Invalid UTF-8 and ICU errors can return false; test === false before treating the result as a number.
-
-[PHP manual: grapheme_levenshtein()](https://www.php.net/manual/en/function.grapheme-levenshtein.php)
+Invalid UTF-8 or ICU errors can return `false`; test `=== false` before using the distance.

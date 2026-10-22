@@ -4,9 +4,7 @@
 
 [Contents](../../README.md)
 
-For digit separators and explicit octal literals, see [numeric literals](01-syntax-and-functions.md#numeric-literals).
-
-Date calculations need an explicit timezone and an input format. Numeric calculations need an explicit representation and rounding rule. These choices remain important even when a newer API makes the syntax shorter. Random generation is covered in [security and random](11-security-and-random.md).
+Date calculations depend on parsing rules and timezones; numeric calculations depend on representation and rounding. See also [numeric literals](01-syntax-and-functions.md#numeric-literals) and [random generation](11-security-and-random.md).
 
 - [Divide integers with `intdiv()`](#integer-division)
 - [Use explicit IEEE floating-point operations](#ieee-math)
@@ -23,91 +21,82 @@ Date calculations need an explicit timezone and an input format. Numeric calcula
 
 ## Divide integers with `intdiv()`
 
-**PHP 7.0+ | Core**
+**PHP 7.0+ | Core** | [PHP](https://www.php.net/manual/en/function.intdiv.php)
 
-`intdiv()` returns an integer quotient without routing the calculation through a floating-point result. It is useful for grouping whole units, such as complete minutes or full pages.
+`intdiv()` returns an integer quotient without an intermediate float, useful for complete units such as minutes or pages.
 
 ```php
-echo intdiv( 125, 60 ) . PHP_EOL; # 2
-echo intdiv( -7, 3 ) . PHP_EOL; # -2
-echo 125 % 60 . PHP_EOL; # 5
+$minutes = intdiv( 125, 60 ); # 2
+$remainder = 125 % 60; # 5
+$negative = intdiv( -7, 3 ); # -2
 ```
 
-**Remember:** The quotient truncates towards zero, not towards negative infinity. Division by zero throws `DivisionByZeroError`. `PHP_INT_MIN` divided by -1 throws `ArithmeticError` because the result does not fit an integer.
-
-[PHP manual: intdiv()](https://www.php.net/manual/en/function.intdiv.php)
-
+The quotient truncates towards zero. Zero divisors throw `DivisionByZeroError`; `intdiv(PHP_INT_MIN, -1)` throws `ArithmeticError` because the result overflows.
 
 <a id="ieee-math"></a>
 
 ## Use explicit IEEE floating-point operations
 
-**PHP 8.0+ | Core**
+**PHP 8.0+ | Core** | [PHP](https://www.php.net/manual/en/function.fdiv.php) | [PHP](https://www.php.net/manual/en/function.fpow.php)
 
-`fdiv()` follows IEEE floating-point division, including infinity and NaN outcomes. `fpow()` brings the same explicit approach to exponentiation from PHP 8.4. They are useful when non-finite results are a deliberate part of a numerical model.
+`fdiv()` follows IEEE division, including infinity and NaN; `fpow()` adds explicit floating-point exponentiation from 8.4. These functions fit calculations where non-finite results are intentional.
 
 ```php
-var_dump( fdiv(1.0, 0.0) ); # float(INF)
-var_dump( is_nan(fdiv(0.0, 0.0)) ); # bool(true)
+$infinity = fdiv( 1.0, 0.0 ); # INF
+$undefined = is_nan( fdiv(0.0, 0.0) ); # true
 
 # PHP 8.4+
-var_dump( fpow(0.0, -1.0) ); # float(INF)
+$power = fpow( 0.0, -1.0 ); # INF
 ```
 
-**Remember:** These functions do not make bad business inputs valid. Check `is_finite()` when a finite result is required. NaN is not equal to itself; use `is_nan()` instead of a comparison.
-
-[PHP manual: fdiv()](https://www.php.net/manual/en/function.fdiv.php) | [PHP manual: fpow()](https://www.php.net/manual/en/function.fpow.php)
+Use `is_finite()` when a finite result is required, and `is_nan()` to recognize NaN, which never equals itself.
 
 <a id="date-conversion"></a>
 
 ## Copy dates across mutable and immutable APIs
 
-**PHP 8.0+ | date**
+**PHP 8.0+ | date** | [PHP](https://www.php.net/manual/en/datetimeimmutable.createfrominterface.php) | [PHP](https://www.php.net/manual/en/datetime.createfromimmutable.php)
 
-`DateTime::createFromInterface()` and `DateTimeImmutable::createFromInterface()` accept either standard date object through `DateTimeInterface`. The copied date keeps its time and timezone without modifying the original.
+`DateTime::createFromInterface()` and `DateTimeImmutable::createFromInterface()` accept either standard implementation, preserving its time and timezone. This avoids branching when an API accepts `DateTimeInterface`.
 
 ```php
 $source = new DateTime( '2026-01-01 12:00:00', new DateTimeZone('UTC') );
 $copy = DateTimeImmutable::createFromInterface( $source );
 $tomorrow = $copy->modify( '+1 day' );
-echo $source->format( 'Y-m-d' ) . PHP_EOL; # 2026-01-01
-echo $tomorrow->format( 'Y-m-d' ) . PHP_EOL; # 2026-01-02
+$original_day = $source->format( 'Y-m-d' ); # 2026-01-01
+$next_day = $tomorrow->format( 'Y-m-d' ); # 2026-01-02
 ```
 
-**Remember:** `DateTime::createFromImmutable()` already became available in PHP 7.3. `DateTimeImmutable` itself predates PHP 7. The new interface factories remove the need to branch on which standard date implementation arrived.
-
-[PHP manual: createFromInterface()](https://www.php.net/manual/en/datetimeimmutable.createfrominterface.php) | [PHP manual: createFromImmutable()](https://www.php.net/manual/en/datetime.createfromimmutable.php)
+The immutable copy leaves the mutable source unchanged. `DateTime::createFromImmutable()` already exists from 7.3.
 
 <a id="date-exceptions"></a>
 
 ## Catch specific malformed-date exceptions
 
-**PHP 8.3+ | date**
+**PHP 8.3+ | date** | [PHP](https://www.php.net/manual/en/class.datemalformedstringexception.php)
 
-The date extension has a more specific exception and error hierarchy from PHP 8.3. `DateMalformedStringException` identifies malformed constructor or `modify()` input, instead of forcing every date failure into a broad Exception handler.
+The date extension gains specific exceptions in 8.3 for malformed strings, timezones, intervals and periods. `DateMalformedStringException` identifies bad constructor or `modify()` input without catching every `Exception`.
 
 ```php
 try
 {
-	new DateTimeImmutable( 'not a date at all' );
+	$date = new DateTimeImmutable( 'not a date' );
 }
 catch( DateMalformedStringException $error )
 {
-	echo 'Invalid date' . PHP_EOL;
+	echo 'Invalid date';
 }
 ```
 
-**Remember:** Some impossible calendar dates are normalized rather than rejected. Constructor success alone is not strict form validation. Related classes include `DateInvalidTimeZoneException`, `DateMalformedIntervalStringException` and `DateMalformedPeriodStringException`.
-
-[PHP manual: DateMalformedStringException](https://www.php.net/manual/en/class.datemalformedstringexception.php)
+Some impossible calendar dates are normalized instead of rejected; constructor success does not provide strict date validation.
 
 <a id="strict-date-input"></a>
 
 ## Validate an exact calendar date
 
-**PHP 7.0+ | date | Background**
+**PHP 7.0+ | date | Background** | [PHP](https://www.php.net/manual/en/datetimeimmutable.createfromformat.php) | [PHP](https://www.php.net/manual/en/datetimeimmutable.getlasterrors.php)
 
-For a form field with one exact format, use `createFromFormat()`, inspect parser errors and compare the formatted result with the input. The API predates PHP 7; the important migration detail is that `getLastErrors()` returns false for a clean parse from PHP 8.2.
+Strict formatted input needs parser diagnostics plus a format round trip: a value such as February 31 may parse but normalize to March. These APIs predate PHP 7.
 
 ```php
 $input = '2026-02-31';
@@ -115,25 +104,21 @@ $date = DateTimeImmutable::createFromFormat( '!Y-m-d', $input, new DateTimeZone(
 $errors = DateTimeImmutable::getLastErrors();
 $valid = $date !== false
 	&& ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0))
-	&& $date->format('Y-m-d') === $input;
-var_dump( $valid ); # bool(false)
+	&& $date->format('Y-m-d') === $input; # false
 ```
 
-**Remember:** The ! resets unspecified fields. Read `getLastErrors()` immediately after the parse you are checking. Validation of external date ranges and access rules remains an application decision.
-
-[PHP manual: createFromFormat()](https://www.php.net/manual/en/datetimeimmutable.createfromformat.php) | [PHP manual: getLastErrors()](https://www.php.net/manual/en/datetimeimmutable.getlasterrors.php)
+`!` resets unspecified fields; read `getLastErrors()` immediately after parsing. A clean parse returns `false` from 8.2 and an array in earlier versions.
 
 <a id="iso-period"></a>
 
 ## Create a repeating period from ISO 8601
 
-**PHP 8.3+ | date**
+**PHP 8.3+ | date** | [PHP](https://www.php.net/manual/en/dateperiod.createfromiso8601string.php)
 
-`DatePeriod::createFromISO8601String()` is an explicit factory for a repeating interval description. Iterating the result produces `DateTimeImmutable` objects, which is convenient when reading a stored schedule.
+`DatePeriod::createFromISO8601String()` turns a repeating interval into iterable `DateTimeImmutable` values, useful for stored schedules.
 
 ```php
 $period = DatePeriod::createFromISO8601String( 'R2/2026-01-01T00:00:00Z/P1D' );
-
 foreach( $period as $date )
 	echo $date->format( 'Y-m-d' ) . PHP_EOL;
 # 2026-01-01
@@ -141,86 +126,72 @@ foreach( $period as $date )
 # 2026-01-03
 ```
 
-**Remember:** The start date is included by default, so two repetitions produce three dates here. PHP accepts only a subset of ISO 8601 repeating intervals; arbitrary non-UTC offsets and R0 are not supported. Invalid input throws `DateMalformedPeriodStringException`.
-
-[PHP manual: DatePeriod factory](https://www.php.net/manual/en/dateperiod.createfromiso8601string.php)
+The start is included, so `R2` yields three dates. Only a subset of ISO 8601 is supported, excluding `R0` and non-UTC offsets; invalid input throws `DateMalformedPeriodStringException`.
 
 <a id="timestamp-microseconds"></a>
 
 ## Create dates from fractional timestamps
 
-**PHP 8.4+ | date**
+**PHP 8.4+ | date** | [PHP](https://www.php.net/manual/en/datetimeimmutable.createfromtimestamp.php) | [PHP](https://www.php.net/manual/en/datetimeimmutable.setmicrosecond.php)
 
-`createFromTimestamp()` accepts an integer or float Unix timestamp. `getMicrosecond()` and `setMicrosecond()` expose the fractional component directly, without formatting and reparsing a U.u string.
+`createFromTimestamp()` accepts integer or float Unix timestamps; microsecond accessors expose the fractional component without formatting and reparsing it.
 
 ```php
 $date = DateTimeImmutable::createFromTimestamp( 1_700_000_000.125 );
 $changed = $date->setMicrosecond( 500000 );
-echo $date->format( 'Y-m-d H:i:s.u' ) . PHP_EOL; # 2023-11-14 22:13:20.125000
-echo $changed->getMicrosecond() . PHP_EOL; # 500000
-echo $date->getMicrosecond() . PHP_EOL; # 125000
+$timestamp = $date->format( 'Y-m-d H:i:s.u' ); # 2023-11-14 22:13:20.125000
+$original = $date->getMicrosecond(); # 125000
+$updated = $changed->getMicrosecond(); # 500000
 ```
 
-**Remember:** The immutable setter returns a new object; `DateTime` mutates itself. A float may already have lost precision before the call. A Unix timestamp represents an instant; choose the display timezone explicitly when formatting for a reader.
-
-[PHP manual: createFromTimestamp()](https://www.php.net/manual/en/datetimeimmutable.createfromtimestamp.php) | [PHP manual: setMicrosecond()](https://www.php.net/manual/en/datetimeimmutable.setmicrosecond.php)
+The immutable setter returns a copy, while `DateTime` mutates. Floats may already have lost precision; choose the intended display timezone separately from the instant.
 
 <a id="rounding-modes"></a>
 
 ## State the rounding rule with `RoundingMode`
 
-**PHP 8.4+ | Core**
+**PHP 8.4+ | Core** | [PHP](https://www.php.net/manual/en/enum.roundingmode.php)
 
-`RoundingMode` gives `round()` a named rounding policy. HalfEven resolves exact ties towards an even result; HalfAwayFromZero resolves ties away from zero. TowardsZero is truncation at the selected precision rather than nearest rounding.
+`RoundingMode` names the rounding policy shared by `round()`, `bcround()` and `BcMath\Number::round()`. HalfEven resolves ties to an even result; HalfAwayFromZero resolves them away from zero.
 
 ```php
-echo round( 2.5, 0, RoundingMode::HalfEven ) . PHP_EOL; # 2
-echo round( 2.5, 0, RoundingMode::HalfAwayFromZero ) . PHP_EOL; # 3
-echo round( -2.9, 0, RoundingMode::TowardsZero ) . PHP_EOL; # -2
+$even = round( 2.5, 0, RoundingMode::HalfEven ); # 2
+$away = round( 2.5, 0, RoundingMode::HalfAwayFromZero ); # 3
+$truncated = round( -2.9, 0, RoundingMode::TowardsZero ); # -2
 ```
 
-**Remember:** The enum is shared with `bcround()` and `BcMath\Number::round()`. It does not make binary float arithmetic decimal-exact. Choose the numeric representation and the rounding point as well as the mode.
-
-[PHP manual: RoundingMode](https://www.php.net/manual/en/enum.roundingmode.php)
+A rounding mode does not make binary floats decimal-exact. Choose the numeric representation and the point of rounding as well as the mode; TowardsZero truncates at the selected precision.
 
 <a id="bcmath-number"></a>
 
 ## Use decimal arithmetic with `BcMath\Number`
 
-**PHP 8.4+ | bcmath**
+**PHP 8.4+ | bcmath** | [PHP](https://www.php.net/manual/en/class.bcmath-number.php)
 
-`BcMath\Number` is an immutable arbitrary-precision decimal object with arithmetic operators and explicit methods. Supply decimal strings or integers so the value has not already passed through binary float rounding.
+`BcMath\Number` provides immutable arbitrary-precision decimals with arithmetic operators and explicit methods. Construct values from strings or integers so they have not already passed through float rounding.
 
 ```php
 $price = new BcMath\Number( '19.995' );
-$total = ($price * 3)->round( 2, RoundingMode::HalfAwayFromZero );
-echo $total . PHP_EOL; # 59.99
-
+$total = ($price * 3)->round( 2, RoundingMode::HalfAwayFromZero ); # 59.99
 $expected = new BcMath\Number( '59.99' );
-var_dump( $total->compare($expected) === 0 ); # bool(true)
+$equal = $total->compare( $expected ) === 0; # true
 ```
 
-**Remember:** === on two Number objects checks object identity, not decimal equality; `compare()` === 0 expresses numeric equality. The class is not governed by bcmath.scale. Explicitly select scale for operations such as division when the business rule requires it.
-
-[PHP manual: BcMath\Number](https://www.php.net/manual/en/class.bcmath-number.php)
+`===` checks object identity, not numeric equality; use `compare() === 0`. The class ignores `bcmath.scale`, so select division scale explicitly when the rule requires it.
 
 <a id="bcmath-rounding"></a>
 
 ## Round decimals and get quotient plus remainder
 
-**PHP 8.4+ | bcmath**
+**PHP 8.4+ | bcmath** | [PHP](https://www.php.net/manual/en/function.bcround.php) | [PHP](https://www.php.net/manual/en/function.bcdivmod.php)
 
-`bcround()`, `bcfloor()` and `bcceil()` handle decimal strings without manually cutting their fractional part. `bcdivmod()` returns a quotient and remainder together and fits naturally with array destructuring.
+`bcround()`, `bcfloor()` and `bcceil()` round decimal strings without float conversion. `bcdivmod()` returns the quotient and remainder together, ready for destructuring.
 
 ```php
-echo bcround( '19.995', 2, RoundingMode::HalfAwayFromZero ) . PHP_EOL; # 20.00
-echo bcfloor( '-1.2' ) . PHP_EOL; # -2
-echo bcceil( '-1.2' ) . PHP_EOL; # -1
-
-[$quotient, $remainder] = bcdivmod( '17', '5', 0 );
-echo $quotient . ':' . $remainder . PHP_EOL; # 3:2
+$rounded = bcround( '19.995', 2, RoundingMode::HalfAwayFromZero ); # '20.00'
+$floor = bcfloor( '-1.2' ); # '-2'
+$ceiling = bcceil( '-1.2' ); # '-1'
+[$quotient, $remainder] = bcdivmod( '17', '5', 0 ); # ['3', '2']
 ```
 
-**Remember:** Results are numeric strings. floor and ceil follow negative and positive infinity respectively, which differs from simply removing a minus number’s fractional part. Set `bcdivmod()` scale explicitly to avoid a hidden dependency on global settings.
-
-[PHP manual: bcround()](https://www.php.net/manual/en/function.bcround.php) | [PHP manual: bcdivmod()](https://www.php.net/manual/en/function.bcdivmod.php)
+Results are numeric strings. Floor and ceil follow negative and positive infinity rather than truncating; pass `bcdivmod()` scale explicitly to avoid depending on global settings.

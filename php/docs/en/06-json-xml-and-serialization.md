@@ -4,7 +4,7 @@
 
 [Contents](../../README.md)
 
-Separate three questions: is the document syntactically valid, does it contain the expected data, and is it safe in its destination context? A parser answers the first question. These examples show how to keep the other checks explicit.
+JSON syntax and data shape are separate checks; the DOM and XML examples cover parsing, text insertion and controlled document changes.
 
 - [Choose a policy for invalid UTF-8 in JSON](#invalid-utf8-json)
 - [Handle JSON failures with exceptions](#json-exceptions)
@@ -22,102 +22,84 @@ Separate three questions: is the document syntactically valid, does it contain t
 
 ## Choose a policy for invalid UTF-8 in JSON
 
-**PHP 7.2+ | json**
+**PHP 7.2+ | json** | [PHP](https://www.php.net/manual/en/json.constants.php)
 
-From PHP 7.2, `JSON_INVALID_UTF8_SUBSTITUTE` and `JSON_INVALID_UTF8_IGNORE` let `json_encode()` and `json_decode()` handle malformed UTF-8 deliberately. `SUBSTITUTE` replaces invalid sequences with the visible replacement character U+FFFD. `IGNORE` discards them, which can silently join text that was separated by bad bytes.
+`JSON_INVALID_UTF8_SUBSTITUTE` replaces malformed UTF-8 with U+FFFD; `JSON_INVALID_UTF8_IGNORE` drops invalid bytes during encoding or decoding. These are policies for damaged text, not encoding conversion.
 
 ```php
 $text = "A\xFFB";
-$rejected = json_encode( $text );
-$error = json_last_error();
-$substituted = json_encode( $text, JSON_INVALID_UTF8_SUBSTITUTE );
-$ignored = json_encode( $text, JSON_INVALID_UTF8_IGNORE );
-
-var_dump( $rejected === false && $error === JSON_ERROR_UTF8 ); # bool(true)
-echo $substituted . PHP_EOL; # "A\ufffdB"
-echo $ignored . PHP_EOL; # "AB"
-echo bin2hex( $text ) . PHP_EOL; # 41ff42
+$rejected = json_encode( $text ); # false
+$error = json_last_error(); # JSON_ERROR_UTF8
+$substituted = json_encode( $text, JSON_INVALID_UTF8_SUBSTITUTE ); # "A\ufffdB"
+$ignored = json_encode( $text, JSON_INVALID_UTF8_IGNORE ); # "AB"
 ```
 
-**Remember:** Keep rejection as the default when data must remain exact, such as an identifier or a signed payload. If degraded human text is acceptable, prefer `SUBSTITUTE` so the loss remains visible; use `IGNORE` only when deletion is an explicit import rule. The example captures `json_last_error()` before later calls replace it. `JSON_THROW_ON_ERROR` is a separate PHP 7.3 addition.
-
-These flags affect the values processed by the JSON call. They do not change the original `$text`, convert an arbitrary legacy encoding to UTF-8, or change the encoding of a PHP or Markdown file.
-
-[PHP manual: JSON flags](https://www.php.net/manual/en/json.constants.php)
-
+Both lose data, so keep rejection for exact values such as identifiers. The source string stays unchanged; capture `json_last_error()` before another JSON call replaces it.
 
 <a id="json-exceptions"></a>
 
 ## Handle JSON failures with exceptions
 
-**PHP 7.3+ | json**
+**PHP 7.3+ | json** | [PHP](https://www.php.net/manual/en/function.json-decode.php) | [PHP](https://www.php.net/manual/en/class.jsonexception.php)
 
-`JSON_THROW_ON_ERROR` makes encoding and decoding failures throw `JsonException`. Valid JSON null is then clearly different from a parsing failure, without relying on global `json_last_error()` state.
+`JSON_THROW_ON_ERROR` makes JSON failures throw `JsonException`, avoiding reliance on global error state. It works for both encoding and decoding.
 
 ```php
 try
 {
-	$value = json_decode( 'null', true, 512, JSON_THROW_ON_ERROR );
-	var_dump( $value ); # NULL
+	$value = json_decode( 'null', true, 512, JSON_THROW_ON_ERROR ); # null
 	json_decode( '{"broken":}', true, 512, JSON_THROW_ON_ERROR );
 }
 catch( JsonException $error )
 {
-	echo 'Invalid JSON' . PHP_EOL;
+	echo 'Invalid JSON';
 }
 ```
 
-**Remember:** The flag is available to `json_encode()` too. Do not expose raw payloads or internal exception details in a public response. Use the same flag consistently rather than suppressing errors with @.
-
-[PHP manual: json_decode()](https://www.php.net/manual/en/function.json-decode.php) | [PHP manual: JsonException](https://www.php.net/manual/en/class.jsonexception.php)
+Valid JSON `null` still decodes to `null`; with exceptions enabled it cannot be confused with a parsing failure.
 
 <a id="json-validation"></a>
 
 ## Validate JSON only when you do not need its contents
 
-**PHP 8.3+ | json**
+**PHP 8.3+ | json** | [PHP](https://www.php.net/manual/en/function.json-validate.php)
 
-`json_validate()` checks JSON syntax without constructing the decoded array or object. Use it when storing or forwarding a document that only needs a syntax check.
+`json_validate()` checks syntax without building a decoded value. It fits documents that only need to be stored or forwarded after a syntax check.
 
 ```php
 $json = '{"active":true}';
-var_dump( json_validate($json) ); # bool(true)
-var_dump( json_validate('{"active":}') ); # bool(false)
+$valid = json_validate( $json ); # true
+$invalid = json_validate( '{"active":}' ); # false
 ```
 
-**Remember:** If you need the decoded data immediately, call `json_decode()` once with `JSON_THROW_ON_ERROR`. Validating first parses the document twice. Syntax validity does not establish your required fields, types or permissions.
-
-[PHP manual: json_validate()](https://www.php.net/manual/en/function.json-validate.php)
+If the data is needed, decode once with `JSON_THROW_ON_ERROR`; validating first parses twice and still does not verify the data schema.
 
 <a id="json-shape"></a>
 
 ## Keep numeric IDs and JSON shapes intact
 
-**PHP 7.3+ | json | Background**
+**PHP 7.3+ | json | Background** | [PHP](https://www.php.net/manual/en/json.constants.php) | [PHP](https://www.php.net/manual/en/function.json-decode.php)
 
-Successful decoding can return a scalar, list, object or null. Check the shape your API actually accepts. Combine `JSON_BIGINT_AS_STRING` with exception handling when an external integer can exceed the platform integer range.
+Decoding can return a scalar, list, object or `null`, so check the structure your API accepts. `JSON_BIGINT_AS_STRING` preserves integers beyond the platform range without converting identifiers to floats.
 
 ```php
 $json = '{"id":123456789012345678901234567890,"name":"Ada"}';
 $data = json_decode( $json, true, 512, JSON_THROW_ON_ERROR | JSON_BIGINT_AS_STRING );
-
 if( !is_array($data) || !isset($data['name']) || !is_string($data['name']) )
 	throw new InvalidArgumentException( 'Expected a record with a name' );
 
-var_dump( $data['id'] ); # string(30) "123456789012345678901234567890"
+$id = $data['id']; # '123456789012345678901234567890'
 ```
 
-**Remember:** `JSON_BIGINT_AS_STRING` predates PHP 7; the 7.3 minimum here is for `JSON_THROW_ON_ERROR`. Do not turn identifiers into floats. Converting JSON objects to associative arrays can also change empty-object/list round trips.
-
-[PHP manual: JSON flags](https://www.php.net/manual/en/json.constants.php) | [PHP manual: json_decode()](https://www.php.net/manual/en/function.json-decode.php)
+`JSON_BIGINT_AS_STRING` predates PHP 7; 7.3 is required by the exception flag here. Associative decoding can turn an empty object into an empty list when encoded again.
 
 <a id="json-enums"></a>
 
 ## Encode backed enums as their values
 
-**PHP 8.1+ | json / Core**
+**PHP 8.1+ | json / Core** | [PHP](https://www.php.net/manual/en/language.enumerations.serialization.php)
 
-A backed enum has a stable scalar value that JSON can encode directly. This makes an enum useful for an internal state with an explicit representation in an API.
+Backed enums encode directly as their scalar values, giving internal states an explicit JSON representation.
 
 ```php
 enum ExportStatus: string
@@ -125,32 +107,24 @@ enum ExportStatus: string
 	case Ready = 'ready';
 	case Failed = 'failed';
 }
-
-echo json_encode( ['status' => ExportStatus::Ready], JSON_THROW_ON_ERROR ) . PHP_EOL;
+$json = json_encode( ['status' => ExportStatus::Ready], JSON_THROW_ON_ERROR );
 # {"status":"ready"}
 ```
 
-**Remember:** A pure enum without a backing value cannot be encoded this way. On input, decode the scalar first and use `tryFrom()` or `from()`; `json_decode()` does not recreate an enum object.
-
-[PHP manual: enum serialization](https://www.php.net/manual/en/language.enumerations.serialization.php)
+Pure enums fail JSON encoding. Decoding returns the scalar; restore the enum with `from()` or `tryFrom()`.
 
 <a id="object-serialization"></a>
 
 ## Control object state with `__serialize()` and `__unserialize()`
 
-**PHP 7.4+ | Core**
+**PHP 7.4+ | Core** | [PHP](https://www.php.net/manual/en/language.oop5.magic.php#object.serialize) | [PHP](https://www.php.net/manual/en/function.unserialize.php)
 
-These magic methods explicitly define the state used by PHP serialization. Keep the payload small and validate its shape when restoring it. `__unserialize()` runs without calling the constructor, so constructor validation alone is insufficient.
+`__serialize()` defines persisted state; `__unserialize()` restores it without invoking the constructor. Validate restored values in the hook, even if construction already validates them.
 
 ```php
 class SavedCounter
 {
-	private int $value;
-
-	public function __construct( int $value )
-	{
-		$this->value = $value;
-	}
+	public int $value = 7;
 
 	public function __serialize(): array
 	{
@@ -164,72 +138,58 @@ class SavedCounter
 
 		$this->value = $data['value'];
 	}
-
-	public function value(): int
-	{
-		return $this->value;
-	}
 }
-
-$payload = serialize( new SavedCounter(7) );
+$payload = serialize( new SavedCounter() );
 $counter = unserialize( $payload, ['allowed_classes' => [SavedCounter::class]] );
-echo $counter->value() . PHP_EOL; # 7
+$value = $counter->value; # 7
 ```
 
-**Remember:** The example only restores its own trusted payload. Never feed untrusted data to `unserialize()`; allowed_classes is not a general safety guarantee. Prefer JSON for external data. The old `Serializable` interface without these methods is deprecated from PHP 8.1.
-
-[PHP manual: serialization methods](https://www.php.net/manual/en/language.oop5.magic.php#object.serialize) | [PHP manual: unserialize()](https://www.php.net/manual/en/function.unserialize.php)
+Only restore trusted payloads: `allowed_classes` does not make untrusted `unserialize()` safe. Implementing only the old `Serializable` interface is deprecated from 8.1.
 
 <a id="dom-convenience"></a>
 
 ## Use DOM operations for attributes and text
 
-**PHP 8.3+ | dom**
+**PHP 8.3+ | dom** | [PHP](https://www.php.net/manual/en/migration83.new-functions.php)
 
-`DOMElement` gained convenience methods such as `toggleAttribute()`, `insertAdjacentText()` and `insertAdjacentElement()`. `DOMNode::contains()` checks ancestry without a manual parent loop. Text insertion creates text, not parsed markup.
+`DOMElement` gains `toggleAttribute()`, `insertAdjacentText()` and `insertAdjacentElement()`; `DOMNode::contains()` checks ancestry. Text operations insert escaped text rather than parsed markup.
 
 ```php
 $document = new DOMDocument();
-$document->loadXML( '<root><item>PHP</item></root>' );
-$item = $document->getElementsByTagName( 'item' )->item( 0 );
+$document->loadXML( '<item>PHP</item>' );
+$item = $document->documentElement;
 $item->toggleAttribute( 'hidden', true );
 $item->insertAdjacentText( 'beforeend', ' & XML' );
-echo $document->saveXML( $item ) . PHP_EOL;
-# <item hidden="">PHP &amp; XML</item>
+$xml = $document->saveXML( $item ); # <item hidden="">PHP &amp; XML</item>
 ```
 
-**Remember:** HTML boolean attributes are meaningful by presence, not by a string such as "false". For untrusted text use text operations; inserting raw HTML is a different operation.
-
-[PHP manual: DOM additions](https://www.php.net/manual/en/migration83.new-functions.php)
+HTML boolean attributes depend on presence, so assigning the string `"false"` does not disable them.
 
 <a id="html5-dom"></a>
 
 ## Parse modern HTML with `Dom\HTMLDocument`
 
-**PHP 8.4+ | dom**
+**PHP 8.4+ | dom** | [PHP](https://www.php.net/manual/en/class.dom-htmldocument.php)
 
-`Dom\HTMLDocument` parses HTML using the modern HTML standard. Its new Dom namespace also offers familiar selectors. This is useful for extracting or transforming an HTML document without pretending it is XML.
+`Dom\HTMLDocument` parses according to the modern HTML standard and supports selectors through the new `Dom` API. Use it when extracting or transforming HTML rather than treating it as XML.
 
 ```php
 $document = Dom\HTMLDocument::createFromString(
-	'<!doctype html><html><head><title>Notes</title></head>'
-	. '<body><main id="content"><p>PHP</p></main></body></html>'
+	'<!doctype html><title>Notes</title><main id="content"><p>PHP</p></main>'
 );
 $element = $document->querySelector( '#content p' );
-echo $element->textContent . PHP_EOL; # PHP
+$text = $element?->textContent; # PHP
 ```
 
-**Remember:** New Dom objects and legacy `DOMDocument`/`DOMElement` objects are different APIs. `querySelector()` can return null when no element matches. Parsing HTML does not sanitize it for publication.
-
-[PHP manual: Dom\HTMLDocument](https://www.php.net/manual/en/class.dom-htmldocument.php)
+`querySelector()` can return `null`; new `Dom` objects and legacy DOM objects are separate APIs. Parsing does not sanitize HTML for publication.
 
 <a id="xpath-quote"></a>
 
 ## Quote XPath string values correctly
 
-**PHP 8.4+ | dom**
+**PHP 8.4+ | dom** | [PHP](https://www.php.net/manual/en/domxpath.quote.php)
 
-`DOMXPath::quote()` creates an XPath string literal, including the case where a value contains both quote styles. Use it for values instead of interpolating raw text into an XPath expression.
+`DOMXPath::quote()` builds an XPath string literal, including values containing both quote styles. It avoids interpolating raw values into an expression.
 
 ```php
 $document = new DOMDocument();
@@ -237,58 +197,50 @@ $document->loadXML( '<users><user name="O&apos;Brien">7</user></users>' );
 $xpath = new DOMXPath( $document );
 $name = "O'Brien";
 $query = '//user[@name=' . DOMXPath::quote( $name ) . ']';
-echo $xpath->evaluate( 'string(' . $query . ')' ) . PHP_EOL; # 7
+$id = $xpath->evaluate( 'string(' . $query . ')' ); # '7'
 ```
 
-**Remember:** Quoting protects a literal value, not an arbitrary user-supplied XPath path or function name. Keep expression structure under application control.
-
-[PHP manual: DOMXPath::quote()](https://www.php.net/manual/en/domxpath.quote.php)
+It quotes values, not user-supplied paths, operators or function names; the expression structure stays under application control.
 
 <a id="html-fragments"></a>
 
 ## Insert and read HTML fragments
 
-**PHP 8.5+ | dom**
+**PHP 8.5+ | dom** | [PHP](https://www.php.net/manual/en/migration85.new-functions.php) | [PHP](https://www.php.net/manual/en/class.dom-element.php)
 
-`Dom\Element::insertAdjacentHTML()` parses an HTML fragment relative to an element. outerHTML includes the element itself as well as its contents. This avoids constructing an extra document solely to insert a fragment.
+`Dom\Element::insertAdjacentHTML()` parses a fragment in the element’s context. `outerHTML` reads both the element and its contents.
 
 ```php
 $document = Dom\HTMLDocument::createFromString(
-	'<!doctype html><html><head><title>Notes</title></head>'
-	. '<body><div id="box"></div></body></html>'
+	'<!doctype html><title>Notes</title><div id="box"></div>'
 );
 $box = $document->querySelector( '#box' );
 $box->insertAdjacentHTML( Dom\AdjacentPosition::BeforeEnd, '<strong>PHP</strong>' );
-echo $box->outerHTML . PHP_EOL; # <div id="box"><strong>PHP</strong></div>
+$html = $box->outerHTML; # <div id="box"><strong>PHP</strong></div>
 ```
 
-**Remember:** The modern Dom API takes a `Dom\AdjacentPosition` case: BeforeBegin, AfterBegin, BeforeEnd or AfterEnd. Legacy `DOMElement` text insertion uses string positions instead. Raw untrusted HTML remains dangerous when rendered; use `insertAdjacentText()` or textContent for plain user text.
-
-[PHP manual: DOM additions in 8.5](https://www.php.net/manual/en/migration85.new-functions.php) | [PHP manual: Dom\Element](https://www.php.net/manual/en/class.dom-element.php)
+The new API takes `Dom\AdjacentPosition` cases rather than legacy string positions. Use `textContent` or `insertAdjacentText()` for plain untrusted text; raw HTML requires sanitization before rendering.
 
 <a id="xml-factories"></a>
 
 ## Create XML readers and writers with named factories
 
-**PHP 8.4+ | xmlreader / xmlwriter**
+**PHP 8.4+ | xmlreader / xmlwriter** | [PHP](https://www.php.net/manual/en/xmlreader.fromstring.php) | [PHP](https://www.php.net/manual/en/xmlwriter.tomemory.php)
 
-`XMLReader::fromString()` and `XMLWriter::toMemory()` describe both the object and its source or destination in one call. Related `fromStream()`/`fromUri()` and `toStream()`/`toUri()` factories cover streams and files.
+Named factories combine construction with a source or destination: `fromString()` / `fromStream()` / `fromUri()` and `toMemory()` / `toStream()` / `toUri()`.
 
 ```php
 $reader = XMLReader::fromString( '<items><item id="7"/></items>' );
-
 while( $reader->read() )
 {
 	if( $reader->nodeType === XMLReader::ELEMENT && $reader->name === 'item' )
-		echo $reader->getAttribute( 'id' ) . PHP_EOL; # 7
+		echo $reader->getAttribute( 'id' ); # 7
 }
-
 $reader->close();
+
 $writer = XMLWriter::toMemory();
 $writer->writeElement( 'name', 'PHP & XML' );
-echo $writer->outputMemory() . PHP_EOL; # <name>PHP &amp; XML</name>
+$xml = $writer->outputMemory(); # <name>PHP &amp; XML</name>
 ```
 
-**Remember:** `fromString()` keeps the source string in memory; use a stream reader for a genuinely large source. For untrusted XML do not enable external entity expansion or DTD loading without a justified, controlled requirement.
-
-[PHP manual: XMLReader::fromString()](https://www.php.net/manual/en/xmlreader.fromstring.php) | [PHP manual: XMLWriter::toMemory()](https://www.php.net/manual/en/xmlwriter.tomemory.php)
+`fromString()` retains the source in memory; use a stream for large inputs. For untrusted XML, do not enable external entity expansion or DTD loading without a controlled requirement.

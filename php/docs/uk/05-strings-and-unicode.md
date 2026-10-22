@@ -4,7 +4,7 @@
 
 [Зміст](../../README.uk.md)
 
-Для двійкових або ASCII-даних вибирайте байтові операції, для людського тексту враховуйте Unicode. Ця різниця важливіша за довжину імені функції. Приклади з mb_ потребують mbstring, а grapheme_ та Locale потребують intl.
+Рядкові API працюють із різними одиницями: байтами, кодовими точками чи графемними кластерами. Спочатку визначте одиницю, а потім операцію пошуку, поділу чи вимірювання довжини.
 
 - [UTF-8: байти, кодові точки та графемні кластери](#byte-codepoint-grapheme)
 - [Читання з кінця через від’ємні індекси](#negative-offsets)
@@ -25,171 +25,149 @@
 
 ## UTF-8: байти, кодові точки та графемні кластери
 
-**PHP 7.0+ | Ядро / mbstring / intl | Контекст**
+**PHP 7.0+ | Ядро / mbstring / intl | Контекст** | [PHP](https://www.php.net/manual/en/migration70.new-features.php) | [PHP](https://www.php.net/manual/en/function.grapheme-strlen.php)
 
-Рядок PHP зберігає байти. Різні операції рахують байти, кодові точки Unicode або графемні кластери, які користувач сприймає як символи. Unicode-послідовності в подвійних лапках додано у PHP 7.0; вони роблять невидимі комбіновані знаки явними.
+Рядок PHP містить байти; у цьому прикладі UTF-8 `strlen()`, `mb_strlen()` та `grapheme_strlen()` рахують відповідно байти, кодові точки й графемні кластери. Unicode-послідовності з’явилися в 7.0.
 
 ```php
-$text = "e\u{0301}"; # e + combining acute accent
-echo strlen( $text ) . PHP_EOL; # 3 bytes
-echo mb_strlen( $text, 'UTF-8' ) . PHP_EOL; # 2 code points
-echo grapheme_strlen( $text ) . PHP_EOL; # 1 grapheme cluster
+$text = "e\u{0301}";
+$bytes = strlen( $text ); # 3
+$code_points = mb_strlen( $text, 'UTF-8' ); # 2
+$graphemes = grapheme_strlen( $text ); # 1
 ```
 
-**Важливо:** Вибирайте одиницю до обрізання, доповнення чи перевірки довжини. Графемні кластери теж не дорівнюють ширині стовпців термінала. Для відповідних викликів потрібні ввімкнені mbstring та intl.
-
-[Документація PHP: Unicode escapes](https://www.php.net/manual/en/migration70.new-features.php) | [Документація PHP: grapheme_strlen()](https://www.php.net/manual/en/function.grapheme-strlen.php)
+Кодові точки й графемні кластери є різними одиницями, і жодна не гарантує ширини в колонках термінала.
 
 <a id="negative-offsets"></a>
 
 ## Читання з кінця через від’ємні індекси
 
-**PHP 7.1+ | Ядро**
+**PHP 7.1+ | Ядро** | [PHP](https://www.php.net/manual/en/migration71.new-features.php)
 
-Від’ємні індекси рядка відраховуються від кінця. Для ASCII-токенів це простий спосіб прочитати останній символ без обчислення `strlen()` - 1.
+Від’ємні індекси рядка адресують байти з кінця.
 
 ```php
 $code = 'INV-42';
-echo $code[-1] . PHP_EOL; # 2
-echo $code[-2] . PHP_EOL; # 4
+$last = $code[-1]; # '2'
+$previous = $code[-2]; # '4'
 ```
 
-**Важливо:** Індекси все одно адресують байти. Для UTF-8 використовуйте `mb_substr()` або `grapheme_substr()`, залежно від потрібної одиниці. Індекс поза межами не є перевіркою порожнього поля.
-
-[Документація PHP: negative offsets](https://www.php.net/manual/en/migration71.new-features.php)
+Для UTF-8 використовуйте `mb_substr()` для кодових точок або `grapheme_substr()` для графемних кластерів.
 
 <a id="string-search"></a>
 
 ## Пошук підрядка, префікса чи суфікса
 
-**PHP 8.0+ | Ядро**
+**PHP 8.0+ | Ядро** | [PHP](https://www.php.net/manual/en/function.str-contains.php) | [PHP](https://www.php.net/manual/en/function.str-starts-with.php) | [PHP](https://www.php.net/manual/en/function.str-ends-with.php)
 
-`str_contains()`, `str_starts_with()` та `str_ends_with()` повертають логічну відповідь на конкретне питання. Вони не змішують позицію 0 з маркером відсутності false, який повертає `strpos()`.
+`str_contains()`, `str_starts_with()` та `str_ends_with()` повертають логічні значення замість позицій.
 
 ```php
 $path = '/api/users.php';
-var_dump( str_contains($path, 'users') ); # bool(true)
-var_dump( str_starts_with($path, '/api/') ); # bool(true)
-var_dump( str_ends_with($path, '.php') ); # bool(true)
-var_dump( str_contains($path, '') ); # bool(true)
+$contains = str_contains( $path, 'users' ); # true
+$starts = str_starts_with( $path, '/api/' ); # true
+$ends = str_ends_with( $path, '.php' ); # true
 ```
 
-**Важливо:** Пошук чутливий до регістру та працює з байтами. Порожній підрядок дає збіг. Окремо відхиляйте порожній пошуковий запит, якщо він недопустимий; пошук підрядка не перевіряє коректність URL чи шляху.
-
-[Документація PHP: str_contains()](https://www.php.net/manual/en/function.str-contains.php) | [Документація PHP: str_starts_with()](https://www.php.net/manual/en/function.str-starts-with.php) | [Документація PHP: str_ends_with()](https://www.php.net/manual/en/function.str-ends-with.php)
+Пошук чутливий до регістру й працює з байтами; порожній зразок збігається в усіх трьох функціях.
 
 <a id="mb-split"></a>
 
 ## Поділ багатобайтового рядка за кодовими точками
 
-**PHP 7.4+ | mbstring**
+**PHP 7.4+ | mbstring** | [PHP](https://www.php.net/manual/en/function.mb-str-split.php)
 
-`mb_str_split()` створює частини, виміряні в символах вибраного кодування. Вона замінює байтову `str_split()` під час обробки літер UTF-8.
+`mb_str_split()` розбиває рядок за символами вибраного кодування, а не за байтами.
 
 ```php
-$parts = mb_str_split( 'Київ', 2, 'UTF-8' );
-echo json_encode( $parts, JSON_UNESCAPED_UNICODE ) . PHP_EOL; # ["Ки","їв"]
+$parts = mb_str_split( 'Київ', 2, 'UTF-8' ); # ['Ки', 'їв']
 ```
 
-**Важливо:** Комбінований наголос може відокремитися від основної літери. Для меж видимих символів використовуйте `grapheme_str_split()` з PHP 8.4. Явно задавайте кодування для передбачуваної обробки.
-
-[Документація PHP: mb_str_split()](https://www.php.net/manual/en/function.mb-str-split.php)
+Комбінувальний знак може відокремитися від основи; з 8.4 `grapheme_str_split()` зберігає графемні кластери.
 
 <a id="mb-pad"></a>
 
 ## Доповнення тексту за кількістю кодових точок
 
-**PHP 8.3+ | mbstring**
+**PHP 8.3+ | mbstring** | [PHP](https://www.php.net/manual/en/function.mb-str-pad.php)
 
-`mb_str_pad()` використовує кількість кодових точок замість кількості байтів. Тому кириличне й ASCII-слово можна доповнювати за однаковим правилом довжини в символах.
+`mb_str_pad()` доповнює рядок за кількістю кодових точок.
 
 ```php
-echo mb_str_pad( 'Київ', 6, '.', STR_PAD_RIGHT, 'UTF-8' ) . PHP_EOL; # Київ..
-echo mb_str_pad( 'PHP', 6, '.', STR_PAD_LEFT, 'UTF-8' ) . PHP_EOL; # ...PHP
+$right = mb_str_pad( 'Київ', 6, '.', STR_PAD_RIGHT, 'UTF-8' ); # Київ..
+$left = mb_str_pad( 'PHP', 6, '.', STR_PAD_LEFT, 'UTF-8' ); # ...PHP
 ```
 
-**Важливо:** Доповнення не обрізає довший вхідний рядок. Кодові точки не є візуальними стовпцями, тому функція сама не вирівняє кожну таблицю термінала або напис з емодзі.
-
-[Документація PHP: mb_str_pad()](https://www.php.net/manual/en/function.mb-str-pad.php)
+Вона не обрізає довший рядок і не вимірює видиму ширину емодзі та іншого тексту.
 
 <a id="mb-case"></a>
 
 ## Зміна регістру першого символу Unicode
 
-**PHP 8.4+ | mbstring**
+**PHP 8.4+ | mbstring** | [PHP](https://www.php.net/manual/en/function.mb-ucfirst.php) | [PHP](https://www.php.net/manual/en/function.mb-lcfirst.php)
 
-`mb_ucfirst()` переводить перший символ у титульний регістр, `mb_lcfirst()` робить його малим. Решта тексту зберігається. Це замінює невелику, але схильну до помилок комбінацію обрізання та зміни регістру.
+`mb_ucfirst()` переводить перший символ у титульний регістр, `mb_lcfirst()` у нижній; решта не змінюється.
 
 ```php
-echo mb_ucfirst( 'київ', 'UTF-8' ) . PHP_EOL; # Київ
-echo mb_lcfirst( 'Київ', 'UTF-8' ) . PHP_EOL; # київ
+$upper = mb_ucfirst( 'київ', 'UTF-8' ); # Київ
+$lower = mb_lcfirst( 'Київ', 'UTF-8' ); # київ
 ```
 
-**Важливо:** Це не оформлення всього речення як заголовка й не мовозалежне правило для імен. Перетворення регістру Unicode може змінити кількість кодових точок.
-
-[Документація PHP: mb_ucfirst()](https://www.php.net/manual/en/function.mb-ucfirst.php) | [Документація PHP: mb_lcfirst()](https://www.php.net/manual/en/function.mb-lcfirst.php)
+Регістрове перетворення Unicode може змінити кількість кодових точок; це не локалізоване оформлення заголовків.
 
 <a id="unicode-trim"></a>
 
 ## Видалення пробілів Unicode з країв
 
-**PHP 8.4+ | mbstring**
+**PHP 8.4+ | mbstring** | [PHP](https://www.php.net/manual/en/function.mb-trim.php)
 
-`mb_trim()`, `mb_ltrim()` та `mb_rtrim()` розуміють багатобайтові символи й мають ширший типовий набір пробілів, ніж `trim()`. Це корисно для тексту, вставленого з документів або вебсторінок.
+`mb_trim()`, `mb_ltrim()` та `mb_rtrim()` видаляють крайові багатобайтові символи з ширшим типовим набором пробілів, ніж `trim()`.
 
 ```php
 $text = "\u{00A0}PHP\u{3000}";
-echo mb_trim( $text, null, 'UTF-8' ) . PHP_EOL; # PHP
+$trimmed = mb_trim( $text, null, 'UTF-8' ); # PHP
 ```
 
-**Важливо:** Обрізання впливає лише на вибрані краї. Воно не видаляє внутрішні пробіли й не перевіряє текст. Переданий список символів замінює типовий набір; позначення діапазонів із байтової `trim()` не підтримується.
-
-[Документація PHP: mb_trim()](https://www.php.net/manual/en/function.mb-trim.php)
+Власний список символів замінює типовий набір і не підтримує позначення діапазонів із `trim()`.
 
 <a id="grapheme-split"></a>
 
 ## Поділ за межами видимих символів
 
-**PHP 8.4+ | intl**
+**PHP 8.4+ | intl** | [PHP](https://www.php.net/manual/en/function.grapheme-str-split.php)
 
-`grapheme_str_split()` зберігає основний символ разом із комбінованими знаками. Використовуйте її для поділу тексту на одиниці, які людина зазвичай сприймає як один символ.
+`grapheme_str_split()` розбиває UTF-8 на межах графем, зберігаючи комбінувальні знаки разом з основою.
 
 ```php
 $text = "e\u{0301}x";
-$parts = grapheme_str_split( $text );
-echo count( $parts ) . PHP_EOL; # 2
-echo bin2hex( $parts[0] ) . PHP_EOL; # 65cc81
+$parts = grapheme_str_split( $text ); # ["e\u{0301}", 'x']
 ```
 
-**Важливо:** Вхід має бути коректним UTF-8. У разі помилки повертається false, тому перевіряйте результат перед операціями масивів із зовнішніми даними. Розмір частини має бути не менше 1.
-
-[Документація PHP: grapheme_str_split()](https://www.php.net/manual/en/function.grapheme-str-split.php)
+Некоректний UTF-8 або інша помилка може дати `false`; розмір частини має бути не меншим за 1.
 
 <a id="string-increment"></a>
 
 ## Явне збільшення буквено-числової ASCII-мітки
 
-**PHP 8.3+ | Ядро**
+**PHP 8.3+ | Ядро** | [PHP](https://www.php.net/manual/en/function.str-increment.php) | [PHP](https://www.php.net/manual/en/function.str-decrement.php)
 
-`str_increment()` та `str_decrement()` явно описують перехід між ASCII-мітками. Вони допомагають уникнути історичної поведінки ++ для рядка, яка залежить від типу значення.
+`str_increment()` та `str_decrement()` явно змінюють буквено-цифрові мітки ASCII.
 
 ```php
-echo str_increment( 'INV0099' ) . PHP_EOL; # INV0100
-echo str_decrement( 'INV0100' ) . PHP_EOL; # INV0099
-echo str_increment( 'ZZ' ) . PHP_EOL; # AAA
+$next = str_increment( 'INV0099' ); # INV0100
+$previous = str_decrement( 'INV0100' ); # INV0099
+$carry = str_increment( 'ZZ' ); # AAA
 ```
 
-**Важливо:** Приймаються лише непорожні буквено-числові рядки ASCII. Розділові знаки та літери Unicode спричиняють `ValueError`. Це арифметика міток, а не безпечний розподіл номерів рахунків між паралельними запитами.
-
-[Документація PHP: str_increment()](https://www.php.net/manual/en/function.str-increment.php) | [Документація PHP: str_decrement()](https://www.php.net/manual/en/function.str-decrement.php)
+Порожні рядки, пунктуація та літери Unicode спричиняють `ValueError`.
 
 <a id="heredoc"></a>
 
 ## Природні відступи в heredoc та nowdoc
 
-**PHP 7.3+ | Ядро**
+**PHP 7.3+ | Ядро** | [PHP](https://www.php.net/manual/en/language.types.string.php#language.types.string.syntax.heredoc)
 
-З PHP 7.3 завершальний маркер heredoc або nowdoc може мати відступ. Такий відступ видаляється з тіла рядка. Багаторядковий текст можна оформлювати відповідно до навколишнього коду.
+Відступ завершального маркера heredoc або nowdoc видаляється з тіла рядка.
 
 ```php
 $name = 'Ada';
@@ -197,83 +175,67 @@ $message = <<<TEXT
 	Hello, $name.
 	PHP notes
 	TEXT;
-
-echo $message . PHP_EOL;
-# Hello, Ada.
-# PHP notes
 ```
 
-**Важливо:** Heredoc підставляє змінні; nowdoc використовує початковий маркер у лапках і залишає текст буквальним. Не змішуйте табуляцію та пробіли у відступах. Підстановка не екранує HTML, SQL чи аргументи оболонки.
-
-[Документація PHP: heredoc](https://www.php.net/manual/en/language.types.string.php#language.types.string.syntax.heredoc)
+Heredoc підставляє змінні, nowdoc з лапками в початковому маркері зберігає текст буквально; у відступі не можна змішувати табуляції та пробіли.
 
 <a id="allowed-tags"></a>
 
 ## Дозволені теги масивом для `strip_tags()`
 
-**PHP 7.4+ | Ядро**
+**PHP 7.4+ | Ядро** | [PHP](https://www.php.net/manual/en/function.strip-tags.php)
 
-`strip_tags()` приймає масив імен дозволених тегів. Невеликий явний список легше читати, ніж рядок із кутовими дужками, зібраний в іншому місці.
+З 7.4 `strip_tags()` приймає масив назв дозволених тегів.
 
 ```php
 $html = '<p class="note">Hello</p><script>bad()</script>';
-echo strip_tags( $html, ['p'] ) . PHP_EOL;
-# <p class="note">Hello</p>bad()
+$text = strip_tags( $html, ['p'] ); # <p class="note">Hello</p>bad()
 ```
 
-**Важливо:** Це не засіб очищення HTML: атрибути дозволених тегів зберігаються, а вміст script може лишитися текстом. Для виведення звичайного тексту в HTML потрібне відповідне екранування; для чужого форматованого HTML потрібен справжній санітайзер.
-
-[Документація PHP: strip_tags()](https://www.php.net/manual/en/function.strip-tags.php)
+Це не засіб очищення HTML: атрибути дозволених тегів зберігаються, а вміст скриптів може лишитися текстом.
 
 <a id="intl-lists"></a>
 
 ## Оформлення списку за правилами мови читача
 
-**PHP 8.5+ | intl**
+**PHP 8.5+ | intl** | [PHP](https://www.php.net/manual/en/class.intllistformatter.php)
 
-`IntlListFormatter` додає розділові знаки та сполучники за правилами локалі. Це зручно для переліку форматів, імен чи можливостей у реченні; `implode()` сама не знає, як приєднати останній елемент.
+`IntlListFormatter` поєднує списки локалізованими сполучниками; `TYPE_OR` та `TYPE_UNITS` задають інші стилі.
 
 ```php
 $formatter = new IntlListFormatter( 'en', IntlListFormatter::TYPE_AND );
-$text = $formatter->format( ['PHP', 'HTML'] );
-echo $text . PHP_EOL; # PHP and HTML
+$text = $formatter->format( ['PHP', 'HTML'] ); # PHP and HTML
 ```
 
-**Важливо:** Потрібна ICU 67 або новіша. TYPE_OR та TYPE_UNITS задають інші стилі списку. Деталі результату залежать від даних локалі; перед використанням перевіряйте false у разі помилки форматування.
-
-[Документація PHP: IntlListFormatter](https://www.php.net/manual/en/class.intllistformatter.php)
+Потрібна ICU 67+; результат залежить від даних локалі, а помилка форматування може дати `false`.
 
 <a id="locale-direction"></a>
 
 ## Типовий напрямок письма локалі
 
-**PHP 8.5+ | intl**
+**PHP 8.5+ | intl** | [PHP](https://www.php.net/manual/en/locale.isrighttoleft.php)
 
-`Locale::isRightToLeft()` запитує ICU, чи основне письмо локалі спрямоване справа наліво. Вона замінює власний список кодів мов для вибору напрямку сторінки.
+`Locale::isRightToLeft()` повертає типовий напрям письма основної писемності локалі.
 
 ```php
-var_dump( Locale::isRightToLeft('en') ); # bool(false)
-var_dump( Locale::isRightToLeft('ar') ); # bool(true)
+$english_rtl = Locale::isRightToLeft( 'en' ); # false
+$arabic_rtl = Locale::isRightToLeft( 'ar' ); # true
 ```
 
-**Важливо:** Це характеристика локалі, а не довільного введеного тексту. Сторінка може містити фрагменти з різними напрямками, для яких потрібна власна розмітка.
-
-[Документація PHP: Locale::isRightToLeft()](https://www.php.net/manual/en/locale.isrighttoleft.php)
+Вона описує локаль, а не напрям довільного тексту чи фрагментів зі змішаним напрямом.
 
 <a id="grapheme-distance"></a>
 
 ## Порівняння Unicode-тексту за графемною відстанню
 
-**PHP 8.5+ | intl**
+**PHP 8.5+ | intl** | [PHP](https://www.php.net/manual/en/function.grapheme-levenshtein.php)
 
-`grapheme_levenshtein()` вимірює відстань вставок, видалень і замін у графемних кластерах. Канонічно еквівалентні складені та розкладені символи можуть порівнюватися однаково, а не як різні байти.
+`grapheme_levenshtein()` вимірює відстань редагування в графемних кластерах і враховує канонічну еквівалентність.
 
 ```php
 $composed = "\u{00E9}";
 $decomposed = "e\u{0301}";
-var_dump( grapheme_levenshtein($composed, $decomposed) ); # int(0)
+$distance = grapheme_levenshtein( $composed, $decomposed ); # 0
 ```
 
-**Важливо:** Відстань є підказкою схожості, а не перевіркою тотожності чи прав доступу. Некоректний UTF-8 та помилки ICU можуть дати false; перевіряйте === false до числового використання.
-
-[Документація PHP: grapheme_levenshtein()](https://www.php.net/manual/en/function.grapheme-levenshtein.php)
+Некоректний UTF-8 або помилки ICU можуть дати `false`; перед використанням відстані перевіряйте `=== false`.

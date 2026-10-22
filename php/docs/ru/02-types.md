@@ -1,36 +1,32 @@
-# Типы и контракты
+# Типы
 
 [English](../en/02-types.md) | [Українська](../uk/02-types.md) | [Русский](../ru/02-types.md)
 
-[Содержание](../../README.ru.md) | [PHP 7.0-8.5](VERSIONS.md) | [Обновление кода](MIGRATION.md)
+[Содержание](../../README.ru.md)
 
-От скалярных объявлений PHP 7 до типизированных констант и точных контрактов. Каждый раздел объясняет, что проверяет PHP и что остаётся проверять приложению. Версии обозначают доступность возможностей, а не рекомендацию запускать старый интерпретатор.
-
-## Содержание
-
-- [Скалярные параметры и тип результата](#scalar-types)
-- [strict_types: управление преобразованием типов](#strict-types)
+- [Скалярные параметры и результат](#scalar-types)
+- [strict_types](#strict-types)
 - [Nullable-типы](#nullable)
-- [void: завершение без результата](#void)
-- [iterable и object](#iterable-object)
-- [Типизированные свойства и неинициализированное состояние](#typed-properties)
-- [Ковариантность и контравариантность](#variance)
-- [Union-типы: один из нескольких вариантов](#union)
-- [mixed: явно произвольное значение](#mixed)
+- [void](#void)
+- [iterable / object](#iterable-object)
+- [Типизированные свойства](#typed-properties)
+- [Ковариантность / контравариантность](#variance)
+- [Union: A|B](#union)
+- [mixed](#mixed)
 - [Тип результата static](#static-return)
-- [Intersection-типы: все контракты одновременно](#intersection)
-- [never: без обычного возврата](#never)
-- [DNF: пересечения и альтернативы](#dnf)
-- [Отдельные типы true, false и null](#literal-types)
-- [Типизированные константы класса](#typed-constants)
-- [Что нативный тип не проверяет](#native-type-limits)
+- [Intersection: A&B](#intersection)
+- [never](#never)
+- [DNF: (A&B)|C](#dnf)
+- [Отдельные true / false / null](#literal-types)
+- [Типизированные константы](#typed-constants)
+- [PHPDoc и нативные типы](#native-type-limits)
 
 <a id="scalar-types"></a>
-## Скалярные параметры и тип результата
+## Скалярные параметры и результат
 
-**PHP 7.0+**
+**PHP 7.0+** | [PHP](https://www.php.net/manual/en/migration70.new-features.php)
 
-Контракт виден из сигнатуры: цена является дробным числом, количество целым, результат тоже дробный. PHP проверяет значения на границе функции. Это убирает повторяющиеся проверки внутри обычного прикладного кода.
+Типы скалярных параметров и результата видны прямо в сигнатуре. PHP проверяет значения при вызове; отдельно дублировать эти типы в PHPDoc уже не нужно.
 
 ```php
 function line_total( float $price, int $quantity ): float
@@ -41,17 +37,16 @@ function line_total( float $price, int $quantity ): float
 echo line_total( 12.5, 3 ); # 37.5
 ```
 
-Скалярные типы записывают как int, float, string и bool. Пишите bool, а не boolean. Тип определяет вид значения, но не гарантирует, что количество положительное или строка содержит правильный адрес почты. Это отдельные правила проверки.
-
-[Документация PHP](https://www.php.net/manual/en/migration70.new-features.php)
+Скалярные типы: `int`, `float`, `string` и `bool`; правила преобразования зависят от `strict_types`.
 
 <a id="strict-types"></a>
-## strict_types: управление преобразованием типов
+## strict_types
 
-**PHP 7.0+**
+**PHP 7.0+** | [PHP](https://www.php.net/manual/en/language.types.declarations.php#language.types.declarations.strict)
 
-По умолчанию PHP может преобразовать совместимый скалярный аргумент, например числовую строку, в объявленный тип. Строгий режим полезен, когда случайное преобразование скроет ошибку в коде. Директиву ставят в начале PHP-файла.
+`strict_types` уместен, когда числовая строка не должна незаметно подходить параметру `int`. Директиву ставят в начале PHP-файла.
 
+<!-- example: fragment -->
 ```php
 declare( strict_types=1 );
 
@@ -60,26 +55,17 @@ function double_count( int $count ): int
 	return $count * 2;
 }
 
-try
-{
-	double_count( '3' );
-}
-catch( TypeError $error )
-{
-	echo 'Expected an integer';
-}
+double_count( '3' ); # TypeError
 ```
 
-Строгость скалярных аргументов определяет файл, из которого вызывают функцию. Проверка результата зависит от файла с её объявлением. Для параметра float можно передать int. strict_types не заменяет проверку входных данных, не меняет === и не делает все внутренние операции строгими.
-
-[Документация PHP](https://www.php.net/manual/en/language.types.declarations.php#language.types.declarations.strict)
+Строгость аргументов зависит от файла вызова, проверка результата от файла объявления. `int` всё ещё разрешён для `float`.
 
 <a id="nullable"></a>
 ## Nullable-типы
 
-**PHP 7.1+**
+**PHP 7.1+** | [PHP](https://www.php.net/manual/en/migration71.new-features.php)
 
-Используйте ?T, если значением может быть T или null. Например, поиск может не найти запись. Nullable-параметр не становится необязательным автоматически.
+`?T` описывает значение, которое может отсутствовать: например, необязательное имя или неудачный поиск. Значение `= null` отдельно позволяет пропустить аргумент.
 
 ```php
 function display_name( ?string $name = null ): string
@@ -87,21 +73,17 @@ function display_name( ?string $name = null ): string
 	return $name ?? 'Guest';
 }
 
-echo display_name();          # Guest
-echo display_name( '' );      # empty string
-echo display_name( 'Olena' ); # Olena
+echo display_name(); # Guest
 ```
 
-Значение по умолчанию = null позволяет пропустить аргумент. Без него значение всё равно нужно передать, даже если это null. С PHP 8.0 можно писать string|null. Неявная nullable-запись string $name = null устарела в PHP 8.4; обозначайте null явно.
-
-[Документация PHP](https://www.php.net/manual/en/migration71.new-features.php)
+`string|null` является другим вариантом записи с 8.0. Неявная форма `string $name = null` устарела с 8.4.
 
 <a id="void"></a>
-## void: завершение без результата
+## void
 
-**PHP 7.1+**
+**PHP 7.1+** | [PHP](https://www.php.net/manual/en/language.types.void.php)
 
-void означает, что функция выполняет действие и не возвращает полезного значения. Для досрочного выхода можно написать return без значения. return null не разрешён.
+`void` обозначает действие без полезного результата. Досрочный `return` без значения разрешён, но `return null` нет.
 
 ```php
 function print_status( bool $visible ): void
@@ -111,20 +93,14 @@ function print_status( bool $visible ): void
 
 	echo 'Ready';
 }
-
-print_status( true ); # Ready
 ```
 
-Выбирайте void для обычной операции, которая может нормально завершиться. never нужен, когда нормальное завершение невозможно. Эти типы не описывают значения свойств.
-
-[Документация PHP](https://www.php.net/manual/en/language.types.void.php)
-
 <a id="iterable-object"></a>
-## iterable и object
+## iterable / object
 
-**PHP 7.1 / 7.2+**
+**PHP 7.1 / 7.2+** | [PHP](https://www.php.net/manual/en/language.types.iterable.php)
 
-iterable (7.1) принимает массив или объект Traversable: функция работает и с готовым списком, и с генератором. object (7.2) принимает любой объект. Если нужны конкретные методы, лучше указать соответствующий интерфейс.
+`iterable` (7.1) позволяет передать в одну функцию массив или `Traversable`, включая генератор. Это удобно, когда нужен только обход, а не доступ по индексам массива. `object` (7.2) принимает любой объект.
 
 ```php
 function sum_values( iterable $values ): int
@@ -140,16 +116,14 @@ function sum_values( iterable $values ): int
 echo sum_values( [2, 3, 5] ); # 10
 ```
 
-iterable не проверяет тип каждого элемента. Генераторы и потоки с ключами разобраны в [главе о массивах и итерации](04-arrays-and-iteration.md). object полезен в универсальных инструментах, а не вместо каждого предметного интерфейса.
-
-[Документация PHP](https://www.php.net/manual/en/language.types.iterable.php)
+`iterable` не ограничивает типы элементов.
 
 <a id="typed-properties"></a>
-## Типизированные свойства и неинициализированное состояние
+## Типизированные свойства
 
-**PHP 7.4+**
+**PHP 7.4+** | [PHP](https://www.php.net/manual/en/language.oop5.properties.php)
 
-Свойство может иметь собственный тип. Неинициализированное типизированное свойство отличается от свойства со значением null. Даже nullable-свойству нужно начальное значение перед чтением.
+Свойство может иметь собственный тип. Без начального значения типизированное свойство остаётся неинициализированным; даже nullable-объявление не присваивает `null` автоматически.
 
 ```php
 class Profile
@@ -159,55 +133,41 @@ class Profile
 }
 
 $profile = new Profile();
-
-var_dump( isset($profile->id) ); # false
-var_dump( $profile->email );    # NULL
-
-$profile->id = 42;
-echo $profile->id;              # 42
+var_dump( isset($profile->id), $profile->email ); # false, null
 ```
 
-Чтение id до присваивания вызовет Error. isset() безопасен, но не отличает неинициализированное свойство от null; для этого есть ReflectionProperty::isInitialized(). callable не разрешён как тип свойства; для сохранённого замыкания часто подходит Closure.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.properties.php)
+Чтение id до присваивания вызывает `Error`. `isset()` безопасен, но не отличает неинициализированное состояние от `null`. `callable` не является типом свойства; для сохранённого замыкания есть `Closure`.
 
 <a id="variance"></a>
-## Ковариантность и контравариантность
+## Ковариантность / контравариантность
 
-**PHP 7.4+**
+**PHP 7.4+** | [PHP](https://www.php.net/manual/en/language.oop5.variance.php)
 
-Переопределённый метод может обещать более конкретный результат и принимать более общий аргумент. Объект наследника должен оставаться пригодным везде, где ожидается родительский контракт.
+Переопределённый метод может принимать более широкий входной тип и возвращать более конкретный. Здесь реализация принимает любой `object` вместо только `stdClass`, но обещает `stdClass` вместо общего `object`.
 
 ```php
-class Animal {}
-class Cat extends Animal {}
-
-interface Shelter
+interface Factory
 {
-	public function adopt( Cat $candidate ): Animal;
+	public function create( stdClass $data ): object;
 }
 
-class CatShelter implements Shelter
+class CustomFactory implements Factory
 {
-	public function adopt( Animal $candidate ): Cat
+	public function create( object $data ): stdClass
 	{
-		return new Cat();
+		return new stdClass();
 	}
 }
-
-echo get_class( (new CatShelter())->adopt(new Cat()) ); # Cat
 ```
 
-Полная поддержка появилась в 7.4; версия 7.2 уже позволяла убрать тип параметра при переопределении. Обратное изменение может сузить допустимые аргументы или ослабить обещанный результат. Обычные свойства с чтением и записью преимущественно инвариантны; для property hooks есть отдельные правила.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.variance.php)
+7.2 уже позволял убрать тип параметра. Обычные свойства с чтением и записью остаются инвариантными.
 
 <a id="union"></a>
-## Union-типы: один из нескольких вариантов
+## Union: A|B
 
-**PHP 8.0+**
+**PHP 8.0+** | [PHP](https://www.php.net/manual/en/language.types.type-system.php)
 
-Объединение типов записывают через |. Оно уместно, когда API действительно имеет несколько видов результата, например целое число при успехе или false при неудаче.
+Если функция действительно возвращает несколько видов значения, их можно перечислить в типе результата. `int|false` подходит для поиска позиции, где ноль является правильным успешным результатом.
 
 ```php
 function find_position( string $text, string $needle ): int|false
@@ -215,22 +175,17 @@ function find_position( string $text, string $needle ): int|false
 	return strpos( $text, $needle );
 }
 
-$position = find_position( 'php', 'p' );
-
-if( $position !== false )
-	echo $position; # 0 is a successful position
+echo find_position( 'php', 'p' ); # 0
 ```
 
-Это контракт, проверяемый во время выполнения, в отличие от PHPDoc. Не превращайте каждый неопределённый параметр в большое объединение: если операции нужен один тип, нормализуйте внешние данные. false внутри union разрешён с 8.0; отдельный тип false появился позже.
-
-[Документация PHP](https://www.php.net/manual/en/language.types.type-system.php)
+`false` разрешён в union с 8.0, отдельно с 8.2. Проверяйте неудачу через !== `false`, чтобы не потерять нулевую позицию.
 
 <a id="mixed"></a>
-## mixed: явно произвольное значение
+## mixed
 
-**PHP 8.0+**
+**PHP 8.0+** | [PHP](https://www.php.net/manual/en/language.types.mixed.php)
 
-mixed явно разрешает любое значение PHP, включая null. Это уместно для универсального контейнера или передачи неизвестного значения дальше. Тип не объясняет, какие операции над значением безопасны.
+`mixed` явно принимает любое значение PHP, включая `null`. Он подходит универсальному форматировщику или контейнеру, контракт которого действительно не сужает входной тип.
 
 ```php
 function describe_value( mixed $value ): string
@@ -241,16 +196,14 @@ function describe_value( mixed $value ): string
 echo describe_value( ['id' => 42] ); # array
 ```
 
-mixed уже включает null, поэтому ?mixed и mixed|null недопустимы. Он не проверяет декодированный JSON и не делает чтение ключей массива безопасным. Как только контракт понятен, используйте более точный тип.
-
-[Документация PHP](https://www.php.net/manual/en/language.types.mixed.php)
+`mixed` уже включает `null`, поэтому `?mixed` и `mixed|null` недопустимы.
 
 <a id="static-return"></a>
 ## Тип результата static
 
-**PHP 8.0+**
+**PHP 8.0+** | [PHP](https://www.php.net/manual/en/language.types.relative-class-types.php)
 
-self обозначает класс, в котором объявлен метод; static учитывает класс вызова. Это позволяет точнее описать наследуемые именованные конструкторы и цепочки методов.
+`static` учитывает класс вызова, а `self` обозначает класс объявления метода. Поэтому наследуемая фабрика может точно описать результат и для наследников.
 
 ```php
 class Record
@@ -266,16 +219,14 @@ class UserRecord extends Record {}
 echo get_class( UserRecord::create() ); # UserRecord
 ```
 
-static можно указать для результата, но не для параметра или свойства. Нужно вернуть объект, совместимый с классом вызова. В 8.5 переопределённый метод final-класса может заменить родительский результат static на self или название этого final-класса.
-
-[Документация PHP](https://www.php.net/manual/en/language.types.relative-class-types.php)
+8.5: переопределение в final-классе может заменить `static` на `self` или имя этого класса.
 
 <a id="intersection"></a>
-## Intersection-типы: все контракты одновременно
+## Intersection: A&B
 
-**PHP 8.1+**
+**PHP 8.1+** | [PHP](https://www.php.net/manual/en/language.types.declarations.php#language.types.declarations.composite.intersection)
 
-Пересечение записывают через &: один объект должен соответствовать всем перечисленным классам или интерфейсам. Countable&Iterator уместен, если нужны и методы итерации, и количество элементов.
+A&B требует, чтобы один объект соответствовал обоим контрактам. `Countable&Iterator` уместен, когда функции нужны методы итерации и количество элементов.
 
 ```php
 function item_count( Countable&Iterator $items ): int
@@ -286,43 +237,30 @@ function item_count( Countable&Iterator $items ): int
 echo item_count( new ArrayIterator([10, 20]) ); # 2
 ```
 
-Это один объект с обеими возможностями, а не любая из них и не пара объектов. Скалярные пересечения int&string недопустимы. Для сочетания пересечения с null или другим вариантом нужен DNF-синтаксис с 8.2.
-
-[Документация PHP](https://www.php.net/manual/en/language.types.declarations.php#language.types.declarations.composite.intersection)
+Скалярные пересечения `int&string` недопустимы.
 
 <a id="never"></a>
-## never: без обычного возврата
+## never
 
-**PHP 8.1+**
+**PHP 8.1+** | [PHP](https://www.php.net/manual/en/language.types.never.php)
 
-Функция never должна выбросить исключение, завершить процесс или работать бесконечно. Такой контракт объясняет операцию прерывания читателю и анализатору. Её исключение можно перехватить снаружи.
+`never` означает, что функция не возвращается обычным путём: она выбрасывает исключение, завершает процесс или работает бесконечно. Так путь прерывания виден прямо из сигнатуры.
 
 ```php
 function reject_request(): never
 {
 	throw new RuntimeException( 'Request rejected' );
 }
-
-try
-{
-	reject_request();
-}
-catch( RuntimeException $error )
-{
-	echo $error->getMessage(); # Request rejected
-}
 ```
 
-Даже return без значения запрещён. Достижение конца функции вызывает TypeError. Не используйте never лишь потому, что функция часто завершается ошибкой: обычный успешный путь требует другого типа.
-
-[Документация PHP](https://www.php.net/manual/en/language.types.never.php)
+Даже `return` без значения запрещён; достижение конца вызывает `TypeError`.
 
 <a id="dnf"></a>
-## DNF: пересечения и альтернативы
+## DNF: (A&B)|C
 
-**PHP 8.2+**
+**PHP 8.2+** | [PHP](https://www.php.net/manual/en/migration82.new-features.php)
 
-DNF позволяет объединить целые группы пересечений. Значением может быть объект, который одновременно является Countable и Iterator, либо null.
+DNF сочетает пересечения с альтернативами. Эта сигнатура принимает объект, который одновременно является `Countable` и `Iterator`, либо `null`, если коллекции нет.
 
 ```php
 function optional_count( (Countable&Iterator)|null $items ): int
@@ -334,16 +272,14 @@ echo optional_count( null ); # 0
 echo optional_count( new ArrayIterator([1, 2]) ); # 2
 ```
 
-Скобки вокруг групп пересечения обязательны. Произвольные выражения вроде A&(B|C) не поддерживаются. Если контракт становится сложным, подходящий интерфейс часто понятнее всё более длинного выражения типа.
-
-[Документация PHP](https://www.php.net/manual/en/migration82.new-features.php)
+Скобки вокруг групп пересечения обязательны. `A&(B|C)` не поддерживается.
 
 <a id="literal-types"></a>
-## Отдельные типы true, false и null
+## Отдельные true / false / null
 
-**PHP 8.2+**
+**PHP 8.2+** | [PHP](https://www.php.net/manual/en/language.types.singleton.php)
 
-Литеральный тип обещает ровно одно значение. Он уместен для узких контрактов и совместимого переопределения; для обычного результата да/нет подходит bool.
+Тип результата может обещать ровно `true`, `false` или `null`. Например, `true` уместен для операции, которая возвращает успех, а при ошибке выбрасывает исключение.
 
 ```php
 function confirm_ready(): true
@@ -355,21 +291,16 @@ function missing_value(): null
 {
 	return null;
 }
-
-var_dump( confirm_ready() ); # bool(true)
-var_dump( missing_value() ); # NULL
 ```
 
-false и null входили в соответствующие union-типы с 8.0; в 8.2 они стали отдельными типами и появился true. true|false недопустим: пишите bool. null является значением результата, а void означает отсутствие полезного результата.
-
-[Документация PHP](https://www.php.net/manual/en/language.types.singleton.php)
+`true|false` недопустим; используйте `bool`. `null` является значением результата, в отличие от `void`.
 
 <a id="typed-constants"></a>
-## Типизированные константы класса
+## Типизированные константы
 
-**PHP 8.3+**
+**PHP 8.3+** | [PHP](https://www.php.net/manual/en/language.oop5.constants.php)
 
-Константы могут иметь тип вместе со значением. Это полезно для наследуемых контрактов: переопределение должно оставаться совместимым по типу.
+Константы класса могут иметь тип как часть наследуемого контракта. Переопределение в наследнике должно оставаться совместимым по типу. Это также относится к константам интерфейсов, трейтов и enum.
 
 ```php
 class Limits
@@ -377,37 +308,18 @@ class Limits
 	public const int PAGE_SIZE = 50;
 	public const array SORT_FIELDS = ['name', 'created_at'];
 }
-
-echo Limits::PAGE_SIZE; # 50
 ```
 
-Это относится к константам классов, интерфейсов, трейтов и enum. Обычная глобальная const от этого не получает синтаксис объявления типа. Тип array также не описывает каждый элемент массива.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.constants.php)
+Обычная глобальная `const` не поддерживает такое объявление типа.
 
 <a id="native-type-limits"></a>
-## Что нативный тип не проверяет
+## PHPDoc и нативные типы
 
-**PHP 7.0-8.5 | Контекст**
+**PHP 7.0-8.5 | Контекст** | [PHP](https://www.php.net/manual/en/language.types.declarations.php)
 
-array обещает только массив, а не ключи id/name, список или элементы User. string не означает адрес почты, доверенный путь или безопасный HTML. Проверяйте структуру и предметные правила там, где внешние данные попадают в код.
+Объявление `array` проверяет тип контейнера, а не его ключи или типы элементов. PHPDoc вроде `list<User>` уточняет контракт для IDE или статического анализатора, но сам PHP эту аннотацию не проверяет. Так же `string` не гарантирует корректный email, доверенный путь или безопасный HTML; эти проверки выполняет приложение.
 
 ```php
-function require_positive_id( array $input ): int
-{
-	$id = $input['id'] ?? null;
-
-	if( !is_int($id) || $id <= 0 )
-		throw new InvalidArgumentException( 'Positive integer id required' );
-
-	return $id;
-}
-
-echo require_positive_id( ['id' => 42] ); # 42
+/** @param list<User> $users */
+function take_users( array $users ) {}
 ```
-
-PHPDoc вроде `list<User>` помогает IDE или статическому анализатору, но PHP 7.0-8.5 не проверяет его во время выполнения. Осознанно решайте, принимать ли числовую строку из HTTP с преобразованием или отклонять. Приведение типа не должно незаметно делать из некорректных данных правдоподобный ноль.
-
-[Документация PHP](https://www.php.net/manual/en/language.types.declarations.php)
-
-[Содержание](../../README.ru.md)

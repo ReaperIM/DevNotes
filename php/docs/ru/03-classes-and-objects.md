@@ -4,8 +4,6 @@
 
 [Содержание](../../README.ru.md)
 
-От локальных анонимных реализаций до enum, readonly-значений, обработчиков свойств и отложенной инициализации. Каждый пример независим. По пометкам версий отличайте исходную возможность от более поздних улучшений, указанных в тексте.
-
 **На этой странице**
 
 - [Анонимные классы](#anonymous-classes)
@@ -39,45 +37,28 @@
 <a id="anonymous-classes"></a>
 ## Анонимные классы
 
-**PHP 7.0+ | Ядро**
+**PHP 7.0+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.anonymous.php)
 
-Анонимный класс создаёт объект, реализация которого нужна локально. Он может реализовывать интерфейс или расширять другой класс, поэтому удобен для небольшой тестовой подмены или объекта обратного вызова с состоянием.
+Анонимные классы создают локальные реализации и могут расширять класс или реализовывать интерфейс.
 
 ```php
-interface LabelProvider
+$provider = new class
 {
-	public function label(): string;
-}
-
-$provider = new class( 'draft' ) implements LabelProvider
-{
-	private $status;
-
-	public function __construct( string $status )
-	{
-		$this->status = $status;
-	}
-
 	public function label(): string
 	{
-		return strtoupper( $this->status );
+		return 'draft';
 	}
 };
 
-echo $provider->label();
-# DRAFT
+echo $provider->label(); # draft
 ```
-
-Для повторно используемого предметного объекта лучше именованный класс. Анонимность не означает отсутствие типов или изоляцию: объект всё равно подчиняется правилам наследования, видимости и интерфейсов.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.anonymous.php)
 
 <a id="constructor-promotion"></a>
 ## Объявление свойств в конструкторе
 
-**PHP 8.0+ | Ядро**
+**PHP 8.0+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.decon.php#language.oop5.decon.constructor.promotion)
 
-Параметр конструктора с модификатором видимости объявляет свойство и присваивает ей аргумент. Это убирает повторное объявление свойства и `$this->name = $name` в простых объектах данных.
+Параметр конструктора с модификатором видимости объявляет и инициализирует свойство.
 
 ```php
 class User
@@ -89,20 +70,17 @@ class User
 }
 
 $user = new User( 7, 'Ada' );
-echo $user->id, ':', $user->name;
-# 7:Ada
+echo $user->id, ':', $user->name; # 7:Ada
 ```
 
-Можно сочетать продвинутые и обычные параметры. Присваивания происходят до выполнения тела конструктора, поэтому в нём можно проверять или нормализовать сохранённые значения. Публичное свойство остаётся публичным: само продвижение не добавляет неизменяемости или проверок.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.decon.php#language.oop5.decon.constructor.promotion)
+Обычные параметры можно сочетать с параметрами-свойствами; присваивание происходит до тела конструктора.
 
 <a id="new-initializers"></a>
 ## Объекты как значения параметров по умолчанию
 
-**PHP 8.1+ | Ядро**
+**PHP 8.1+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/migration81.new-features.php)
 
-Параметр по умолчанию может создать объект через `new`. Это удобно, когда у зависимости есть небольшое разумное начальное значение, но вызывающий код может передать другой экземпляр.
+`new` разрешён в значениях параметров по умолчанию, аргументах атрибутов, локальных статических инициализаторах и глобальных константах.
 
 ```php
 class Prefix
@@ -115,20 +93,17 @@ function label( string $text, Prefix $prefix = new Prefix() ): string
 	return $prefix->value . ':' . $text;
 }
 
-echo label( 'types' );
-# note:types
+echo label( 'types' ); # note:types
 ```
 
-Когда используется значение по умолчанию, объект вычисляется для этого вызова, а не является одним общим изменяемым экземпляром для всех вызовов. PHP 8.1 также разрешает `new` в аргументах атрибутов, локальных статических инициализаторах и глобальных константах с синтаксическими ограничениями. Обычное объявление свойства всё ещё не может иметь `new` как начальное значение.
-
-[Документация PHP](https://www.php.net/manual/en/migration81.new-features.php)
+Использованное значение параметра по умолчанию создаёт объект для этого вызова; обычные свойства всё ещё не могут иметь `new` как начальное значение.
 
 <a id="attributes"></a>
 ## Атрибуты и чтение их метаданных
 
-**PHP 8.0+ | Ядро**
+**PHP 8.0+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.attributes.overview.php)
 
-Атрибуты добавляют структурированные метаданные к объявлениям. Определите класс атрибута, разместите его на разрешённом объявлении и прочитайте через reflection. Собственные атрибуты действуют только тогда, когда код приложения их интерпретирует.
+Атрибуты задают метаданные для рефлексии; флаги цели и `IS_REPEATABLE` ограничивают использование, которое проверяет `newInstance()`.
 
 ```php
 #[Attribute( Attribute::TARGET_METHOD )]
@@ -140,30 +115,23 @@ class Description
 class Report
 {
 	#[Description( 'Exports a report' )]
-	public function export(): string
-	{
-		return 'report';
-	}
+	public function export(): void {}
 }
 
 $method = new ReflectionMethod( Report::class, 'export' );
-$attributes = $method->getAttributes( Description::class );
-$description = $attributes[0]->newInstance();
+$description = $method->getAttributes( Description::class )[0]->newInstance();
 
-echo $description->text;
-# Exports a report
+echo $description->text; # Exports a report
 ```
 
-Осознанно выбирайте допустимые цели и `Attribute::IS_REPEATABLE`. `newInstance()` создаёт атрибут и проверяет его использование; сама метка метаданных не проверяет права доступа. PHP 8.5 добавляет `#[DelayedTargetValidation]` для более сложных инструментов: проверка неправильной цели встроенных атрибутов или атрибутов расширений откладывается до создания через reflection. Смотрите также [диагностические атрибуты](08-errors-and-debugging.md#deprecated-attribute) и [атрибуты глобальных констант](01-syntax-and-functions.md#global-constant-attributes).
-
-[Документация PHP](https://www.php.net/manual/en/language.attributes.overview.php)
+PHP 8.5 добавляет `#[DelayedTargetValidation]`, откладывающий проверку некорректной цели встроенных атрибутов или атрибутов расширений до создания экземпляра через рефлексию; см. также [диагностические атрибуты](08-errors-and-debugging.md#deprecated-attribute) и [глобальные константы](01-syntax-and-functions.md#global-constant-attributes).
 
 <a id="stringable"></a>
 ## Интерфейс Stringable
 
-**PHP 8.0+ | Ядро**
+**PHP 8.0+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/class.stringable.php)
 
-Объект с `__toString()` неявно реализует `Stringable`. Объединение `string|Stringable` позволяет указать, что API принимает обычную строку или объект со строковым представлением.
+Класс с `__toString()` неявно реализует `Stringable`; `string|Stringable` принимает оба представления.
 
 ```php
 class Label
@@ -183,16 +151,14 @@ echo render_label( new Label() );
 # draft
 ```
 
-`Stringable` не является тем же типом, что `string`, особенно при строгой типизации. Явное приведение выше является границей, где запрашивается строковое представление. Преобразование может выбросить исключение; смотрите [исключения из __toString()](08-errors-and-debugging.md#to-string-exceptions).
-
-[Документация PHP](https://www.php.net/manual/en/class.stringable.php)
+`Stringable` не является `string` при строгой типизации, а преобразование [может выбросить исключение](08-errors-and-debugging.md#to-string-exceptions).
 
 <a id="enums"></a>
 ## Enum для закрытого набора состояний
 
-**PHP 8.1+ | Ядро**
+**PHP 8.1+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.enumerations.backed.php)
 
-Enum определяет конечный набор именованных объектов. Backed enum добавляет уникальное значение `string` или `int` для хранения или внешних данных. Код может работать с типизированным состоянием, а база хранить небольшое скалярное значение.
+Enum объявляет именованные объекты-варианты; backed enum добавляет уникальные значения `int` или `string` через `->value`, а все варианты имеют `->name`.
 
 ```php
 enum Status: string
@@ -202,24 +168,22 @@ enum Status: string
 }
 
 $status = Status::from( 'published' );
-echo $status->name, ':', $status->value, PHP_EOL;
-var_dump( Status::tryFrom('missing') );
-echo count( Status::cases() );
-# Published:published
-# NULL
-# 2
+$missing = Status::tryFrom( 'missing' ); # null
+$cases = Status::cases();
+
+echo $status->name, ':', $status->value, PHP_EOL; # Published:published
+var_dump( $missing ); # NULL
+echo count( $cases ); # 2
 ```
 
-`from()` выбрасывает `ValueError` для неизвестного значения, а `tryFrom()` возвращает `null`. Некорректный тип аргумента всё ещё может вызвать `TypeError`, поэтому `tryFrom()` не является универсальным валидатором. Случай enum является объектом: `Status::Draft !== 'draft'`. Используйте `->value` только на скалярной границе. Pure enum имеет случаи и `->name`, но не имеет `->value`, `from()` или `tryFrom()`.
-
-[Документация PHP](https://www.php.net/manual/en/language.enumerations.backed.php)
+`from()` выбрасывает `ValueError` для неизвестного значения, а `tryFrom()` возвращает `null`, однако некорректный тип всё ещё может вызвать `TypeError`; чистые enum не имеют базового значения и методов преобразования.
 
 <a id="enum-constants"></a>
 ## Свойства enum в константных выражениях
 
-**PHP 8.2+ | Ядро**
+**PHP 8.2+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/migration82.new-features.php)
 
-Поля `name` и `value` случая enum можно читать в константных выражениях. Это позволяет не дублировать скалярную запись рядом с объявлением enum.
+`name` варианта enum и `value` backed-варианта можно читать в константных выражениях.
 
 ```php
 enum Format: string
@@ -230,20 +194,17 @@ enum Format: string
 const DEFAULT_FORMAT = Format::Json->value;
 const DEFAULT_CASE_NAME = Format::Json->name;
 
-echo DEFAULT_CASE_NAME, ':', DEFAULT_FORMAT;
-# Json:json
+echo DEFAULT_CASE_NAME, ':', DEFAULT_FORMAT; # Json:json
 ```
 
-Pure enum не имеет свойства `value`. Такие выражения читают встроенные метаданные enum, а не разрешают произвольный доступ к свойствам объектов или выполнение методов в константах.
-
-[Документация PHP](https://www.php.net/manual/en/migration82.new-features.php)
+Это не разрешает произвольное чтение свойств объектов или вызовы методов в константах.
 
 <a id="readonly-properties"></a>
 ## Readonly-свойства и поверхностная неизменяемость
 
-**PHP 8.1+ | Ядро**
+**PHP 8.1+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.properties.php#language.oop5.properties.readonly-properties)
 
-`readonly`-свойство можно инициализировать один раз, после чего его обычно нельзя переприсвоить или изменить. Это полезно для идентичности и объектов-значений, но объект внутри такого свойства всё ещё может иметь изменяемое состояние.
+Типизированное нестатическое `readonly`-свойство допускает однократную инициализацию, но хранящийся в нём объект может оставаться изменяемым.
 
 ```php
 class Snapshot
@@ -251,24 +212,20 @@ class Snapshot
 	public function __construct( public readonly stdClass $data ) {}
 }
 
-$data = (object)['count' => 1];
-$snapshot = new Snapshot( $data );
+$snapshot = new Snapshot( (object)['count' => 1] );
 $snapshot->data->count++;
 
-echo $snapshot->data->count;
-# 2
+echo $snapshot->data->count; # 2
 ```
 
-Свойство должно быть типизированным и не может быть статическим. Увеличение readonly-скаляра или изменение элемента его массива запрещены; изменение содержимого объекта по ссылке является другой операцией. До PHP 8.4 инициализация неявно была приватной для объявившего класса; с PHP 8.4 по умолчанию действует `protected(set)`, разрешающая инициализацию из дочерней области, если права явно не сужены.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.properties.php#language.oop5.properties.readonly-properties)
+До PHP 8.4 инициализация была неявно приватной для объявившего класса; с 8.4 по умолчанию действует `protected(set)`, если доступ не сужен, а инкремент скаляра и запись элементов массива остаются запрещёнными.
 
 <a id="readonly-classes"></a>
 ## Readonly-классы
 
-**PHP 8.2+ | Ядро**
+**PHP 8.2+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.basic.php#language.oop5.basic.class.readonly)
 
-Readonly-класс применяет правила readonly ко всем свойствам экземпляра. Это сокращает объект данных и защищает от случайно изменяемого нового свойства.
+Класс readonly делает все свойства экземпляра readonly.
 
 ```php
 readonly class Point
@@ -277,20 +234,17 @@ readonly class Point
 }
 
 $point = new Point( 3, 4 );
-echo $point->x, ':', $point->y;
-# 3:4
+echo $point->x, ':', $point->y; # 3:4
 ```
 
-Свойства должны быть типизированными; статические и динамические свойства недоступны. Наследование должно соблюдать правила readonly-классов. Как и с отдельным readonly-свойством, вложенные изменяемые объекты не становятся неизменяемыми автоматически.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.basic.php#language.oop5.basic.class.readonly)
+Свойства должны быть типизированными, статические и динамические свойства запрещены, наследование подчиняется правилам readonly, а вложенные объекты всё ещё могут быть изменяемыми.
 
 <a id="readonly-cloning"></a>
 ## Повторная инициализация readonly в __clone()
 
-**PHP 8.3+ | Ядро**
+**PHP 8.3+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/migration83.new-features.php)
 
-При клонировании readonly-свойства можно повторно инициализировать, чтобы копия получила собственные вложенные объекты. Это решает распространённую проблему поверхностной копии без общего разрешения изменять исходное свойство.
+`__clone()` может повторно инициализировать readonly-свойства, чтобы отделить вложенные объекты копии.
 
 ```php
 readonly class Schedule
@@ -311,16 +265,14 @@ echo $original->date->format( 'Y-m-d' ), ':', $copy->date->format( 'Y-m-d' );
 # 2025-01-01:2025-01-02
 ```
 
-Это контролируемое исключение из запрета записи на время клонирования, а не разрешение многократно обновлять свойство. Клонирование остаётся поверхностным, если явно не клонировать вложенные объекты, которым нужно независимое состояние.
-
-[Документация PHP](https://www.php.net/manual/en/migration83.new-features.php)
+Это ограниченное исключение на время клонирования; остальные вложенные объекты остаются общими при обычном поверхностном клонировании.
 
 <a id="readonly-anonymous"></a>
 ## Анонимные readonly-классы
 
-**PHP 8.3+ | Ядро**
+**PHP 8.3+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/migration83.new-features.php)
 
-Локальный анонимный объект теперь может соблюдать те же readonly-правила, что и именованный класс. Это удобно для небольшого неизменяемого значения, которому не нужно повторно используемое публичное имя класса.
+Анонимные классы также могут быть readonly.
 
 ```php
 $value = new readonly class( 7 )
@@ -328,47 +280,36 @@ $value = new readonly class( 7 )
 	public function __construct( public int $id ) {}
 };
 
-echo $value->id;
-# 7
+echo $value->id; # 7
 ```
 
-Это добавляет readonly к анонимным классам; обычные анонимные классы существуют с PHP 7.0. Ограничения на типизированные свойства и вложенное изменяемое состояние сохраняются.
-
-[Документация PHP](https://www.php.net/manual/en/migration83.new-features.php)
+Для них действуют ограничения типизированных свойств и поверхностной неизменяемости именованных readonly-классов.
 
 <a id="constant-visibility-final"></a>
 ## Видимость и final для констант класса
 
-**PHP 7.1+ | Ядро**
+**PHP 7.1+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.constants.php)
 
-PHP 7.1 позволяет задавать для констант класса public, protected или private. PHP 8.1 добавляет `final`, запрещающий дочернему классу заменять значение из контракта родительского класса.
+PHP 7.1 добавляет видимость констант класса; PHP 8.1 добавляет объявления вида `final public const PAGE_SIZE = 20;`, запрещающие переопределение в потомках.
 
 ```php
 class Limits
 {
 	private const INTERNAL_FACTOR = 2;
 	public const PAGE_SIZE = 20;
-
-	public static function batch_size(): int
-	{
-		return self::PAGE_SIZE * self::INTERNAL_FACTOR;
-	}
 }
 
-echo Limits::batch_size();
-# 40
+echo Limits::PAGE_SIZE; # 20
 ```
 
-В PHP 8.1+ можно объявить `final public const PAGE_SIZE = 20;`, если переопределение нарушило бы замысел. Видимость управляет доступом, а final переопределением. [Типизированные константы класса](02-types.md#typed-constants) являются отдельным дополнением PHP 8.3.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.constants.php)
+[Типизированные константы класса](02-types.md#typed-constants) появляются отдельно в PHP 8.3.
 
 <a id="dynamic-constants"></a>
 ## Выбор константы класса по имени
 
-**PHP 8.3+ | Ядро**
+**PHP 8.3+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.constants.php)
 
-`ClassName::{$name}` читает константу класса по имени из переменной. Это убирает построение строки `ClassName::CONSTANT` для `constant()`, когда класс уже известен.
+`ClassName::{$name}` читает константу класса по переменному имени; `$object::class` возвращает имя класса объекта с PHP 8.0.
 
 ```php
 class Format
@@ -377,30 +318,24 @@ class Format
 }
 
 $name = 'JSON';
-echo Format::{$name};
-# application/json
+$mime = Format::{$name};
+
+echo $mime; # application/json
 ```
 
-Правила видимости остаются в силе, а неизвестная константа вызывает ошибку. Внешнее имя нужно выбирать из разрешённого набора. С PHP 8.0 `$object::class` также позволяет получить имя класса объекта без отдельного вызова `get_class()`.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.constants.php)
+Видимость константы сохраняется, а неизвестное имя вызывает ошибку.
 
 <a id="trait-constants"></a>
 ## Константы, объявленные в traits
 
-**PHP 8.2+ | Ядро**
+**PHP 8.2+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.traits.php)
 
-Trait может объявлять константы рядом с поведением, которое их использует. Это удобно, когда общая реализация имеет небольшую постоянную опцию или значение протокола.
+Trait может объявлять константы, доступные через использующий его класс; конфликтующие объявления должны быть совместимыми.
 
 ```php
 trait HasFormat
 {
 	public const FORMAT = 'json';
-
-	public function format(): string
-	{
-		return self::FORMAT;
-	}
 }
 
 class Exporter
@@ -408,20 +343,19 @@ class Exporter
 	use HasFormat;
 }
 
-echo (new Exporter())->format();
-# json
+$format = Exporter::FORMAT;
+
+echo $format; # json
 ```
 
-Обращайтесь к константам через класс, использующий trait. Конфликтующие объявления должны соответствовать правилам совместимости PHP. Связанное изменение PHP 8.3 касается статических свойств trait: если дочерний класс явно использует тот же trait повторно, его статическое свойство отделяется от родительского; не предполагайте, что оба счётчика общие.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.traits.php)
+С PHP 8.3 потомок, явно повторно использующий trait, имеет отдельное от родителя хранилище статических свойств trait.
 
 <a id="trait-final"></a>
 ## Импорт метода trait как final
 
-**PHP 8.3+ | Ядро**
+**PHP 8.3+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.traits.php)
 
-Класс может пометить импортированный метод trait как final в блоке адаптации. Общий trait остаётся пригодным для других классов, а этот класс запрещает потомкам переопределять импортированное поведение.
+Адаптация trait может импортировать метод как `final`.
 
 ```php
 trait HasIdentifier
@@ -440,31 +374,25 @@ class Report
 	}
 }
 
-echo (new Report())->identifier();
-# report
+echo (new Report())->identifier(); # report
 ```
 
-Это ограничивает переопределение в потомках, а не делает весь класс final и не фиксирует свойства объекта. Используйте для поведения, которое контракт класса намеренно делает неизменным.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.traits.php)
+Это запрещает переопределение метода в потомках использующего trait класса без изменения самого trait.
 
 <a id="override"></a>
 ## Проверка переопределённых методов через #[Override]
 
-**PHP 8.3+ | Ядро**
+**PHP 8.3+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/class.override.php)
 
-Атрибут указывает, что метод должен заменять унаследованный метод или реализовывать метод интерфейса. Опечатка или переименование в родительском API тогда вызовет ошибку компиляции, а не незаметно создаст посторонний метод.
+`#[Override]` проверяет при компиляции, что метод переопределяет унаследованное объявление или реализует метод интерфейса.
 
 ```php
-class Exporter
+interface Exporter
 {
-	public function format(): string
-	{
-		return 'text';
-	}
+	public function format(): string;
 }
 
-class JsonExporter extends Exporter
+class JsonExporter implements Exporter
 {
 	#[Override]
 	public function format(): string
@@ -473,20 +401,17 @@ class JsonExporter extends Exporter
 	}
 }
 
-echo (new JsonExporter())->format();
-# json
+echo (new JsonExporter())->format(); # json
 ```
 
-Атрибут проверяет существование переопределяемого объявления, а не правильность реализации. Его нельзя применять к `__construct()`. [Переопределение свойств](#override-properties) получает такую же пометку в PHP 8.5.
-
-[Документация PHP](https://www.php.net/manual/en/class.override.php)
+Атрибут недоступен для `__construct()`; [переопределение свойств](#override-properties) поддерживается с PHP 8.5.
 
 <a id="property-hooks"></a>
 ## Обработчики свойств: хранимые и виртуальные значения
 
-**PHP 8.4+ | Ядро**
+**PHP 8.4+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.property-hooks.php)
 
-Свойство может менять поведение чтения через `get` и записи через `set`. Backed-свойство хранит значение, а виртуальное вычисляет его через обработчики без собственного хранилища.
+Обработчики свойств меняют чтение и запись: `name` хранит значение, а `display_name` является виртуальным.
 
 ```php
 class Contact
@@ -504,20 +429,17 @@ class Contact
 
 $contact = new Contact();
 $contact->name = ' Ada ';
-echo $contact->name, ':', $contact->display_name;
-# Ada:ADA
+echo $contact->name, ':', $contact->display_name; # Ada:ADA
 ```
 
-Сокращённый `set` автоматически записывает результат выражения в хранимое значение. Виртуальное свойство только с `get` недоступно для записи. Обработчики доступны для нестатических свойств и не сочетаются с `readonly`. Предметные операции над несколькими объектами оставляйте методами; доступ к свойству должен быть понятным.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.property-hooks.php)
+Выражение `set` автоматически сохраняет результат; виртуальное свойство только с `get` недоступно для записи, а обработчики не могут быть статическими или сочетаться с `readonly`.
 
 <a id="setter-validation"></a>
 ## Полный setter должен записывать значение свойства
 
-**PHP 8.4+ | Ядро**
+**PHP 8.4+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.property-hooks.php)
 
-Блочный обработчик `set` может проверить данные перед сохранением. В отличие от сокращённого выражения, блок должен явно присвоить принятое значение свойству.
+Блочный обработчик `set` должен явно записывать принятое значение.
 
 ```php
 class Product
@@ -527,7 +449,7 @@ class Product
 		set
 		{
 			if( $value < 0 )
-				throw new InvalidArgumentException( 'Quantity cannot be negative' );
+				throw new InvalidArgumentException( 'Negative quantity' );
 
 			$this->quantity = $value;
 		}
@@ -536,38 +458,22 @@ class Product
 
 $product = new Product();
 $product->quantity = 5;
-
-try
-{
-	$product->quantity = -1;
-}
-catch( InvalidArgumentException )
-{
-	echo $product->quantity;
-}
-# 5
+echo $product->quantity; # 5
 ```
 
-Внутри этого обработчика `$this->quantity` обращается к хранилищу, а не рекурсивно вызывает тот же обработчик. Проверка происходит до присваивания, поэтому отклонённое обновление оставляет прежнее значение. Начальное значение свойства не заменяет проверку дальнейших записей.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.property-hooks.php)
+Внутри собственного обработчика `$this->quantity` обращается к хранилищу без рекурсии; отказ до присваивания сохраняет предыдущее значение.
 
 <a id="asymmetric-visibility"></a>
 ## Разные права для чтения и записи
 
-**PHP 8.4+ | Ядро**
+**PHP 8.4+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.visibility.php#language.oop5.visibility-members)
 
-`public private(set)` позволяет внешнему коду читать свойство, но записывать его может только объявивший класс. Это сохраняет простой публичный интерфейс чтения без общего разрешения на присваивание.
+`public private(set)` разрешает публичное чтение и повторную запись внутри объявившего класса.
 
 ```php
 class Article
 {
-	public private(set) string $title;
-
-	public function __construct( string $title )
-	{
-		$this->title = $title;
-	}
+	public function __construct( public private(set) string $title ) {}
 
 	public function rename( string $title ): void
 	{
@@ -577,20 +483,17 @@ class Article
 
 $article = new Article( 'Draft' );
 $article->rename( ' Published ' );
-echo $article->title;
-# Published
+echo $article->title; # Published
 ```
 
-Права записи не могут быть шире прав чтения. `private(set)` также делает свойство final, поэтому потомок не может объявить его заново для обхода ограничения. Это не readonly: разрешённый класс может записывать повторно. Получение ссылки или изменение элемента массива также подчиняются правам записи.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.visibility.php#language.oop5.visibility-members)
+Видимость записи не может быть шире чтения, `private(set)` делает свойство final, а ссылки и изменения элементов массива также требуют права записи.
 
 <a id="interface-properties"></a>
 ## Контракты свойств в интерфейсах
 
-**PHP 8.4+ | Ядро**
+**PHP 8.4+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.interfaces.php)
 
-Интерфейс может требовать публичное свойство для чтения или записи с помощью объявлений в форме обработчиков. Реализация может использовать обычное свойство или обработчики, если нужные операции доступны.
+Интерфейсы могут требовать публичного чтения или записи свойства через `{ get; }` или `{ get; set; }`.
 
 ```php
 interface HasTitle
@@ -603,25 +506,18 @@ class Article implements HasTitle
 	public function __construct( public string $title ) {}
 }
 
-function title_of( HasTitle $item ): string
-{
-	return $item->title;
-}
-
-echo title_of( new Article('Notes') );
-# Notes
+$article = new Article( 'Notes' );
+echo $article->title; # Notes
 ```
 
-Требование `get` не заставляет реализацию запретить запись, а лишь гарантирует чтение. Соответственно, `{ get; set; }` требует обеих операций. Уточняя контракт, соблюдайте правила вариантности типов.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.interfaces.php)
+Контракт может выполнить обычное свойство или обработчики с соблюдением правил вариантности типов. Требование `get` не запрещает реализации разрешать запись.
 
 <a id="lazy-objects"></a>
 ## Отложенные объекты: ghost и proxy
 
-**PHP 8.4+ | Ядро**
+**PHP 8.4+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.lazy-objects.php)
 
-Reflection может создать объект, инициализация которого отложена до использования состояния. Lazy ghost инициализируется на месте, а lazy proxy получает от фабрики отдельный настоящий экземпляр и передаёт ему операции с состоянием.
+Через Reflection можно отложить инициализацию объекта до обращения к его состоянию. Ghost инициализируется на месте, а proxy получает отдельный реальный экземпляр из фабрики.
 
 ```php
 class Document
@@ -652,32 +548,29 @@ echo $proxy->title;
 # proxy
 ```
 
-Это откладывает работу, а не выполняет её параллельно. Proxy и его настоящий экземпляр имеют разную идентичность, что важно для таблиц объектов и строгого сравнения. Механизм предназначен для пользовательских классов и `stdClass`, а не произвольных внутренних классов. Используйте его, когда отложенная инициализация решает реальную проблему загрузки или времени жизни.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.lazy-objects.php)
+Proxy и созданный им объект являются разными экземплярами; механизм поддерживает пользовательские классы и `stdClass`, а не произвольные внутренние классы.
 
 <a id="new-chaining"></a>
 ## Вызов метода сразу после new
 
-**PHP 8.4+ | Ядро**
+**PHP 8.4+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/migration84.new-features.php)
 
-Объект, созданный со скобками конструктора, можно использовать сразу без дополнительных скобок вокруг всего выражения `new`. Это облегчает короткую запись «создать и использовать».
+После выражения `new` со скобками конструктора можно сразу обращаться к членам объекта.
 
 ```php
-echo new DateTimeImmutable( '2025-01-02' )->format( 'Y-m-d' );
-# 2025-01-02
+$date = new DateTimeImmutable( '2025-01-02' )->format( 'Y-m-d' );
+
+echo $date; # 2025-01-02
 ```
 
-Прежняя запись `(new DateTimeImmutable(...))->format(...)` остаётся правильной. Оставляйте переменную, если объект нужен в нескольких следующих шагах или однострочная запись скрывает важный жизненный цикл.
-
-[Документация PHP](https://www.php.net/manual/en/migration84.new-features.php)
+Старый синтаксис `(new ClassName(...))->method()` остаётся корректным.
 
 <a id="override-properties"></a>
 ## Проверка переопределения свойств через #[Override]
 
-**PHP 8.5+ | Ядро**
+**PHP 8.5+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/class.override.php)
 
-Проверка переопределения распространяется с методов на свойства. Это особенно полезно для виртуального свойства, унаследованное вычисление которого уточняется.
+`#[Override]` также проверяет унаследованные свойства или свойства интерфейса при компиляции.
 
 ```php
 class Record
@@ -697,20 +590,17 @@ class Report extends Record
 	}
 }
 
-echo new Report()->label;
-# report
+echo new Report()->label; # report
 ```
 
-Если ожидаемое свойство родительского класса или интерфейса исчезает, объявление вызывает ошибку компиляции. Остальные правила сохраняются: атрибут не делает несовместимое переопределение или переопределение final-свойства допустимым.
-
-[Документация PHP](https://www.php.net/manual/en/class.override.php)
+Атрибут не разрешает несовместимое переопределение или переопределение final-свойства.
 
 <a id="static-visibility"></a>
 ## Асимметричная видимость статических свойств
 
-**PHP 8.5+ | Ядро**
+**PHP 8.5+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.visibility.php)
 
-Статические свойства тоже могут иметь более узкие права записи. Общий счётчик можно читать снаружи, тогда как обновления остаются в классе, отвечающем за операцию.
+Статические свойства могут иметь более узкую видимость записи.
 
 ```php
 class Counter
@@ -724,20 +614,17 @@ class Counter
 }
 
 Counter::count_call();
-echo Counter::$calls;
-# 1
+echo Counter::$calls; # 1
 ```
 
-Это управляет доступом, а не изоляцией запросов или параллельностью. В долгоживущих процессах статическое состояние переживает последовательные операции. Readonly для статических свойств является другой идеей и остаётся неподдерживаемым.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.visibility.php)
+Это управляет доступом, а не временем жизни состояния; статические readonly-свойства остаются недоступными.
 
 <a id="final-promotion"></a>
 ## Final для свойств в параметрах конструктора
 
-**PHP 8.5+ | Ядро**
+**PHP 8.5+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.final.php)
 
-Final-свойства появились в PHP 8.4; PHP 8.5 разрешает указывать модификатор прямо у свойства, объявленного параметром конструктора. Он запрещает потомку заново объявлять это свойство.
+PHP 8.5 разрешает `final` для свойств в параметрах конструктора, расширяя final-свойства из PHP 8.4.
 
 ```php
 class Ticket
@@ -747,20 +634,18 @@ class Ticket
 
 $ticket = new Ticket( 'A' );
 $ticket->code = 'B';
-echo $ticket->code;
-# B
+
+echo $ticket->code; # B
 ```
 
-Final не означает readonly: приведённое публичное свойство всё ещё можно переприсваивать. Выбирайте final для ограничения наследования, а readonly для ограничения записи значения; это разные задачи.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.final.php)
+Модификатор запрещает повторное объявление в потомках, но не запрещает присваивание, как `readonly`.
 
 <a id="clone-with"></a>
 ## Клонирование объекта с изменением выбранных свойств
 
-**PHP 8.5+ | Ядро**
+**PHP 8.5+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.cloning.php)
 
-Функциональная форма `clone( $object, $changes )` создаёт копию и применяет карту значений свойств. Это удобно для метода `with_*()`, возвращающего обновлённый readonly-объект-значение.
+`clone( $object, $changes )` создаёт копию и меняет свойства после `__clone()`.
 
 ```php
 readonly class Color
@@ -786,16 +671,14 @@ echo $original->alpha, ':', $copy->alpha;
 # 255:128
 ```
 
-Замены происходят после `__clone()` и соблюдают права записи свойств. Обновления readonly размещайте в разрешённой области класса. Конструктор повторно не выполняется, поэтому проверяйте изменённые значения до клонирования: проверки только в конструкторе недостаточно. Неуказанные вложенные объекты сохраняют обычные правила поверхностной копии.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.cloning.php)
+Изменения подчиняются видимости записи, поэтому обновления readonly требуют разрешённой области класса. Конструктор не вызывается повторно: проверяйте изменения явно; остальные вложенные объекты сохраняют поведение поверхностного клонирования.
 
 <a id="dynamic-properties"></a>
 ## Динамические свойства устарели
 
-**PHP 8.2+ | Ядро**
+**PHP 8.2+ | Ядро** | [Документация PHP](https://www.php.net/manual/en/language.oop5.properties.php#language.oop5.properties.dynamic-properties)
 
-Создание необъявленного свойства в обычном классе теперь создаёт сообщение об устаревании. Это выявляет ошибки в именах и делает настоящую структуру объекта понятнее.
+Создание необъявленного свойства обычного класса вызывает сообщение об устаревшей возможности.
 
 ```php
 class User
@@ -813,6 +696,4 @@ echo $user->name, ':', $metadata->tag;
 # Grace:draft
 ```
 
-Объявляйте известные поля. Для намеренно произвольных данных используйте массив или `stdClass`. Исключения охватывают классы с `#[AllowDynamicProperties]`, их потомков и классы с `__set()`; реализация, создающая необъявленные свойства внутри `__set()`, всё ещё может вызывать это сообщение. Не добавляйте атрибут везде только для скрытия ошибок в именах.
-
-[Документация PHP](https://www.php.net/manual/en/language.oop5.properties.php#language.oop5.properties.dynamic-properties)
+Исключения включают `stdClass`, классы с `#[AllowDynamicProperties]` и их потомков и обработку через `__set()`, но создание необъявленного свойства внутри `__set()` всё ещё может вызвать сообщение.

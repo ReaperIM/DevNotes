@@ -4,8 +4,6 @@
 
 [Contents](../../README.md)
 
-PHP improves existing database APIs with shorter prepared queries, clearer errors and driver classes. These examples state the connection or schema they require. Credentials belong in your application configuration.
-
 **In this chapter**
 
 - [PDO exceptions became the default](#pdo-errors)
@@ -20,9 +18,9 @@ PHP improves existing database APIs with shorter prepared queries, clearer error
 
 ## PDO exceptions became the default
 
-**PHP 8.0+ changed default | PDO**
+**PHP 8.0+ changed default | PDO** [PHP manual](https://www.php.net/manual/en/pdo.error-handling.php)
 
-The default changed from silent errors to PDO::ERRMODE_EXCEPTION. Code that only checks false may take a different failure path after upgrading.
+PDO defaults to `ERRMODE_EXCEPTION` rather than silent errors from PHP 8.0. Setting it explicitly also gives PHP 7 the same failure policy.
 
 <!-- example: fragment -->
 ```php
@@ -33,78 +31,76 @@ $statement->execute( [7] );
 $name = $statement->fetchColumn();
 ```
 
-Explicit setup also makes the policy clear on PHP 7. Catch PDOException at a boundary that can handle it meaningfully. false from fetchColumn() may mean no next row, not query failure. Public responses must not expose SQL or connection details. [PHP manual](https://www.php.net/manual/en/pdo.error-handling.php).
+Old branches that only check `false` may now be bypassed by `PDOException`.
 
 <a id="mysqli-errors"></a>
 
 ## mysqli strict reporting became the default
 
-**PHP 8.1+ changed default | mysqli**
+**PHP 8.1+ changed default | mysqli** [PHP manual](https://www.php.net/manual/en/mysqli-driver.report-mode.php)
 
-The default is MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT. Database failures can throw mysqli_sql_exception where older code expected warnings or false.
+mysqli defaults to `MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT` from PHP 8.1.
 
 <!-- example: fragment -->
 ```php
+# Connection settings come from application configuration; users(id, name) exists.
 mysqli_report( MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT );
-# Set before creating the application's mysqli connection.
+$db = new mysqli( $host, $username, $password, $database );
+$statement = $db->prepare( 'SELECT name FROM users WHERE id = ?' );
+$statement->execute( [7] );
 ```
 
-Set error policy once during connection setup and review old error branches when upgrading. This setting does not validate SQL input or choose the connection character set. [PHP manual](https://www.php.net/manual/en/mysqli-driver.report-mode.php).
+Failures can throw `mysqli_sql_exception` where older code expected warnings or `false`.
 
 <a id="mysqli-execute"></a>
 
 ## Execute with an array of parameters
 
-**PHP 8.1+ execute(array) / PHP 8.2+ execute_query() | mysqli**
+**PHP 8.1+ execute(array) / PHP 8.2+ execute_query() | mysqli** [PHP manual](https://www.php.net/manual/en/mysqli.execute-query.php)
 
-From PHP 8.1, mysqli_stmt::execute() accepts a parameter array. PHP 8.2 adds mysqli::execute_query() to prepare, bind and execute a simple query in one call.
+`mysqli_stmt::execute()` accepts a parameter array from 8.1. From 8.2, `execute_query()` combines prepare, bind and execute for a one-off query.
 
 <!-- example: fragment -->
 ```php
 # $db is mysqli; users(id, name) exists.
-$user_id = 7;
-$result = $db->execute_query(
-	'SELECT id, name FROM users WHERE id = ?',
-	[$user_id],
-);
+$result = $db->execute_query( 'SELECT id, name FROM users WHERE id = ?', [7] );
 $user = $result->fetch_assoc();
 
-# Keep a statement when executing the same query repeatedly.
+# Keep the statement when executing the same query repeatedly.
 $statement = $db->prepare( 'SELECT id, name FROM users WHERE id = ?' );
-$statement->execute( [$user_id] );
+$statement->execute( [7] );
 ```
 
-The shortcut returns mysqli_result for result-producing statements and a boolean otherwise. It prepares anew each time; retaining a statement remains useful in loops. Bound values are not manually quoted. For explicit binding types, the older bind_param() API remains available. [PHP manual](https://www.php.net/manual/en/mysqli.execute-query.php).
+`execute_query()` prepares anew each time and returns `mysqli_result` for result sets or a boolean otherwise.
 
 <a id="fetch-column"></a>
 
 ## Read one column directly
 
-**PHP 8.1+ | mysqli**
+**PHP 8.1+ | mysqli** [PHP manual](https://www.php.net/manual/en/mysqli-result.fetch-column.php)
 
-mysqli_result::fetch_column() reads a selected column from the next row. It is handy for a count, setting or iteration over one field.
+`mysqli_result::fetch_column()` reads one selected column from the next row, with column numbering starting at zero.
 
 <!-- example: fragment -->
 ```php
-# PHP 8.2+ for execute_query(); $db is mysqli.
+# $db is mysqli; execute_query() requires PHP 8.2+.
 $result = $db->execute_query( 'SELECT COUNT(*) FROM users' );
 $count = $result->fetch_column();
-# fetch_column(1) would read the second selected column.
 ```
 
-Column numbers start at zero. Every call advances to the next row. false signals no row remains, while SQL NULL becomes null. Driver/query paths can affect scalar PHP types; normalize at a boundary when strict types matter. [PHP manual](https://www.php.net/manual/en/mysqli-result.fetch-column.php).
+Each call advances the row; `false` means no row remains, while SQL NULL becomes `null`.
 
 <a id="pdo-subclasses"></a>
 
 ## Driver-specific PDO classes
 
-**PHP 8.4+ | PDO and matching driver**
+**PHP 8.4+ | PDO and matching driver** [PHP manual](https://www.php.net/manual/en/pdo.connect.php)
 
-PDO::connect() can return the matching subclass, such as Pdo\Mysql, Pdo\Pgsql or Pdo\Sqlite. Driver methods and constants have a home while shared statement operations stay familiar.
+`PDO::connect()` returns a matching subclass such as `Pdo\Mysql`, `Pdo\Pgsql` or `Pdo\Sqlite`, exposing driver-specific methods alongside the shared PDO API.
 
 <!-- example: fragment -->
 ```php
-# Values come from trusted application configuration.
+# DSN and credentials come from application configuration.
 $db = PDO::connect( $dsn, $username, $password, [
 	PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 ] );
@@ -113,17 +109,16 @@ if( $db instanceof Pdo\Mysql )
 	$warnings = $db->getWarningCount();
 ```
 
-The matching driver is still required. new PDO(...) remains valid. PHP 8.5 deprecates old driver-specific PDO::MYSQL_*-style constants in favor of subclass equivalents. Shared constants such as PDO::ATTR_ERRMODE remain on PDO. [PHP manual](https://www.php.net/manual/en/pdo.connect.php).
+PHP 8.5 deprecates driver constants such as `PDO::MYSQL_*` in favor of subclass constants; shared constants remain on PDO.
 
 <a id="sqlite-backup"></a>
 
 ## Copy SQLite through its backup API
 
-**PHP 7.4+ | sqlite3**
+**PHP 7.4+ | sqlite3** [PHP manual](https://www.php.net/manual/en/sqlite3.backup.php)
 
-SQLite3::backup() copies an opened database into another SQLite database. This is useful for backups without designing a raw file-copy procedure around an active database.
+`SQLite3::backup()` copies an opened database into another SQLite database through its backup API, without manually copying the active database file.
 
-<!-- example: fragment -->
 ```php
 $source = new SQLite3( ':memory:' );
 $source->exec( 'CREATE TABLE settings (value TEXT)' );
@@ -134,30 +129,26 @@ if( !$source->backup($destination) )
 	throw new RuntimeException( 'Backup failed' );
 
 echo $destination->querySingle( 'SELECT value FROM settings' ); # ready
-$destination->close();
-$source->close();
 ```
 
-The destination is overwritten: choose it deliberately. This example uses only memory databases. A real backup normally targets a separate file and must be verified as part of a recovery procedure. [PHP manual](https://www.php.net/manual/en/sqlite3.backup.php).
+The destination database is overwritten.
 
 <a id="placeholder-boundaries"></a>
 
 ## What a placeholder represents
 
-**PHP 7.0–8.5 | existing PDO/mysqli rule | Background**
+**PHP 7.0–8.5 | existing PDO/mysqli rule | Background** [PHP manual](https://www.php.net/manual/en/pdo.prepare.php)
 
-Prepared queries predate PHP 7, but newer shortcuts make their boundaries important. One placeholder means one whole value, not a column name, keyword or complete list.
+A prepared-query placeholder represents one whole value, not an identifier, keyword or list.
 
 <!-- example: fragment -->
 ```php
-# $db is PDO; this example deliberately uses a non-empty list.
+# $db is PDO; the list is non-empty.
 $ids = [7, 12, 19];
 $placeholders = implode( ', ', array_fill(0, count($ids), '?') );
-$statement = $db->prepare(
-	'SELECT id, name FROM users WHERE id IN (' . $placeholders . ')'
-);
+$statement = $db->prepare( 'SELECT id, name FROM users WHERE id IN (' . $placeholders . ')' );
 $statement->execute( $ids );
 $users = $statement->fetchAll( PDO::FETCH_ASSOC );
 ```
 
-Only generated punctuation is concatenated; values are bound separately. Handle an empty list before producing SQL. Dynamic identifiers require an allowlist mapping, not value placeholders. Parameterization does not decide which rows a user may access. [PHP manual](https://www.php.net/manual/en/pdo.prepare.php).
+Handle empty lists before generating SQL; dynamic identifiers need an allowlist rather than value placeholders.

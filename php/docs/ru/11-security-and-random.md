@@ -4,8 +4,6 @@
 
 [Содержание](../../README.ru.md)
 
-PHP имеет специальные API для случайных секретов, хешей паролей и проверки данных. Опирайтесь на их документированные гарантии вместо самодельных сочетаний строковых функций. Примеры различают безопасную случайность и воспроизводимые тестовые данные.
-
 **В этой главе**
 
 - [Безопасные случайные байты и числа](#secure-random)
@@ -23,49 +21,46 @@ PHP имеет специальные API для случайных секрет
 
 ## Безопасные случайные байты и числа
 
-**PHP 7.0+ | random / standard in older PHP**
+**PHP 7.0+ | random / standard in older PHP** [Документация PHP](https://www.php.net/manual/en/function.random-bytes.php)
 
-random_bytes() даёт криптографически безопасные байты; random_int() выбирает безопасное целое число с включительными границами. Токен и выбор числа являются разными задачами с разным объёмом результата.
+`random_bytes()` создаёт криптографически стойкие байты; `random_int()` выбирает стойкое случайное целое с включёнными границами.
 
 ```php
 $token = bin2hex( random_bytes(32) );
 $number = random_int( 1, 6 );
 var_dump( strlen($token) ); # int(64)
-var_dump( $number >= 1 && $number <= 6 ); # bool(true)
 ```
 
-32 случайных байта становятся 64 шестнадцатеричными символами; кодирование меняет запись, а не энтропию. Для секретов не заменяйте эти API временем, uniqid() или тестовым генератором с зерном. Шестизначный код всё равно требует срока действия и ограничения попыток. [Документация PHP](https://www.php.net/manual/en/function.random-bytes.php).
+Генераторы симуляций с seed, временные метки и `uniqid()` не подходят как замена для секретов.
 
 <a id="password-algorithms"></a>
 
 ## Алгоритмы паролей и проверка возможностей
 
-**PHP 7.2+ Argon2i / 7.3+ Argon2id / 7.4+ password_algos()**
+**PHP 7.2+ Argon2i / 7.3+ Argon2id / 7.4+ password_algos()** [Документация PHP](https://www.php.net/manual/en/function.password-hash.php)
 
-Поддержка Argon2 расширяет существующий API password_hash(). password_algos() показывает алгоритмы, зарегистрированные в текущей сборке, вместо предположения, что номер версии гарантирует их наличие.
+Варианты Argon2 расширяют `password_hash()`; `password_algos()` показывает алгоритмы, реально доступные в текущей сборке.
 
 ```php
 $password = 'example passphrase';
 $algorithm = (in_array('argon2id', password_algos(), true))
 	? PASSWORD_ARGON2ID
 	: PASSWORD_DEFAULT;
-
 $hash = password_hash( $password, $algorithm );
 var_dump( password_verify($password, $hash) ); # bool(true)
 var_dump( password_needs_rehash($hash, $algorithm) ); # bool(false)
 ```
 
-Сохранённый хеш содержит алгоритм, параметры и соль для проверки. Не шифруйте пароли и не добавляйте собственную соль. После успешного входа проверяйте password_needs_rehash(), если политика изменилась; стоимость вычисления подбирайте измерениями на своём сервере. PASSWORD_DEFAULT является поддерживаемым выбором по умолчанию, а не обещанием выбрать Argon2id. [Документация PHP](https://www.php.net/manual/en/function.password-hash.php).
+`PASSWORD_DEFAULT` не гарантирует Argon2id; при изменении политики проверяйте `password_needs_rehash()` после успешной проверки пароля.
 
 <a id="sodium"></a>
 
 ## Аутентифицированное шифрование через Sodium
 
-**PHP 7.2+ bundled | sodium**
+**PHP 7.2+ bundled | sodium** [Документация PHP](https://www.php.net/manual/en/function.sodium-crypto-secretbox.php)
 
-Sodium поставляется с PHP начиная с 7.2. Secretbox шифрует сообщение и проверяет его подлинность: неверный ключ или изменённый шифротекст не могут незаметно стать принятым открытым текстом.
+Secretbox в Sodium шифрует и проверяет подлинность сообщения, отклоняя неправильный ключ или изменённый шифротекст.
 
-<!-- example: fragment -->
 ```php
 $key = sodium_crypto_secretbox_keygen();
 $nonce = random_bytes( SODIUM_CRYPTO_SECRETBOX_NONCEBYTES );
@@ -78,15 +73,15 @@ if( $plaintext === false )
 echo $plaintext; # private note
 ```
 
-Расширение должно быть включено. Ключ храните в секрете, а nonce сохраняйте или передавайте вместе с шифротекстом; nonce не является паролем и не должен повторяться с тем же ключом. Новый случайный ключ здесь показывает операцию, а не постоянное хранение ключей. Для паролей входа не используйте обратимое шифрование. [Документация PHP](https://www.php.net/manual/en/function.sodium-crypto-secretbox.php).
+Храните ключ в секрете, а nonce вместе с шифротекстом; никогда не используйте nonce повторно с тем же ключом.
 
 <a id="randomizer"></a>
 
 ## Единый API Randomizer
 
-**PHP 8.2+ | random**
+**PHP 8.2+ | random** [Документация PHP](https://www.php.net/manual/en/class.random-randomizer.php)
 
-Randomizer объединяет выбор чисел, байты, перемешивание и выбор ключей массива в одном объекте. Без явно переданного движка используется безопасный движок.
+`Randomizer` объединяет случайные операции с безопасным генератором по умолчанию. `shuffleArray()` возвращает новый список с новыми индексами; `pickArrayKeys()` возвращает ключи, а не значения.
 
 ```php
 $randomizer = new Random\Randomizer();
@@ -95,18 +90,18 @@ $shuffled = $randomizer->shuffleArray( $items );
 $keys = $randomizer->pickArrayKeys( $items, 2 );
 $number = $randomizer->getInt( 10, 20 );
 var_dump( count($shuffled), count($keys) ); # int(3), int(2)
-var_dump( $items[0] ); # string(3) "red"
+var_dump( $items[0] ); # string(3) "red": input unchanged
 ```
 
-shuffleArray() возвращает новый список, не меняет исходный массив и не сохраняет ключи. pickArrayKeys() возвращает ключи, а не значения. getInt() включает обе границы. Выбор небезопасного движка меняет свойства безопасности всех операций с ним. [Документация PHP](https://www.php.net/manual/en/class.random-randomizer.php).
+Выбор некриптографического генератора меняет свойства безопасности его операций.
 
 <a id="seeded-random"></a>
 
 ## Воспроизводимая случайность для тестов
 
-**PHP 8.2+ | random**
+**PHP 8.2+ | random** [Документация PHP](https://www.php.net/manual/en/class.random-engine-mt19937.php)
 
-Движок с явно заданным зерном создаёт воспроизводимые тестовые данные. Два движка с одинаковым зерном и одинаковыми вызовами дают одинаковую последовательность.
+Генератор с seed воспроизводит последовательность, если совпадают генератор, seed и последовательность вызовов.
 
 ```php
 $first = new Random\Randomizer( new Random\Engine\Mt19937(12345) );
@@ -116,15 +111,15 @@ $b = [$second->getInt(1, 100), $second->getInt(1, 100)];
 var_dump( $a === $b ); # bool(true)
 ```
 
-Mt19937, PcgOneseq128XslRr64 и Xoshiro256StarStar подходят для симуляций и тестов, а не секретов. Зерно не является криптографическим ключом. Воспроизведение зависит от движка и порядка вызовов, а не только от зерна. [Документация PHP](https://www.php.net/manual/en/class.random-engine-mt19937.php).
+`Mt19937`, `PcgOneseq128XslRr64` и `Xoshiro256StarStar` подходят для симуляций и тестов, а не для секретов.
 
 <a id="random-alphabet"></a>
 
 ## Случайные байты из заданного алфавита
 
-**PHP 8.3+ | random**
+**PHP 8.3+ | random** [Документация PHP](https://www.php.net/manual/en/random-randomizer.getbytesfromstring.php)
 
-getBytesFromString() выбирает байты из заданного алфавита. Это удобно для коротких идентификаторов или читаемых кодов с явно выбранными символами.
+`getBytesFromString()` создаёт случайную строку из выбранного алфавита, что удобно для читаемых кодов или идентификаторов.
 
 ```php
 $randomizer = new Random\Randomizer();
@@ -134,33 +129,32 @@ var_dump( strlen($code) ); # int(12)
 var_dump( strspn($code, $alphabet) === 12 ); # bool(true)
 ```
 
-Операция работает с байтами, а не символами Unicode: используйте ASCII-алфавит. Повторение байтов в алфавите увеличивает их вероятность. Длина и размер алфавита определяют пространство поиска, поэтому удобный короткий код не становится автоматически сильным долговременным секретом. [Документация PHP](https://www.php.net/manual/en/random-randomizer.getbytesfromstring.php).
+Операция работает с байтами, а не символами Unicode; повторённые байты алфавита имеют большую вероятность.
 
 <a id="random-floats"></a>
 
 ## Случайные дробные числа с явными границами
 
-**PHP 8.3+ | random**
+**PHP 8.3+ | random** [Документация PHP](https://www.php.net/manual/en/random-randomizer.getfloat.php)
 
-nextFloat() даёт значение в [0.0, 1.0). getFloat() выбирает число из нужного интервала; IntervalBoundary управляет включением каждой границы.
+`nextFloat()` возвращает [0.0, 1.0); `getFloat()` принимает границы и режим `IntervalBoundary`.
 
 ```php
 $randomizer = new Random\Randomizer();
-$unit = $randomizer->nextFloat();
-$weight = $randomizer->getFloat( 1.0, 2.0 );
-var_dump( $unit >= 0.0 && $unit < 1.0 ); # bool(true)
+$unit = $randomizer->nextFloat(); # [0.0, 1.0)
+$weight = $randomizer->getFloat( 1.0, 2.0 ); # [1.0, 2.0)
 var_dump( $weight >= 1.0 && $weight < 2.0 ); # bool(true)
 ```
 
-Граница по умолчанию ClosedOpen. Методы позволяют не придумывать преобразование случайных целых через деление. Результат всё равно является двоичным дробным числом, а не точным десятичным денежным значением. [Документация PHP](https://www.php.net/manual/en/random-randomizer.getfloat.php).
+Режим по умолчанию: `ClosedOpen`.
 
 <a id="float-validation"></a>
 
 ## Проверка дробного числа и диапазона
 
-**PHP 7.4+ range options | filter**
+**PHP 7.4+ range options | filter** [Документация PHP](https://www.php.net/manual/en/filter.constants.validation.php)
 
-FILTER_VALIDATE_FLOAT принимает min_range и max_range. Формат и диапазон можно проверить вместе, не превращая некорректный текст в число заранее.
+`FILTER_VALIDATE_FLOAT` принимает `min_range` и `max_range` для совместной проверки формата и диапазона.
 
 ```php
 $price = filter_var( '0', FILTER_VALIDATE_FLOAT, [
@@ -173,15 +167,15 @@ if( $price === false )
 var_dump( $price ); # float(0)
 ```
 
-Проверяйте сбой через === false, чтобы сохранить корректный ноль. Десятичный формат и правила локали должны соответствовать параметрам фильтра. Проверенный float всё равно имеет обычные ограничения точности. [Документация PHP](https://www.php.net/manual/en/filter.constants.validation.php).
+Проверяйте сбой через `=== false`, чтобы сохранить корректный ноль.
 
 <a id="filter-exceptions"></a>
 
 ## Исключение при неудачной проверке
 
-**PHP 8.5+ | filter**
+**PHP 8.5+ | filter** [Документация PHP](https://wiki.php.net/rfc/filter_throw_on_failure)
 
-FILTER_THROW_ON_FAILURE превращает неудачную проверку в Filter\FilterFailedException. Это особенно удобно, когда false само является корректным результатом фильтрации.
+`FILTER_THROW_ON_FAILURE` выбрасывает `Filter\FilterFailedException` для некорректного ввода, допуская корректный результат `false`.
 
 ```php
 $enabled = filter_var( 'false', FILTER_VALIDATE_BOOL, FILTER_THROW_ON_FAILURE );
@@ -197,17 +191,16 @@ catch( Filter\FilterFailedException $error )
 }
 ```
 
-Флаг нельзя сочетать с FILTER_NULL_ON_FAILURE. Детали исключения могут содержать отклонённое значение; не показывайте их пользователям и не записывайте секреты бездумно. Проверка не заменяет экранирование для конкретного контекста вывода. [Документация PHP](https://wiki.php.net/rfc/filter_throw_on_failure).
+Флаг нельзя сочетать с `FILTER_NULL_ON_FAILURE`.
 
 <a id="cipher-key-length"></a>
 
 ## Получение длины ключа от OpenSSL
 
-**PHP 8.2+ | openssl**
+**PHP 8.2+ | openssl** [Документация PHP](https://www.php.net/manual/en/function.openssl-cipher-key-length.php)
 
-openssl_cipher_key_length() возвращает нужную длину ключа поддерживаемого шифра. Это заменяет собственную таблицу названий алгоритмов и количества байтов.
+`openssl_cipher_key_length()` возвращает нужную длину ключа поддерживаемого шифра в байтах.
 
-<!-- example: fragment -->
 ```php
 $length = openssl_cipher_key_length( 'aes-256-gcm' );
 
@@ -215,7 +208,7 @@ if( $length === false )
 	throw new RuntimeException( 'Cipher unavailable' );
 
 $key = random_bytes( $length );
-var_dump( strlen($key) ); # int(32) for aes-256-gcm
+var_dump( strlen($key) ); # int(32)
 ```
 
-Возвращаются байты, а не биты. Неизвестный шифр вызывает предупреждение и возвращает false. Одна длина ключа не проектирует шифрование: nonce/IV, теги подлинности и хранение ключа остаются отдельными требованиями. [Документация PHP](https://www.php.net/manual/en/function.openssl-cipher-key-length.php).
+Неизвестный шифр вызывает предупреждение и возвращает `false`.

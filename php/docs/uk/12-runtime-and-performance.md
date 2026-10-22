@@ -4,8 +4,6 @@
 
 [Зміст](../../README.uk.md)
 
-Можливості середовища виконання впливають на час життя, розгортання й вимірювання. Вони корисні, коли їхня вартість відповідає застосунку: новий синтаксис чи ввімкнений параметр сам собою не гарантує швидшого запиту.
-
 **У цьому розділі**
 
 - [Спостереження за об’єктом без утримання в пам’яті](#weak-reference)
@@ -24,9 +22,9 @@
 
 ## Спостереження за об’єктом без утримання в пам’яті
 
-**PHP 7.4+ | Core**
+**PHP 7.4+ | Core** [Документація PHP](https://www.php.net/manual/en/class.weakreference.php)
 
-WeakReference зберігає посилання, яке не утримує об’єкт. get() повертає об’єкт, поки інше сильне посилання підтримує його життя, і null після знищення.
+`WeakReference` зберігає посилання, яке не утримує об’єкт у пам’яті. `get()` повертає об’єкт, поки інше сильне посилання підтримує його життя, і `null` після знищення.
 
 ```php
 $object = new stdClass();
@@ -36,15 +34,15 @@ unset( $object );
 var_dump( $reference->get() ); # NULL
 ```
 
-Це корисно для спостерігачів і кешів, які не повинні володіти цільовим об’єктом. Збереження get() у звичайну змінну знову створює сильне посилання. WeakReference керує часом життя, а не замінює звичайне проєктування володіння об’єктами. [Документація PHP](https://www.php.net/manual/en/class.weakreference.php).
+Збереження `get()` у звичайну змінну знову створює сильне посилання.
 
 <a id="weak-map"></a>
 
 ## Кеш даних зі слабкими ключами-об’єктами
 
-**PHP 8.0+ | Core**
+**PHP 8.0+ | Core** [Документація PHP](https://www.php.net/manual/en/class.weakmap.php)
 
-WeakMap пов’язує дані з ключами-об’єктами, не утримуючи самі ключі в пам’яті. Коли ключ знищується, відповідний запис зникає.
+`WeakMap` пов’язує дані з ключами-об’єктами, не утримуючи ці ключі в пам’яті. Коли ключ знищується, його запис у мапі зникає.
 
 ```php
 $cache = new WeakMap();
@@ -55,15 +53,15 @@ unset( $object );
 var_dump( count($cache) ); # int(0)
 ```
 
-Значення утримуються звичайним способом. Якщо значення кешу сильно посилається на власний ключ, це може зберегти об’єкт. WeakMap допомагає кешам похідних даних об’єкта; він не обмежує сторонні дані кешу й не розв’язує цикли посилань решти застосунку. [Документація PHP](https://www.php.net/manual/en/class.weakmap.php).
+Значення утримуються сильними посиланнями, тому посилання значення на власний ключ може зберегти ключ у пам'яті.
 
 <a id="fibers"></a>
 
 ## Призупинення й відновлення стека викликів
 
-**PHP 8.1+ | Core**
+**PHP 8.1+ | Core** [Документація PHP](https://www.php.net/manual/en/language.fibers.php)
 
-Fiber має стек виконання, який можна відновити. Функція глибоко в ланцюжку може призупинити його, не змушуючи кожного викликувача ставати генератором.
+Fiber зберігає стек викликів, який можна відновити, тож функція глибоко в ланцюжку може його призупинити. `resume()` задає результат `suspend()`, а `getReturn()` читає остаточний результат функції.
 
 ```php
 $fiber = new Fiber( function(): int
@@ -73,70 +71,69 @@ $fiber = new Fiber( function(): int
 } );
 
 echo $fiber->start(), "\n"; # waiting
-var_dump( $fiber->resume(21) ); # NULL: the fiber completed
+var_dump( $fiber->resume(21) ); # NULL: completed
 var_dump( $fiber->getReturn() ); # int(42)
 ```
 
-Аргумент resume стає результатом suspend(). Остаточний результат функції читають через getReturn(), а не resume(). Fibers працюють кооперативно, це не паралельні CPU-потоки: блокувальне введення-виведення далі блокує без планувальника й відповідних неблокувальних операцій. [Документація PHP](https://www.php.net/manual/en/language.fibers.php).
+Fibers працюють кооперативно: блокувальне введення-виведення досі блокує без планувальника та неблокувальних операцій.
 
 <a id="preloading"></a>
 
 ## Попереднє завантаження сталого коду
 
-**PHP 7.4+ | OPcache**
+**PHP 7.4+ | OPcache** [Документація PHP](https://www.php.net/manual/en/opcache.preloading.php)
 
-Попереднє завантаження читає вибрані функції й класи на старті PHP, щоб наступні запити постійного процесу користувалися ними без повторного завантаження. Це обмін базової пам’яті й гнучкості розгортання на меншу повторну роботу.
+У php.ini задайте в `opcache.preload` шлях до стартового скрипта, який один раз завантажить вибрані функції та класи для наступних запитів постійних процесів.
 
 <!-- example: fragment -->
 ```php
-# PHP code inside the configured preload script.
+# preload.php, selected by opcache.preload in php.ini.
 opcache_compile_file( __DIR__ . '/src/User.php' );
 ```
 
-Задайте шлях до цього скрипту в opcache.preload; у Unix-розгортанні opcache.preload_user може вибрати користувача запуску. Windows не підтримує preloading. Зміна попередньо завантажених визначень потребує перезапуску процесу. Це насамперед для постійних процесів, а не разового CLI-виклику; вибирайте код із контрольованою поведінкою на старті. [Документація PHP](https://www.php.net/manual/en/opcache.preloading.php).
+Windows не підтримує preloading; зміна попередньо завантажених визначень потребує перезапуску процесу.
 
 <a id="jit"></a>
 
 ## JIT та OPcache є різними інструментами
 
-**PHP 8.0+ JIT | OPcache**
+**PHP 8.0+ JIT | OPcache** [Документація PHP](https://www.php.net/manual/en/opcache.configuration.php)
 
-OPcache кешує скомпільований байткод PHP. JIT може компілювати придатні шляхи виконання в машинний код. Це різні оптимізації з різною вартістю.
+OPcache кешує скомпільований байткод; JIT може компілювати відповідні шляхи виконання в машинний код.
 
 ```php
 $status = opcache_get_status( false );
 $jit = ($status === false) ? null : ($status['jit'] ?? null);
-var_dump( $jit ); # Environment-dependent status, not a benchmark.
+var_dump( $jit ); # Environment-dependent.
 ```
 
-Вимкнений OPcache може повернути false. Наявність і користь JIT залежать від збірки, параметрів та навантаження. Вимірюйте справжні гарячі ділянки: очікування бази, диска й мережі не зникає від швидшої арифметики PHP. Для CLI-перевірок явно перевіряйте opcache.enable_cli та буфер і параметри JIT; не визначайте активність за номером PHP. [Документація PHP](https://www.php.net/manual/en/opcache.configuration.php).
+Наявність і користь залежать від збірки, параметрів і навантаження; для CLI-вимірювань перевіряйте `opcache.enable_cli` та параметри JIT.
 
 <a id="ffi"></a>
 
 ## FFI для явної взаємодії з C
 
-**PHP 7.4+ | FFI**
+**PHP 7.4+ | FFI** [Документація PHP](https://www.php.net/manual/en/book.ffi.php)
 
-FFI дозволяє PHP описувати типи C й викликати функції нативних бібліотек без написання повного розширення PHP. Це корисно, коли потрібний C API не має відповідної обгортки.
+FFI описує нативні типи та функції C; цей приклад виділяє ціле C без завантаження бібліотеки.
 
 <!-- example: fragment -->
 ```php
-# Requires the FFI extension and a policy that permits this call.
 $ffi = FFI::cdef();
 $value = $ffi->new( 'int' );
 $value->cdata = 42;
 var_dump( $value->cdata ); # int(42)
 ```
 
-Тут лише виділяється C-значення, бібліотека не завантажується. Справжнє використання потребує точних нативних сигнатур, знання платформи/ABI та контролю часу життя пам’яті. FFI може бути обмежений ffi.enable. Це не універсальний спосіб прискорити PHP; небезпечний нативний виклик здатний завершити процес аварійно. [Документація PHP](https://www.php.net/manual/en/book.ffi.php).
+`ffi.enable` може обмежувати виклики, а неправильні нативні сигнатури чи робота з пам'яттю можуть аварійно завершити процес.
 
 <a id="ini-quantities"></a>
 
 ## Розбір розмірів із php.ini
 
-**PHP 8.2+ | Core**
+**PHP 8.2+ | Core** [Документація PHP](https://www.php.net/manual/en/function.ini-parse-quantity.php)
 
-ini_parse_quantity() розуміє скорочені множники PHP K, M і G. Це зручно для читання відомого параметра ini без власного парсера суфіксів.
+`ini_parse_quantity()` розбирає розміри php.ini з множниками K, M і G на основі 1024.
 
 ```php
 var_dump( ini_parse_quantity('128M') ); # int(134217728)
@@ -144,48 +141,57 @@ var_dump( ini_parse_quantity('512K') ); # int(524288)
 var_dump( ini_parse_quantity('-1') ); # int(-1)
 ```
 
-Множники використовують степені 1024. Зберігайте спеціальні значення параметра: -1 може означати відсутність ліміту memory_limit, а не кількість доступних байтів. Для некоректного тексту парсер може попередити й прочитати числовий початок; це не сувора перевірка довільного вводу. [Документація PHP](https://www.php.net/manual/en/function.ini-parse-quantity.php).
+Зберігайте спеціальні значення параметрів на зразок `memory_limit=-1`; некоректний текст може викликати попередження та дати числовий початок.
 
 <a id="measure-memory"></a>
 
 ## Скидання піку пам’яті для окремого етапу
 
-**PHP 8.2+ | Core**
+**PHP 8.2+ | Core** [Документація PHP](https://www.php.net/manual/en/function.memory-reset-peak-usage.php)
 
-memory_reset_peak_usage() скидає лічильник піку до поточного використання. Так наступний етап можна виміряти без максимуму, що лишився від попередньої операції.
+Скиньте пік пам'яті перед вимірюванням етапу, щоб пік попередньої операції не приховував його витрати пам'яті.
 
 ```php
 memory_reset_peak_usage();
 $before = memory_get_usage();
 $buffer = str_repeat( 'x', 1_000_000 );
-$peak = memory_get_peak_usage();
-var_dump( $peak >= $before + strlen($buffer) ); # bool(true)
+$peak_growth = memory_get_peak_usage() - $before;
+var_dump( $peak_growth ); # Peak growth in bytes.
 unset( $buffer );
 ```
 
-Пік залишається абсолютним значенням процесу, а не автоматично різницею етапу. Для порівняння використовуйте однаковий режим real_usage. Алокатор та інші збережені дані впливають на підсумок; скидання не звільняє пам’ять. [Документація PHP](https://www.php.net/manual/en/function.memory-reset-peak-usage.php).
+Пік залишається абсолютним значенням процесу, а скидання не звільняє пам'ять.
 
 <a id="ini-and-cli"></a>
 
 ## Типові значення середовища, права журналу й пакетний lint
 
-**PHP 8.2+ log mode / PHP 8.3+ ini fallback and batch lint**
+**PHP 8.2+ log mode / PHP 8.3+ ini fallback and batch lint** [Документація PHP](https://www.php.net/manual/en/configuration.file.php)
 
-PHP 8.3 дозволяє в php.ini резервне значення для відсутньої змінної середовища та кілька файлів після php -l. PHP 8.2 додав error_log_mode для прав файлу журналу.
+PHP 8.3 додає запасні значення змінних середовища в php.ini та `php -l` для кількох файлів; PHP 8.2 додає `error_log_mode`.
 
-У php.ini використовуйте `max_execution_time = ${PHP_MAX_EXECUTION_TIME:-30}`. Для файлового журналу `error_log_mode = 0640` задає Unix-права створення з урахуванням правил ОС; Windows ACL налаштовуються окремо. `php -l first.php second.php` перевіряє лише синтаксис: не запускає тести, не перевіряє всі типи виконання й налаштування розширень. CLI та FPM можуть читати різні ini-файли; перевіряйте справжні параметри SAPI. [Документація PHP](https://www.php.net/manual/en/configuration.file.php).
+```ini
+max_execution_time = ${PHP_MAX_EXECUTION_TIME:-30}
+error_log_mode = 0640
+```
+
+```sh
+php -l first.php second.php
+```
+
+`error_log_mode` задає Unix-права створення; ACL Windows налаштовуються окремо.
 
 <a id="extension-capabilities"></a>
 
 ## Перевірка можливостей збірки: AVIF у GD
 
-**PHP 8.1+ AVIF API | gd**
+**PHP 8.1+ AVIF API | gd** [Документація PHP](https://www.php.net/manual/en/function.imageavif.php)
 
-Версія PHP може мати API, але розширення або нативний кодек відсутній. Підтримка AVIF у GD є прикладом, де важливо перевірити конкретну збірку.
+GD має функції читання та запису AVIF від PHP 8.1; `imagetypes()` перевіряє підтримку кодека в поточній збірці.
 
 <!-- example: fragment -->
 ```php
-# Requires GD; $source_path and $target_path are trusted local paths.
+# $source_path and $target_path are trusted local paths.
 if( !(imagetypes() & IMG_AVIF) )
 	throw new RuntimeException( 'AVIF support is unavailable' );
 
@@ -197,15 +203,15 @@ if( $image === false )
 imageavif( $image, $target_path, 80 );
 ```
 
-Функції читання й запису AVIF з’явилися в PHP 8.1, але GD має бути зібраний із кодеком. Перед прийманням довільних зображень обмежуйте розміри та ресурси. Такий самий принцип діє для curl, intl, sodium, драйверів PDO та інших необов’язкових модулів: перевіряйте середовище виконання. [Документація PHP](https://www.php.net/manual/en/function.imageavif.php).
+Наявність PHP API не гарантує, що GD зібрано з кодеком.
 
 <a id="monotonic-time"></a>
 
 ## Вимірювання тривалості монотонним годинником
 
-**PHP 7.3+ | standard**
+**PHP 7.3+ | standard** [Документація PHP](https://www.php.net/manual/en/function.hrtime.php)
 
-hrtime() вимірює час високої роздільності від довільного початку. Годинник монотонний: зміни календарного часу не змінюють його шкалу. Для тривалості етапу відніміть два показники; для календарних міток використовуйте API дати й часу.
+`hrtime()` вимірює тривалість монотонними годинниками, незалежними від змін календарного часу.
 
 ```php
 $started_at = hrtime( true );
@@ -213,10 +219,10 @@ $digest = hash( 'sha256', str_repeat('x', 100000) );
 $finished_at = hrtime( true );
 
 if( $started_at === false || $finished_at === false )
-	throw new RuntimeException( 'High-resolution clock is unavailable' );
+	throw new RuntimeException( 'Clock unavailable' );
 
 $elapsed_ms = ($finished_at - $started_at) / 1000000;
-var_dump( $elapsed_ms >= 0 ); # bool(true); the actual duration varies.
+var_dump( $elapsed_ms ); # Elapsed milliseconds; varies each run.
 ```
 
-З true результатом є наносекунди як int на 64-бітних платформах або float на 32-бітних. Без true повертається [секунди, наносекунди]; при збої false. Одиниця наносекунд не гарантує наносекундної точності обладнання, а float на 32-бітній платформі не зберігає кожну цілу наносекунду. Порівнюйте однакове навантаження повторними вимірюваннями, а не робіть висновок з одного запуску. [Документація PHP](https://www.php.net/manual/en/function.hrtime.php).
+З `true` наносекунди мають тип int на 64-бітних і float на 32-бітних платформах; одиниця не гарантує наносекундної точності обладнання.

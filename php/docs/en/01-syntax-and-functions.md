@@ -4,8 +4,6 @@
 
 [Contents](../../README.md)
 
-This chapter explains the syntax that makes everyday PHP shorter and more explicit. Each PHP block is independent. The version next to a section is the minimum for its main feature; later additions are identified in the text.
-
 **On this page**
 
 - [A default value with ??](#null-coalescing)
@@ -35,113 +33,98 @@ This chapter explains the syntax that makes everyday PHP shorter and more explic
 <a id="null-coalescing"></a>
 ## A default value with ??
 
-**PHP 7.0+ | Core**
+**PHP 7.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.operators.comparison.php#language.operators.comparison.coalesce)
 
-Use `??` when a missing value and `null` both mean “use the default”. Existing `0`, `false` and an empty string are preserved. This is useful for configuration and optional array fields.
+`??` supplies a fallback for missing or `null` values while preserving `0`, `false` and `''`.
 
 ```php
 $config = ['limit' => 0, 'label' => null];
+$limit = $config['limit'] ?? 20;
+$label = $config['label'] ?? 'Untitled';
 
-var_dump( $config['limit'] ?? 20 );
-var_dump( $config['label'] ?? 'Untitled' );
-var_dump( $config['missing'] ?? 'Fallback' );
-# int(0), string(8) "Untitled", string(8) "Fallback"
+echo $limit, ':', $label; # 0:Untitled
 ```
 
-Unlike `?:`, this does not replace every false-like value. It also does not distinguish an absent key from a key explicitly containing `null`; use `array_key_exists()` when that distinction matters. Parenthesize the coalescing expression when combining it with concatenation.
-
-[PHP documentation](https://www.php.net/manual/en/language.operators.comparison.php#language.operators.comparison.coalesce)
+Use `array_key_exists()` to distinguish a missing key from `null`; parenthesize `??` when combining it with concatenation.
 
 <a id="null-coalescing-assignment"></a>
 ## Fill missing configuration with ??=
 
-**PHP 7.4+ | Core**
+**PHP 7.4+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.operators.assignment.php)
 
-`??=` writes the default back to the variable or array entry. Use it when later code should see a normalized configuration, rather than only computing a temporary fallback.
+`??=` assigns a default when the current value is missing or `null`.
 
 ```php
 $config = ['retries' => 0];
 $config['timeout'] ??= 30;
 $config['retries'] ??= 3;
 
-echo $config['timeout'], ':', $config['retries'];
-# 30:0
+echo $config['timeout'], ':', $config['retries']; # 30:0
 ```
 
-An entry containing `null` is replaced too. The right side is evaluated only if an assignment is necessary, so it can contain a more expensive default calculation.
-
-[PHP documentation](https://www.php.net/manual/en/language.operators.assignment.php)
+The right side is evaluated only when assignment is needed; existing zero values remain unchanged.
 
 <a id="spaceship"></a>
 ## Sorting with the spaceship operator <=>
 
-**PHP 7.0+ | Core**
+**PHP 7.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.operators.comparison.php)
 
-A comparison callback for sorting must return a negative number, zero or a positive number. `<=>` produces exactly that shape: `-1`, `0` or `1`. This removes a chain of conditions from a comparator.
+`<=>` returns `-1`, `0` or `1` for sorting callbacks; reversing operands reverses the order.
 
 ```php
 $rows = [['score' => 8], ['score' => 2], ['score' => 5]];
-
 usort( $rows, function( array $left, array $right ): int
 {
 	return $left['score'] <=> $right['score'];
 } );
 
-echo implode( ',', array_column($rows, 'score') );
-# 2,5,8
+echo implode( ',', array_column($rows, 'score') ); # 2,5,8
 ```
 
-Swap the operands for descending order. Normalize the compared data first if types can differ: `<=>` follows PHP comparison rules and is not a strict equality operator. Returning only `true` or `false` is not a proper three-way comparator.
-
-[PHP documentation](https://www.php.net/manual/en/language.operators.comparison.php)
+It follows PHP comparison rules rather than strict identity, so mixed types may need normalization.
 
 <a id="arrow-functions"></a>
 ## Arrow functions and captured values
 
-**PHP 7.4+ | Core**
+**PHP 7.4+ | Core** | [PHP documentation](https://www.php.net/manual/en/functions.arrow.php)
 
-`fn` is useful for a short transformation containing one expression. Variables used from the surrounding scope are captured by value when the function is created; no explicit `use` list is needed.
+`fn` defines a single-expression closure and captures outer variables by value.
 
 ```php
 $factor = 10;
 $multiply = fn( int $value ): int => $value * $factor;
 $factor = 20;
-
-echo $multiply( 3 );
-# 30
+echo $multiply( 3 ); # 30
 ```
 
-Use a normal closure for multiple statements or `use( &$value )` when an outer variable must be updated. Capturing an object by value still refers to the same object; it does not create a deep copy. `static fn` also avoids automatically binding `$this`.
-
-[PHP documentation](https://www.php.net/manual/en/functions.arrow.php)
+Objects still refer to the same instance; use a normal closure for reference capture and `static fn` to avoid binding `$this`.
 
 <a id="named-arguments"></a>
 ## Named arguments
 
-**PHP 8.0+ | Core**
+**PHP 8.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments)
 
-Parameter names let a call explain its own meaning and skip optional parameters. This is especially useful for several boolean options or functions with many defaults.
+Named arguments select parameters by name and allow skipping optional ones.
 
 ```php
-function describe_item( string $name, bool $active = true, int $limit = 20 ): string
+function describe_item( string $name, string $separator = ':', int $limit = 20 ): string
 {
-	return $name . ':' . $limit;
+	return $name . $separator . $limit;
 }
 
-echo describe_item( 'Report', limit: 5 );
-# Report:5
+$label = describe_item( 'Report', limit: 5 );
+
+echo $label; # Report:5
 ```
 
-Positional arguments must come before named ones. Parameter names now form part of the callable interface: renaming `$limit` can break callers that use `limit:`. Prefer meaningful stable names in public functions.
-
-[PHP documentation](https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments)
+Positional arguments must come first, and renaming a parameter can break callers using its name.
 
 <a id="unpacking-named-arguments"></a>
 ## String keys become named arguments
 
-**PHP 8.0+ | Core**
+**PHP 8.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/function.call-user-func-array.php)
 
-When an array is unpacked into a call, string keys are treated as parameter names. This also matters when migrating `call_user_func_array()` code to PHP 8: an associative array is no longer just a positional list.
+String keys in unpacked argument arrays become parameter names, including in `call_user_func_array()`.
 
 ```php
 function format_range( int $start, int $end ): string
@@ -150,20 +133,17 @@ function format_range( int $start, int $end ): string
 }
 
 $arguments = ['end' => 9, 'start' => 3];
-echo format_range( ...$arguments );
-# 3-9
+echo format_range( ...$arguments ); # 3-9
 ```
 
-Unknown names or duplicate assignments to one parameter produce an error. If keys are arbitrary labels and positional order is intended, deliberately use `array_values()` first. Do not unpack unchecked request data directly into an application function.
-
-[PHP documentation](https://www.php.net/manual/en/function.call-user-func-array.php)
+Unknown names and duplicate assignments cause errors; use `array_values()` when keys are labels and positional order is intended.
 
 <a id="named-after-unpacking"></a>
 ## Named arguments after unpacking
 
-**PHP 8.1+ | Core**
+**PHP 8.1+ | Core** | [PHP documentation](https://www.php.net/manual/en/functions.arguments.php)
 
-A call can unpack a prepared list and then set a remaining parameter by name. This is useful when one caller needs an explicit option in addition to shared positional arguments.
+Named arguments may follow argument unpacking.
 
 ```php
 function join_parts( string $left, string $right, string $separator = '/' ): string
@@ -172,20 +152,17 @@ function join_parts( string $left, string $right, string $separator = '/' ): str
 }
 
 $parts = ['docs', 'types'];
-echo join_parts( ...$parts, separator: ':' );
-# docs:types
+echo join_parts( ...$parts, separator: ':' ); # docs:types
 ```
 
-The later named argument must not overwrite a parameter already supplied by the unpacked array. This is an argument feature, separate from unpacking arrays into another array.
-
-[PHP documentation](https://www.php.net/manual/en/functions.arguments.php)
+They must not overwrite a parameter already supplied by the unpacked array.
 
 <a id="match"></a>
 ## match returns a value and compares strictly
 
-**PHP 8.0+ | Core**
+**PHP 8.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/control-structures.match.php)
 
-`match` is convenient when a small set of inputs determines one result. Each selected arm is an expression, and the subject is compared using strict identity, so `1` and `'1'` can lead to different results.
+`match` returns an expression result, compares with strict identity and has no fall-through.
 
 ```php
 $status = '1';
@@ -193,68 +170,51 @@ $label = match( $status )
 {
 	1 => 'numeric',
 	'1' => 'text',
-	2, 3 => 'other known state',
+	2, 3 => 'known',
 	default => 'unknown',
 };
 
-echo $label;
-# text
+echo $label; # text
 ```
 
-There is no fall-through or `break`. Without a matching arm or `default`, PHP throws `UnhandledMatchError`. A missing default can be intentional when every enum case should be handled. Replacing a `switch` requires checking its previous loose-comparison behavior.
-
-[PHP documentation](https://www.php.net/manual/en/control-structures.match.php)
+Without a matching arm or `default`, it throws `UnhandledMatchError`; this differs from the loose comparisons in `switch`.
 
 <a id="nullsafe"></a>
 ## A nullable object chain with ?->
 
-**PHP 8.0+ | Core**
+**PHP 8.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.oop5.basic.php#language.oop5.basic.nullsafe)
 
-`?->` stops an object access chain when its left operand is `null`. It is a compact way to express “this related object may legitimately be absent”.
+`?->` short-circuits an object chain when its left operand is `null`; mark every nullable step.
 
 ```php
-class Profile
-{
-	public function city(): string
-	{
-		return 'Kyiv';
-	}
-}
-
 $profile = null;
-echo $profile?->city() ?? 'Not provided';
-# Not provided
+$city = $profile?->address?->city ?? 'Not provided';
+
+echo $city; # Not provided
 ```
 
-Apply `?->` at every nullable step. It does not validate unknown property names, convert `false` into `null`, or hide exceptions thrown by a real method. It is read-only: assigning through a nullsafe chain is not supported. Required relationships should fail explicitly instead of silently disappearing.
-
-[PHP documentation](https://www.php.net/manual/en/language.oop5.basic.php#language.oop5.basic.nullsafe)
+It supports reads only and does not suppress invalid accesses or exceptions on non-null objects.
 
 <a id="throw-expression"></a>
 ## throw inside an expression
 
-**PHP 8.0+ | Core**
+**PHP 8.0+ | Core** | [PHP documentation](https://www.php.net/exceptions)
 
-A missing required value can lead directly to an exception in the expression that reads it. Keep this for short checks whose meaning remains obvious.
+`throw` can appear inside an expression, including a `??` fallback.
 
 ```php
 $config = ['token' => 'local-example'];
 $token = $config['token'] ?? throw new InvalidArgumentException( 'Token is required' );
-
-echo $token;
-# local-example
 ```
 
-The check above accepts an empty string because `??` only tests absence and `null`. Validate the contents separately if an empty token is invalid. Use a normal `if` block when validation needs several steps or a more useful error message.
-
-[PHP documentation](https://www.php.net/exceptions)
+Here an empty string is still accepted because `??` only checks absence and `null`.
 
 <a id="closure-from-callable"></a>
 ## Convert a callable with Closure::fromCallable()
 
-**PHP 7.1+ | Core**
+**PHP 7.1+ | Core** | [PHP documentation](https://www.php.net/manual/en/closure.fromcallable.php)
 
-`Closure::fromCallable()` turns an existing callable into a `Closure` and checks that it is callable in the current scope. This is useful when a callback arrives as a function name or method array but the receiving API stores a closure.
+`Closure::fromCallable()` creates a closure and checks callable access in the current scope.
 
 ```php
 function add_prefix( string $name ): string
@@ -263,41 +223,34 @@ function add_prefix( string $name ): string
 }
 
 $format = Closure::fromCallable( 'add_prefix' );
-echo $format( 'types' ), PHP_EOL;
-var_dump( $format instanceof Closure );
-# note:types
-# bool(true)
+
+echo $format( 'types' ); # note:types
 ```
 
-An invalid or inaccessible callable throws `TypeError` at conversion time. The resulting closure keeps the callable’s visibility context; it does not make an arbitrary private method publicly accessible. From PHP 8.1, [first-class callable syntax](#first-class-callables) offers the same semantics for a callable written directly in code.
-
-[PHP documentation](https://www.php.net/manual/en/closure.fromcallable.php)
+Invalid or inaccessible callables throw `TypeError`; [first-class callable syntax](#first-class-callables) provides the same semantics from PHP 8.1.
 
 <a id="first-class-callables"></a>
 ## First-class callable syntax: function_name(...)
 
-**PHP 8.1+ | Core**
+**PHP 8.1+ | Core** | [PHP documentation](https://www.php.net/manual/en/functions.first_class_callable_syntax.php)
 
-The literal `...` creates a `Closure` instead of calling the function. Use it when passing a known function or method as a callback; the callable is resolved at creation time.
+`function_name(...)` creates a `Closure` and resolves access at creation time; method callables preserve that visibility scope.
 
 ```php
 $normalize = trim(...);
 $values = array_map( $normalize, [' one ', ' two '] );
 
-echo implode( ',', $values );
-# one,two
+echo implode( ',', $values ); # one,two
 ```
 
-`$service->handle(...)` also captures the method in the current visibility scope. This syntax is not argument unpacking: there is no array after the dots. It cannot be combined with `?->` or used as `new ClassName(...)` to create a constructor callback.
-
-[PHP documentation](https://www.php.net/manual/en/functions.first_class_callable_syntax.php)
+This is not argument unpacking and cannot be combined with `?->` or `new ClassName(...)`.
 
 <a id="pipe"></a>
 ## The pipe operator |>
 
-**PHP 8.5+ | Core**
+**PHP 8.5+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.operators.functional.php)
 
-A pipe passes the value on its left to the callable on its right, then evaluates to the returned result. A sequence of small transformations can be read in execution order.
+`|>` passes its left value to the callable on the right and returns that call’s result.
 
 ```php
 $slug = ' PHP Notes '
@@ -305,20 +258,17 @@ $slug = ' PHP Notes '
 	|> strtolower(...)
 	|> (fn( string $text ): string => str_replace(' ', '-', $text));
 
-echo $slug;
-# php-notes
+echo $slug; # php-notes
 ```
 
-The callable must accept the piped value as its argument. Use a small closure to adapt functions requiring additional arguments or a different argument position. Pipes execute synchronously, do not handle errors for you and do not make a long transformation automatically more readable.
-
-[PHP documentation](https://www.php.net/manual/en/language.operators.functional.php)
+Adapt additional arguments or another argument position with a closure; the chain executes synchronously.
 
 <a id="closures-in-constant-expressions"></a>
 ## Callbacks in constant expressions
 
-**PHP 8.5+ | Core**
+**PHP 8.5+ | Core** | [PHP documentation](https://wiki.php.net/rfc/closures_in_const_expr)
 
-First-class callables and restricted static closures can now appear where PHP requires a constant expression, including parameter defaults and constants. A callback can have a useful default without a nullable parameter and an extra initialization branch.
+First-class callables and restricted static closures are allowed in constant expressions, including defaults and constants.
 
 ```php
 function normalize_name( string $name, Closure $normalizer = trim(...) ): string
@@ -326,20 +276,17 @@ function normalize_name( string $name, Closure $normalizer = trim(...) ): string
 	return $normalizer( $name );
 }
 
-echo normalize_name( ' Ada ' );
-# Ada
+echo normalize_name( ' Ada ' ); # Ada
 ```
 
-This does not permit arbitrary function calls inside constants. The expression creates the callable; its body runs later when it is invoked. Closures in constant expressions must be static and cannot capture outer variables with `use`.
-
-[PHP documentation](https://wiki.php.net/rfc/closures_in_const_expr)
+They create callbacks rather than execute them; closures must be static and cannot capture variables with `use`.
 
 <a id="recursive-closures"></a>
 ## Recursion with Closure::getCurrent()
 
-**PHP 8.5+ | Core**
+**PHP 8.5+ | Core** | [PHP documentation](https://www.php.net/manual/en/closure.getcurrent.php)
 
-A closure can obtain its own currently executing instance. This avoids capturing the variable that will hold it by reference merely to call itself recursively.
+`Closure::getCurrent()` obtains the executing closure for recursion without capturing its variable by reference.
 
 ```php
 $factorial = static function( int $value ): int
@@ -354,23 +301,19 @@ $factorial = static function( int $value ): int
 	return $value * $current( $value - 1 );
 };
 
-echo $factorial( 5 );
-# 120
+echo $factorial( 5 ); # 120
 ```
 
-Calling `Closure::getCurrent()` outside a closure throws `Error`. It simplifies the reference, not the algorithm: a deep recursion can still exhaust resources, and factorial values quickly exceed the integer range.
-
-[PHP documentation](https://www.php.net/manual/en/closure.getcurrent.php)
+Calling it outside a closure throws `Error`.
 
 <a id="trailing-commas"></a>
 ## Trailing commas in calls and declarations
 
-**PHP 7.3+ | Core**
+**PHP 7.3+ | Core** | [PHP documentation](https://www.php.net/manual/en/functions.arguments.php)
 
-PHP 7.3 accepts a trailing comma in a function or method call. PHP 8.0 also accepts it in parameter declarations and closure `use` lists. This makes adding a line to a multiline list produce a smaller diff.
+Trailing commas are supported in calls from PHP 7.3, and in parameter declarations and closure `use` lists from PHP 8.0.
 
 ```php
-# This call syntax works from PHP 7.3.
 echo implode(
 	',',
 	['one', 'two'],
@@ -378,55 +321,43 @@ echo implode(
 # one,two
 ```
 
-A trailing comma does not pass an extra argument. The version boundary depends on where the comma appears: a call and a function declaration did not gain support in the same release.
-
-[PHP documentation](https://www.php.net/manual/en/functions.arguments.php)
+They do not add another argument.
 
 <a id="numeric-literals"></a>
 ## Readable numeric literals
 
-**PHP 7.4+ | Core**
+**PHP 7.4+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.types.integer.php)
 
-Numeric separators make a limit or bit mask easier to read without changing its value. PHP 8.1 adds explicit `0o` octal notation, so an octal value no longer needs an easily overlooked leading zero.
+PHP 7.4 permits `_` separators between digits; PHP 8.1 adds explicit octal notation such as `0o644`, equivalent to `0644` (decimal `420`).
 
 ```php
 $max_bytes = 10_485_760;
 $mask = 0b1111_0000;
-
-echo $max_bytes, ':', $mask;
-# 10485760:240
 ```
 
-For PHP 8.1+, `0o644` means the same as `0644`, which is decimal `420`. Separators belong between digits; they are source syntax, not formatting understood by every string-to-number conversion.
-
-[PHP documentation](https://www.php.net/manual/en/language.types.integer.php)
+Separators are source syntax, not a general string-to-number format.
 
 <a id="group-use"></a>
 ## Grouped namespace imports
 
-**PHP 7.0+ | Core**
+**PHP 7.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.namespaces.importing.php)
 
-Several names from one namespace can share a common prefix in a `use` declaration. This is useful when a file uses several related application classes.
+Grouped imports share a namespace prefix across several names.
 
 ```php
 use App\Report\{CsvWriter, JsonWriter};
 
-echo CsvWriter::class, PHP_EOL;
-echo JsonWriter::class;
-# App\Report\CsvWriter
-# App\Report\JsonWriter
+$writers = [CsvWriter::class, JsonWriter::class];
 ```
 
-The example prints class names, so it does not need the classes to be instantiated. An import does not load or create a class by itself. Avoid making one enormous group just to reduce the number of `use` lines.
-
-[PHP documentation](https://www.php.net/manual/en/language.namespaces.importing.php)
+Importing a name does not load or instantiate its class.
 
 <a id="closure-call"></a>
 ## Temporarily binding a closure with call()
 
-**PHP 7.0+ | Core**
+**PHP 7.0+ | Core** | [PHP documentation](https://www.php.net/manual/en/closure.call.php)
 
-`Closure::call()` invokes a closure with a temporary `$this` object and its class scope. This can be useful in controlled inspection code, where creating a permanently rebound closure would be unnecessary.
+`Closure::call()` invokes a closure with a temporary `$this` object and its class scope.
 
 ```php
 class Counter
@@ -438,21 +369,17 @@ $read = function(): int
 {
 	return $this->value;
 };
-
-echo $read->call( new Counter() );
-# 7
+echo $read->call( new Counter() ); # 7
 ```
 
-A static closure cannot be bound to `$this`. Treat access to private state as a deliberate technique for tools or tests, not a replacement for the normal public interface of an application object.
-
-[PHP documentation](https://www.php.net/manual/en/closure.call.php)
+A static closure cannot be bound to `$this`.
 
 <a id="static-initializers"></a>
 ## Expressions in static local initializers
 
-**PHP 8.3+ | Core**
+**PHP 8.3+ | Core** | [PHP documentation](https://wiki.php.net/rfc/arbitrary_static_variable_initializers)
 
-A function-local static variable can now be initialized by a function call or another dynamic expression. Initialization happens when execution first reaches it; later calls reuse the stored value.
+Function-local static initializers may use dynamic expressions, evaluated when execution first reaches the declaration.
 
 ```php
 function next_number(): int
@@ -461,67 +388,51 @@ function next_number(): int
 	return ++$number;
 }
 
-echo next_number(), ':', next_number();
-# 5:6
+echo next_number(), ':', next_number(); # 5:6
 ```
 
-This is convenient for small local caches. It does not create a cache shared across separate PHP requests. In a long-running worker the same function state can live much longer, so request-specific data needs an explicit lifetime policy.
-
-[PHP documentation](https://wiki.php.net/rfc/arbitrary_static_variable_initializers)
+Later function calls reuse the stored value in the current process; it is not a cache shared across separate PHP requests.
 
 <a id="exit-callable"></a>
 ## exit() and die() behave more like functions
 
-**PHP 8.4+ | Core**
+**PHP 8.4+ | Core** | [PHP documentation](https://www.php.net/manual/en/migration84.incompatible.php)
 
-`exit()` can now be used as a callable, and its argument follows normal type rules including `strict_types`. An integer is a process exit status; a string is printed before execution terminates.
+`exit()` and its alias `die()` support callables and normal argument type rules, including `strict_types`.
 
 ```php
 $terminate = exit(...);
-
-var_dump( $terminate instanceof Closure );
-# bool(true)
-# Calling $terminate(0) would end this script.
+$is_closure = $terminate instanceof Closure;
 ```
 
-The example obtains the callable without terminating the process. Existing code passing an array or another invalid type must be fixed: PHP now throws `TypeError` instead of relying on the older conversion behavior. `die()` is the alias and has the same rules.
-
-[PHP documentation](https://www.php.net/manual/en/migration84.incompatible.php)
+An integer is an exit status and a string is printed; invalid argument types now throw `TypeError`.
 
 <a id="casts-in-constant-expressions"></a>
 ## Type casts in constant expressions
 
-**PHP 8.5+ | Core**
+**PHP 8.5+ | Core** | [PHP documentation](https://www.php.net/manual/en/language.constants.syntax.php)
 
-Explicit type casts are now allowed in constant expressions. A computed constant can state its intended representation directly instead of relying on a separately prepared literal.
+Explicit type casts are allowed in constant expressions.
 
 ```php
 const WHOLE_SECONDS = (int)3.9;
 
-echo WHOLE_SECONDS;
-# 3
+echo WHOLE_SECONDS; # 3
 ```
 
-This changes which expressions can be declared, not the conversion rules: converting a float to int truncates its fractional part. A cast is not input validation, and an already-correct literal such as `const RETRIES = 3` does not need one.
-
-[PHP documentation](https://www.php.net/manual/en/language.constants.syntax.php)
+Conversion rules are unchanged: `(int)3.9` truncates to `3`.
 
 <a id="global-constant-attributes"></a>
 ## Attributes on global constants
 
-**PHP 8.5+ | Core**
+**PHP 8.5+ | Core** | [PHP documentation](https://www.php.net/manual/en/migration85.new-features.php)
 
-Attributes can now be attached to non-class constants declared using `const`. A practical built-in use is deprecating an old configuration constant while documenting its replacement.
+Attributes may annotate global constants declared with `const`; reading this deprecated constant emits a diagnostic.
 
 ```php
 #[Deprecated( 'Use DEFAULT_PAGE_SIZE' )]
 const OLD_PAGE_SIZE = 20;
 const DEFAULT_PAGE_SIZE = 20;
-
-echo DEFAULT_PAGE_SIZE;
-# 20
 ```
 
-Reading `OLD_PAGE_SIZE` would emit the deprecation diagnostic. This syntax does not apply to constants created with `define()`. For custom attributes, allow `Attribute::TARGET_CONSTANT` and read the metadata through reflection; PHP does not invent behavior for application-defined metadata.
-
-[PHP documentation](https://www.php.net/manual/en/migration85.new-features.php)
+Constants created with `define()` do not support this syntax.

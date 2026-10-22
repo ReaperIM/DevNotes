@@ -4,8 +4,6 @@
 
 [Contents](../../README.md)
 
-PHP provides purpose-built APIs for random secrets, password hashes and validation. Use their documented guarantees rather than assembling security properties from unrelated string functions. Examples distinguish secure randomness from reproducible test data.
-
 **In this chapter**
 
 - [Secure bytes and integers](#secure-random)
@@ -23,49 +21,46 @@ PHP provides purpose-built APIs for random secrets, password hashes and validati
 
 ## Secure bytes and integers
 
-**PHP 7.0+ | random / standard in older PHP**
+**PHP 7.0+ | random / standard in older PHP** [PHP manual](https://www.php.net/manual/en/function.random-bytes.php)
 
-random_bytes() supplies cryptographically secure bytes; random_int() chooses a secure integer in an inclusive range. A token and a numeric selection are different tasks, with different output sizes.
+`random_bytes()` creates cryptographically secure bytes; `random_int()` selects a secure integer with inclusive bounds.
 
 ```php
 $token = bin2hex( random_bytes(32) );
 $number = random_int( 1, 6 );
 var_dump( strlen($token) ); # int(64)
-var_dump( $number >= 1 && $number <= 6 ); # bool(true)
 ```
 
-32 random bytes become 64 hex characters; encoding changes representation, not entropy. Do not replace these APIs with timestamps, uniqid() or a seeded simulation engine for secrets. A six-digit code still needs expiry and attempt limits. [PHP manual](https://www.php.net/manual/en/function.random-bytes.php).
+Seeded simulation engines, timestamps and `uniqid()` are unsuitable substitutes for secrets.
 
 <a id="password-algorithms"></a>
 
 ## Password algorithms and capability checks
 
-**PHP 7.2+ Argon2i / 7.3+ Argon2id / 7.4+ password_algos()**
+**PHP 7.2+ Argon2i / 7.3+ Argon2id / 7.4+ password_algos()** [PHP manual](https://www.php.net/manual/en/function.password-hash.php)
 
-Argon2 support extends the existing password_hash() API. password_algos() lists algorithms actually registered in the running build rather than assuming that a version number guarantees availability.
+Argon2 variants extend `password_hash()`; `password_algos()` lists algorithms actually available in the running build.
 
 ```php
 $password = 'example passphrase';
 $algorithm = (in_array('argon2id', password_algos(), true))
 	? PASSWORD_ARGON2ID
 	: PASSWORD_DEFAULT;
-
 $hash = password_hash( $password, $algorithm );
 var_dump( password_verify($password, $hash) ); # bool(true)
 var_dump( password_needs_rehash($hash, $algorithm) ); # bool(false)
 ```
 
-The stored hash contains the algorithm, options and salt needed for verification. Do not encrypt passwords or add your own salt. Check password_needs_rehash() after a successful login when policy changes, and select cost settings using measurements on your deployment. PASSWORD_DEFAULT is a maintained default, not a promise that it selects Argon2id. [PHP manual](https://www.php.net/manual/en/function.password-hash.php).
+`PASSWORD_DEFAULT` does not promise Argon2id; check `password_needs_rehash()` after successful verification when policy changes.
 
 <a id="sodium"></a>
 
 ## Authenticated encryption with Sodium
 
-**PHP 7.2+ bundled | sodium**
+**PHP 7.2+ bundled | sodium** [PHP manual](https://www.php.net/manual/en/function.sodium-crypto-secretbox.php)
 
-Sodium became a bundled extension in PHP 7.2. Secretbox encrypts a message and authenticates it: a wrong key or changed ciphertext cannot silently turn into accepted plaintext.
+Sodium secretbox encrypts and authenticates a message, rejecting a wrong key or altered ciphertext.
 
-<!-- example: fragment -->
 ```php
 $key = sodium_crypto_secretbox_keygen();
 $nonce = random_bytes( SODIUM_CRYPTO_SECRETBOX_NONCEBYTES );
@@ -78,15 +73,15 @@ if( $plaintext === false )
 echo $plaintext; # private note
 ```
 
-The extension must be enabled. Keep the key secret and store/transmit the nonce with the ciphertext; a nonce is not a password and must not be reused with the same key. A fresh random key in this example demonstrates an operation, not durable key storage. Do not use reversible encryption to store login passwords. [PHP manual](https://www.php.net/manual/en/function.sodium-crypto-secretbox.php).
+Keep the key secret and store the nonce with the ciphertext; never reuse a nonce with the same key.
 
 <a id="randomizer"></a>
 
 ## One Randomizer API
 
-**PHP 8.2+ | random**
+**PHP 8.2+ | random** [PHP manual](https://www.php.net/manual/en/class.random-randomizer.php)
 
-Randomizer combines integer selection, bytes, shuffling and array-key selection in one object. Without an explicit engine it uses the secure engine.
+`Randomizer` groups random operations with a secure default engine. `shuffleArray()` returns a new reindexed list; `pickArrayKeys()` returns keys rather than values.
 
 ```php
 $randomizer = new Random\Randomizer();
@@ -95,18 +90,18 @@ $shuffled = $randomizer->shuffleArray( $items );
 $keys = $randomizer->pickArrayKeys( $items, 2 );
 $number = $randomizer->getInt( 10, 20 );
 var_dump( count($shuffled), count($keys) ); # int(3), int(2)
-var_dump( $items[0] ); # string(3) "red"
+var_dump( $items[0] ); # string(3) "red": input unchanged
 ```
 
-shuffleArray() returns a new list and does not mutate the input; it does not preserve keys. pickArrayKeys() returns keys, not values. getInt() includes both bounds. Choosing a non-secure engine changes the security properties of all operations that use it. [PHP manual](https://www.php.net/manual/en/class.random-randomizer.php).
+Selecting a non-cryptographic engine changes the security properties of its operations.
 
 <a id="seeded-random"></a>
 
 ## Reproducible randomness for tests
 
-**PHP 8.2+ | random**
+**PHP 8.2+ | random** [PHP manual](https://www.php.net/manual/en/class.random-engine-mt19937.php)
 
-An explicitly seeded engine produces repeatable test data. Two engines starting from the same seed and receiving the same calls stay in step.
+A seeded engine reproduces a sequence when the engine, seed and sequence of calls match.
 
 ```php
 $first = new Random\Randomizer( new Random\Engine\Mt19937(12345) );
@@ -116,15 +111,15 @@ $b = [$second->getInt(1, 100), $second->getInt(1, 100)];
 var_dump( $a === $b ); # bool(true)
 ```
 
-Mt19937, PcgOneseq128XslRr64 and Xoshiro256StarStar serve simulations or testing, not secrets. A seed is not a cryptographic key. Reproduction depends on the engine and sequence of calls, not only the seed value. [PHP manual](https://www.php.net/manual/en/class.random-engine-mt19937.php).
+`Mt19937`, `PcgOneseq128XslRr64` and `Xoshiro256StarStar` suit simulations and tests, not secrets.
 
 <a id="random-alphabet"></a>
 
 ## Random bytes from a chosen alphabet
 
-**PHP 8.3+ | random**
+**PHP 8.3+ | random** [PHP manual](https://www.php.net/manual/en/random-randomizer.getbytesfromstring.php)
 
-getBytesFromString() selects bytes from a provided alphabet. It is convenient for compact identifiers or human-readable codes with an explicitly chosen alphabet.
+`getBytesFromString()` builds a random string from a chosen alphabet, useful for readable codes or identifiers.
 
 ```php
 $randomizer = new Random\Randomizer();
@@ -134,33 +129,32 @@ var_dump( strlen($code) ); # int(12)
 var_dump( strspn($code, $alphabet) === 12 ); # bool(true)
 ```
 
-This is byte-based, not a Unicode-character operation: use an ASCII alphabet. Duplicate alphabet bytes increase their probability. Code length and alphabet size determine the search space, so a convenient short code is not automatically a strong long-lived secret. [PHP manual](https://www.php.net/manual/en/random-randomizer.getbytesfromstring.php).
+This operates on bytes, not Unicode characters; repeated alphabet bytes increase their probability.
 
 <a id="random-floats"></a>
 
 ## Random floats with explicit bounds
 
-**PHP 8.3+ | random**
+**PHP 8.3+ | random** [PHP manual](https://www.php.net/manual/en/random-randomizer.getfloat.php)
 
-nextFloat() gives a value in [0.0, 1.0). getFloat() selects from a chosen interval, with an IntervalBoundary argument to control whether each endpoint is included.
+`nextFloat()` returns [0.0, 1.0); `getFloat()` accepts bounds and an `IntervalBoundary` mode.
 
 ```php
 $randomizer = new Random\Randomizer();
-$unit = $randomizer->nextFloat();
-$weight = $randomizer->getFloat( 1.0, 2.0 );
-var_dump( $unit >= 0.0 && $unit < 1.0 ); # bool(true)
+$unit = $randomizer->nextFloat(); # [0.0, 1.0)
+$weight = $randomizer->getFloat( 1.0, 2.0 ); # [1.0, 2.0)
 var_dump( $weight >= 1.0 && $weight < 2.0 ); # bool(true)
 ```
 
-The default boundary is ClosedOpen. These methods avoid inventing a division-based conversion from random integers. They still return binary floating-point values, not exact decimal money amounts. [PHP manual](https://www.php.net/manual/en/random-randomizer.getfloat.php).
+The default mode is `ClosedOpen`.
 
 <a id="float-validation"></a>
 
 ## Validate a float and its range
 
-**PHP 7.4+ range options | filter**
+**PHP 7.4+ range options | filter** [PHP manual](https://www.php.net/manual/en/filter.constants.validation.php)
 
-FILTER_VALIDATE_FLOAT accepts min_range and max_range options. Format and range can be checked together without converting invalid text to a number first.
+`FILTER_VALIDATE_FLOAT` accepts `min_range` and `max_range` to check format and range together.
 
 ```php
 $price = filter_var( '0', FILTER_VALIDATE_FLOAT, [
@@ -173,15 +167,15 @@ if( $price === false )
 var_dump( $price ); # float(0)
 ```
 
-Test failure with === false so valid zero survives. Decimal formatting and locale conventions must match the selected filter options. A validated float still has ordinary floating-point precision limits. [PHP manual](https://www.php.net/manual/en/filter.constants.validation.php).
+Compare failure with `=== false` so valid zero survives.
 
 <a id="filter-exceptions"></a>
 
 ## Throw when validation fails
 
-**PHP 8.5+ | filter**
+**PHP 8.5+ | filter** [PHP manual](https://wiki.php.net/rfc/filter_throw_on_failure)
 
-FILTER_THROW_ON_FAILURE makes failed validation throw Filter\FilterFailedException. It is especially useful when false is itself a valid filtered result.
+`FILTER_THROW_ON_FAILURE` throws `Filter\FilterFailedException` on invalid input while allowing a valid `false` result.
 
 ```php
 $enabled = filter_var( 'false', FILTER_VALIDATE_BOOL, FILTER_THROW_ON_FAILURE );
@@ -197,17 +191,16 @@ catch( Filter\FilterFailedException $error )
 }
 ```
 
-The flag cannot be combined with FILTER_NULL_ON_FAILURE. Exception details can contain the rejected value; do not expose them to users or log secrets blindly. Validation does not replace context-specific output escaping. [PHP manual](https://wiki.php.net/rfc/filter_throw_on_failure).
+The flag cannot be combined with `FILTER_NULL_ON_FAILURE`.
 
 <a id="cipher-key-length"></a>
 
 ## Ask OpenSSL for the key length
 
-**PHP 8.2+ | openssl**
+**PHP 8.2+ | openssl** [PHP manual](https://www.php.net/manual/en/function.openssl-cipher-key-length.php)
 
-openssl_cipher_key_length() returns the required key length for a supported cipher. It replaces a manually maintained table of algorithm names and byte lengths.
+`openssl_cipher_key_length()` returns a supported cipher's required key length in bytes.
 
-<!-- example: fragment -->
 ```php
 $length = openssl_cipher_key_length( 'aes-256-gcm' );
 
@@ -215,7 +208,7 @@ if( $length === false )
 	throw new RuntimeException( 'Cipher unavailable' );
 
 $key = random_bytes( $length );
-var_dump( strlen($key) ); # int(32) for aes-256-gcm
+var_dump( strlen($key) ); # int(32)
 ```
 
-This returns bytes, not bits. An unknown cipher emits a warning and returns false. Key length alone does not design encryption: nonce/IV handling, authentication tags and key storage remain separate requirements. [PHP manual](https://www.php.net/manual/en/function.openssl-cipher-key-length.php).
+An unknown cipher emits a warning and returns `false`.

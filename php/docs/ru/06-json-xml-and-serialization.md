@@ -4,7 +4,7 @@
 
 [Содержание](../../README.ru.md)
 
-Различайте три вопроса: правилен ли синтаксис документа, содержит ли он ожидаемые данные и безопасен ли он в месте использования? Парсер отвечает на первый. Примеры показывают, как оставить остальные проверки явными.
+Синтаксис JSON и структура данных проверяются отдельно; примеры DOM и XML охватывают разбор, вставку текста и контролируемые изменения документа.
 
 - [Политика обработки некорректного UTF-8 в JSON](#invalid-utf8-json)
 - [Обработка ошибок JSON через исключения](#json-exceptions)
@@ -22,102 +22,84 @@
 
 ## Политика обработки некорректного UTF-8 в JSON
 
-**PHP 7.2+ | json**
+**PHP 7.2+ | json** | [PHP](https://www.php.net/manual/en/json.constants.php)
 
-С PHP 7.2 флаги `JSON_INVALID_UTF8_SUBSTITUTE` и `JSON_INVALID_UTF8_IGNORE` позволяют явно выбрать поведение `json_encode()` и `json_decode()` для некорректного UTF-8. `SUBSTITUTE` заменяет неправильные последовательности видимым символом замены U+FFFD. `IGNORE` удаляет их, из-за чего текст по обе стороны повреждённых байтов может незаметно соединиться.
+`JSON_INVALID_UTF8_SUBSTITUTE` заменяет некорректный UTF-8 на U+FFFD, `JSON_INVALID_UTF8_IGNORE` удаляет некорректные байты при кодировании или декодировании. Это правила обработки повреждённого текста, а не преобразование кодировки.
 
 ```php
 $text = "A\xFFB";
-$rejected = json_encode( $text );
-$error = json_last_error();
-$substituted = json_encode( $text, JSON_INVALID_UTF8_SUBSTITUTE );
-$ignored = json_encode( $text, JSON_INVALID_UTF8_IGNORE );
-
-var_dump( $rejected === false && $error === JSON_ERROR_UTF8 ); # bool(true)
-echo $substituted . PHP_EOL; # "A\ufffdB"
-echo $ignored . PHP_EOL; # "AB"
-echo bin2hex( $text ) . PHP_EOL; # 41ff42
+$rejected = json_encode( $text ); # false
+$error = json_last_error(); # JSON_ERROR_UTF8
+$substituted = json_encode( $text, JSON_INVALID_UTF8_SUBSTITUTE ); # "A\ufffdB"
+$ignored = json_encode( $text, JSON_INVALID_UTF8_IGNORE ); # "AB"
 ```
 
-**Важно:** Оставляйте отклонение стандартным поведением для данных, которые должны сохраниться точно, например идентификатора или подписанного сообщения. Если частично повреждённый человеческий текст допустим, выбирайте `SUBSTITUTE`, чтобы потеря была видна; `IGNORE` подходит только для явного правила удаления при импорте. Пример сохраняет `json_last_error()` до того, как последующие вызовы изменят его. `JSON_THROW_ON_ERROR` является отдельным дополнением PHP 7.3.
-
-Эти флаги влияют на значения, обработанные вызовом JSON. Они не меняют исходный `$text`, не преобразуют произвольную старую кодировку в UTF-8 и не меняют кодировку файла PHP или Markdown.
-
-[Документация PHP: флаги JSON](https://www.php.net/manual/en/json.constants.php)
-
+Оба варианта теряют данные, поэтому для точных значений, например идентификаторов, сохраняйте отказ. Исходная строка не меняется; сохраните `json_last_error()` до следующего вызова JSON.
 
 <a id="json-exceptions"></a>
 
 ## Обработка ошибок JSON через исключения
 
-**PHP 7.3+ | json**
+**PHP 7.3+ | json** | [PHP](https://www.php.net/manual/en/function.json-decode.php) | [PHP](https://www.php.net/manual/en/class.jsonexception.php)
 
-`JSON_THROW_ON_ERROR` заставляет ошибки кодирования и декодирования выбрасывать `JsonException`. Корректный JSON null тогда легко отличить от ошибки разбора без глобального состояния `json_last_error()`.
+`JSON_THROW_ON_ERROR` превращает ошибки JSON в `JsonException`, устраняя зависимость от глобального состояния ошибок. Флаг работает для кодирования и декодирования.
 
 ```php
 try
 {
-	$value = json_decode( 'null', true, 512, JSON_THROW_ON_ERROR );
-	var_dump( $value ); # NULL
+	$value = json_decode( 'null', true, 512, JSON_THROW_ON_ERROR ); # null
 	json_decode( '{"broken":}', true, 512, JSON_THROW_ON_ERROR );
 }
 catch( JsonException $error )
 {
-	echo 'Invalid JSON' . PHP_EOL;
+	echo 'Invalid JSON';
 }
 ```
 
-**Важно:** Флаг доступен и для `json_encode()`. Не показывайте сырые данные или внутренние подробности исключения в публичном ответе. Используйте флаг последовательно вместо подавления ошибок через @.
-
-[Документация PHP: json_decode()](https://www.php.net/manual/en/function.json-decode.php) | [Документация PHP: JsonException](https://www.php.net/manual/en/class.jsonexception.php)
+Корректный JSON `null` по-прежнему декодируется как `null`; с включёнными исключениями его нельзя спутать с ошибкой разбора.
 
 <a id="json-validation"></a>
 
 ## Проверка JSON, когда его содержимое не нужно
 
-**PHP 8.3+ | json**
+**PHP 8.3+ | json** | [PHP](https://www.php.net/manual/en/function.json-validate.php)
 
-`json_validate()` проверяет синтаксис JSON без создания декодированного массива или объекта. Она полезна, когда документ нужно сохранить или передать дальше после проверки синтаксиса.
+`json_validate()` проверяет синтаксис без построения декодированного значения. Она подходит для документов, которые нужно лишь сохранить или передать после проверки синтаксиса.
 
 ```php
 $json = '{"active":true}';
-var_dump( json_validate($json) ); # bool(true)
-var_dump( json_validate('{"active":}') ); # bool(false)
+$valid = json_validate( $json ); # true
+$invalid = json_validate( '{"active":}' ); # false
 ```
 
-**Важно:** Если декодированные данные нужны сразу, один раз вызывайте `json_decode()` с `JSON_THROW_ON_ERROR`. Предварительная проверка разбирает документ дважды. Корректный синтаксис не проверяет нужные поля, типы или права.
-
-[Документация PHP: json_validate()](https://www.php.net/manual/en/function.json-validate.php)
+Если нужны данные, декодируйте один раз с `JSON_THROW_ON_ERROR`; предварительная проверка разбирает документ дважды и всё равно не проверяет схему данных.
 
 <a id="json-shape"></a>
 
 ## Сохранение числовых ID и структуры JSON
 
-**PHP 7.3+ | json | Контекст**
+**PHP 7.3+ | json | Контекст** | [PHP](https://www.php.net/manual/en/json.constants.php) | [PHP](https://www.php.net/manual/en/function.json-decode.php)
 
-Успешное декодирование может дать скаляр, список, объект или null. Проверяйте структуру, которую действительно принимает API. Сочетайте `JSON_BIGINT_AS_STRING` с обработкой исключений, если внешнее целое число может превысить диапазон платформы.
+Декодирование может вернуть скаляр, список, объект или `null`, поэтому проверяйте структуру, которую принимает API. `JSON_BIGINT_AS_STRING` сохраняет слишком большие для платформы целые числа, не превращая идентификаторы во float.
 
 ```php
 $json = '{"id":123456789012345678901234567890,"name":"Ada"}';
 $data = json_decode( $json, true, 512, JSON_THROW_ON_ERROR | JSON_BIGINT_AS_STRING );
-
 if( !is_array($data) || !isset($data['name']) || !is_string($data['name']) )
 	throw new InvalidArgumentException( 'Expected a record with a name' );
 
-var_dump( $data['id'] ); # string(30) "123456789012345678901234567890"
+$id = $data['id']; # '123456789012345678901234567890'
 ```
 
-**Важно:** `JSON_BIGINT_AS_STRING` существовала до PHP 7; минимум 7.3 здесь нужен для `JSON_THROW_ON_ERROR`. Не превращайте идентификаторы в float. Преобразование объектов JSON в ассоциативные массивы также может изменить форму пустого объекта или списка.
-
-[Документация PHP: JSON flags](https://www.php.net/manual/en/json.constants.php) | [Документация PHP: json_decode()](https://www.php.net/manual/en/function.json-decode.php)
+`JSON_BIGINT_AS_STRING` существует до PHP 7; версия 7.3 здесь нужна для флага исключений. Ассоциативное декодирование может превратить пустой объект в пустой список при повторном кодировании.
 
 <a id="json-enums"></a>
 
 ## Кодирование backed enum как его значения
 
-**PHP 8.1+ | json / Ядро**
+**PHP 8.1+ | json / Ядро** | [PHP](https://www.php.net/manual/en/language.enumerations.serialization.php)
 
-Backed enum имеет стабильное скалярное значение, которое JSON может кодировать напрямую. Это удобно для внутреннего состояния с явным представлением в API.
+Перечисления со скалярной основой кодируются непосредственно своими значениями, задавая явное представление внутренних состояний в JSON.
 
 ```php
 enum ExportStatus: string
@@ -125,32 +107,24 @@ enum ExportStatus: string
 	case Ready = 'ready';
 	case Failed = 'failed';
 }
-
-echo json_encode( ['status' => ExportStatus::Ready], JSON_THROW_ON_ERROR ) . PHP_EOL;
+$json = json_encode( ['status' => ExportStatus::Ready], JSON_THROW_ON_ERROR );
 # {"status":"ready"}
 ```
 
-**Важно:** Чистый enum без скалярного значения нельзя кодировать так же. На входе сначала декодируйте скаляр и вызывайте `tryFrom()` или `from()`; `json_decode()` не восстанавливает объект enum.
-
-[Документация PHP: enum serialization](https://www.php.net/manual/en/language.enumerations.serialization.php)
+Перечисления без основы вызывают ошибку кодирования JSON. Декодирование возвращает скаляр; восстанавливайте перечисление через `from()` или `tryFrom()`.
 
 <a id="object-serialization"></a>
 
 ## Управление состоянием через `__serialize()` и `__unserialize()`
 
-**PHP 7.4+ | Ядро**
+**PHP 7.4+ | Ядро** | [PHP](https://www.php.net/manual/en/language.oop5.magic.php#object.serialize) | [PHP](https://www.php.net/manual/en/function.unserialize.php)
 
-Эти магические методы явно задают состояние для сериализации PHP. Храните небольшой набор данных и проверяйте его структуру при восстановлении. `__unserialize()` работает без вызова конструктора, поэтому его проверок недостаточно.
+`__serialize()` определяет сохраняемое состояние, а `__unserialize()` восстанавливает его без вызова конструктора. Проверяйте восстановленные значения в этом методе, даже если их уже проверяет конструктор.
 
 ```php
 class SavedCounter
 {
-	private int $value;
-
-	public function __construct( int $value )
-	{
-		$this->value = $value;
-	}
+	public int $value = 7;
 
 	public function __serialize(): array
 	{
@@ -164,72 +138,58 @@ class SavedCounter
 
 		$this->value = $data['value'];
 	}
-
-	public function value(): int
-	{
-		return $this->value;
-	}
 }
-
-$payload = serialize( new SavedCounter(7) );
+$payload = serialize( new SavedCounter() );
 $counter = unserialize( $payload, ['allowed_classes' => [SavedCounter::class]] );
-echo $counter->value() . PHP_EOL; # 7
+$value = $counter->value; # 7
 ```
 
-**Важно:** Пример восстанавливает только собственные доверенные данные. Не передавайте чужие данные в `unserialize()`; allowed_classes не является общей гарантией безопасности. Для внешних данных выбирайте JSON. Старый интерфейс `Serializable` без этих методов устарел с PHP 8.1.
-
-[Документация PHP: serialization methods](https://www.php.net/manual/en/language.oop5.magic.php#object.serialize) | [Документация PHP: unserialize()](https://www.php.net/manual/en/function.unserialize.php)
+Восстанавливайте только доверенные данные: `allowed_classes` не делает `unserialize()` безопасным для недоверенных данных. Реализация только старого интерфейса `Serializable` устарела с 8.1.
 
 <a id="dom-convenience"></a>
 
 ## Операции DOM с атрибутами и текстом
 
-**PHP 8.3+ | dom**
+**PHP 8.3+ | dom** | [PHP](https://www.php.net/manual/en/migration83.new-functions.php)
 
-`DOMElement` получил удобные методы `toggleAttribute()`, `insertAdjacentText()` и `insertAdjacentElement()`. `DOMNode::contains()` проверяет вложенность без ручного обхода родителей. Вставка текста создаёт текст, а не разобранную разметку.
+`DOMElement` получает `toggleAttribute()`, `insertAdjacentText()` и `insertAdjacentElement()`, а `DOMNode::contains()` проверяет принадлежность к поддереву. Текстовые операции вставляют экранированный текст, а не разбирают разметку.
 
 ```php
 $document = new DOMDocument();
-$document->loadXML( '<root><item>PHP</item></root>' );
-$item = $document->getElementsByTagName( 'item' )->item( 0 );
+$document->loadXML( '<item>PHP</item>' );
+$item = $document->documentElement;
 $item->toggleAttribute( 'hidden', true );
 $item->insertAdjacentText( 'beforeend', ' & XML' );
-echo $document->saveXML( $item ) . PHP_EOL;
-# <item hidden="">PHP &amp; XML</item>
+$xml = $document->saveXML( $item ); # <item hidden="">PHP &amp; XML</item>
 ```
 
-**Важно:** Логические HTML-атрибуты определяются наличием, а не строкой вроде "false". Для чужого текста используйте текстовые операции; вставка сырого HTML имеет другой смысл.
-
-[Документация PHP: DOM additions](https://www.php.net/manual/en/migration83.new-functions.php)
+Логические атрибуты HTML зависят от наличия, поэтому строковое значение `"false"` их не отключает.
 
 <a id="html5-dom"></a>
 
 ## Разбор современного HTML через `Dom\HTMLDocument`
 
-**PHP 8.4+ | dom**
+**PHP 8.4+ | dom** | [PHP](https://www.php.net/manual/en/class.dom-htmldocument.php)
 
-`Dom\HTMLDocument` разбирает HTML по современному стандарту HTML. Новое пространство имён Dom также предоставляет привычные селекторы. Это удобно для чтения или преобразования HTML-документа без попыток трактовать его как XML.
+`Dom\HTMLDocument` разбирает документ по современному стандарту HTML и поддерживает селекторы через новый API `Dom`. Он подходит для извлечения или изменения HTML без попыток трактовать его как XML.
 
 ```php
 $document = Dom\HTMLDocument::createFromString(
-	'<!doctype html><html><head><title>Notes</title></head>'
-	. '<body><main id="content"><p>PHP</p></main></body></html>'
+	'<!doctype html><title>Notes</title><main id="content"><p>PHP</p></main>'
 );
 $element = $document->querySelector( '#content p' );
-echo $element->textContent . PHP_EOL; # PHP
+$text = $element?->textContent; # PHP
 ```
 
-**Важно:** Новые объекты Dom и старые `DOMDocument`/`DOMElement` имеют разные API. `querySelector()` может вернуть null, если элемент не найден. Разбор HTML не очищает его для публикации.
-
-[Документация PHP: Dom\HTMLDocument](https://www.php.net/manual/en/class.dom-htmldocument.php)
+`querySelector()` может вернуть `null`; новые объекты `Dom` и старые объекты DOM являются разными API. Разбор не очищает HTML для публикации.
 
 <a id="xpath-quote"></a>
 
 ## Правильное экранирование строковых значений XPath
 
-**PHP 8.4+ | dom**
+**PHP 8.4+ | dom** | [PHP](https://www.php.net/manual/en/domxpath.quote.php)
 
-`DOMXPath::quote()` создаёт строковый литерал XPath, в том числе когда значение содержит оба типа кавычек. Применяйте её для значений вместо подстановки сырого текста в выражение XPath.
+`DOMXPath::quote()` строит строковый литерал XPath, в том числе для значений с обоими видами кавычек. Это заменяет вставку сырых значений в выражение.
 
 ```php
 $document = new DOMDocument();
@@ -237,58 +197,50 @@ $document->loadXML( '<users><user name="O&apos;Brien">7</user></users>' );
 $xpath = new DOMXPath( $document );
 $name = "O'Brien";
 $query = '//user[@name=' . DOMXPath::quote( $name ) . ']';
-echo $xpath->evaluate( 'string(' . $query . ')' ) . PHP_EOL; # 7
+$id = $xpath->evaluate( 'string(' . $query . ')' ); # '7'
 ```
 
-**Важно:** Экранирование защищает литеральное значение, а не произвольный путь XPath или имя функции от пользователя. Структуру выражения должна контролировать программа.
-
-[Документация PHP: DOMXPath::quote()](https://www.php.net/manual/en/domxpath.quote.php)
+Она экранирует значения, а не переданные пользователем пути, операторы или имена функций; структуру выражения контролирует приложение.
 
 <a id="html-fragments"></a>
 
 ## Вставка и чтение фрагментов HTML
 
-**PHP 8.5+ | dom**
+**PHP 8.5+ | dom** | [PHP](https://www.php.net/manual/en/migration85.new-functions.php) | [PHP](https://www.php.net/manual/en/class.dom-element.php)
 
-`Dom\Element::insertAdjacentHTML()` разбирает HTML-фрагмент относительно элемента. outerHTML содержит сам элемент вместе с его содержимым. Это убирает необходимость создавать дополнительный документ только ради вставки фрагмента.
+`Dom\Element::insertAdjacentHTML()` разбирает фрагмент в контексте элемента. `outerHTML` читает и сам элемент, и его содержимое.
 
 ```php
 $document = Dom\HTMLDocument::createFromString(
-	'<!doctype html><html><head><title>Notes</title></head>'
-	. '<body><div id="box"></div></body></html>'
+	'<!doctype html><title>Notes</title><div id="box"></div>'
 );
 $box = $document->querySelector( '#box' );
 $box->insertAdjacentHTML( Dom\AdjacentPosition::BeforeEnd, '<strong>PHP</strong>' );
-echo $box->outerHTML . PHP_EOL; # <div id="box"><strong>PHP</strong></div>
+$html = $box->outerHTML; # <div id="box"><strong>PHP</strong></div>
 ```
 
-**Важно:** Современный API Dom принимает вариант `Dom\AdjacentPosition`: BeforeBegin, AfterBegin, BeforeEnd или AfterEnd. Старый `DOMElement` для вставки текста использует строковые позиции. Сырой чужой HTML остаётся опасным при показе; для обычного текста используйте `insertAdjacentText()` или textContent.
-
-[Документация PHP: DOM additions in 8.5](https://www.php.net/manual/en/migration85.new-functions.php) | [Документация PHP: Dom\Element](https://www.php.net/manual/en/class.dom-element.php)
+Новый API принимает варианты `Dom\AdjacentPosition` вместо старых строковых позиций. Для обычного недоверенного текста используйте `textContent` или `insertAdjacentText()`; сырой HTML требует очистки перед отображением.
 
 <a id="xml-factories"></a>
 
 ## Создание `XMLReader` и `XMLWriter` именованными фабриками
 
-**PHP 8.4+ | xmlreader / xmlwriter**
+**PHP 8.4+ | xmlreader / xmlwriter** | [PHP](https://www.php.net/manual/en/xmlreader.fromstring.php) | [PHP](https://www.php.net/manual/en/xmlwriter.tomemory.php)
 
-`XMLReader::fromString()` и `XMLWriter::toMemory()` в одном вызове описывают объект и его источник или назначение. Связанные фабрики `fromStream()`/`fromUri()` и `toStream()`/`toUri()` работают с потоками и файлами.
+Именованные фабрики совмещают создание объекта с выбором источника или назначения: `fromString()` / `fromStream()` / `fromUri()` и `toMemory()` / `toStream()` / `toUri()`.
 
 ```php
 $reader = XMLReader::fromString( '<items><item id="7"/></items>' );
-
 while( $reader->read() )
 {
 	if( $reader->nodeType === XMLReader::ELEMENT && $reader->name === 'item' )
-		echo $reader->getAttribute( 'id' ) . PHP_EOL; # 7
+		echo $reader->getAttribute( 'id' ); # 7
 }
-
 $reader->close();
+
 $writer = XMLWriter::toMemory();
 $writer->writeElement( 'name', 'PHP & XML' );
-echo $writer->outputMemory() . PHP_EOL; # <name>PHP &amp; XML</name>
+$xml = $writer->outputMemory(); # <name>PHP &amp; XML</name>
 ```
 
-**Важно:** `fromString()` хранит входную строку в памяти; для действительно большого источника используйте чтение из потока. Для чужого XML не включайте развёртывание внешних сущностей или загрузку DTD без обоснованной контролируемой необходимости.
-
-[Документация PHP: XMLReader::fromString()](https://www.php.net/manual/en/xmlreader.fromstring.php) | [Документация PHP: XMLWriter::toMemory()](https://www.php.net/manual/en/xmlwriter.tomemory.php)
+`fromString()` держит источник в памяти; для больших данных используйте поток. Для недоверенного XML не включайте внешние сущности или загрузку DTD без контролируемой необходимости.

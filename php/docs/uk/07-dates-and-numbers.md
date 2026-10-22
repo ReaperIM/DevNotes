@@ -4,9 +4,7 @@
 
 [Зміст](../../README.uk.md)
 
-Роздільники цифр і явний запис вісімкових чисел розглянуто в [числових літералах](01-syntax-and-functions.md#numeric-literals).
-
-Обчислення дат потребують явного часового поясу та формату введення. Числові обчислення потребують вибору представлення й правила округлення. Це важливо навіть тоді, коли новий API скорочує запис. Генерацію випадкових значень описано у главі [про безпеку](11-security-and-random.md).
+Обчислення дат залежать від правил розбору й часових поясів, а числові обчислення від подання та округлення. Див. також [числові літерали](01-syntax-and-functions.md#numeric-literals) і [випадкові значення](11-security-and-random.md).
 
 - [Цілочислове ділення через `intdiv()`](#integer-division)
 - [Явні операції IEEE з дробовими числами](#ieee-math)
@@ -23,91 +21,82 @@
 
 ## Цілочислове ділення через `intdiv()`
 
-**PHP 7.0+ | Ядро**
+**PHP 7.0+ | Ядро** | [PHP](https://www.php.net/manual/en/function.intdiv.php)
 
-`intdiv()` повертає цілу частку без проміжного дробового результату. Це зручно для групування цілих одиниць, наприклад повних хвилин або сторінок.
+`intdiv()` повертає цілу частку без проміжного float, що зручно для повних одиниць, наприклад хвилин чи сторінок.
 
 ```php
-echo intdiv( 125, 60 ) . PHP_EOL; # 2
-echo intdiv( -7, 3 ) . PHP_EOL; # -2
-echo 125 % 60 . PHP_EOL; # 5
+$minutes = intdiv( 125, 60 ); # 2
+$remainder = 125 % 60; # 5
+$negative = intdiv( -7, 3 ); # -2
 ```
 
-**Важливо:** Частка відкидає дробову частину в напрямку нуля, а не мінус нескінченності. Ділення на нуль кидає `DivisionByZeroError`. `PHP_INT_MIN`, поділене на -1, кидає `ArithmeticError`, бо результат не вміщується в int.
-
-[Документація PHP: intdiv()](https://www.php.net/manual/en/function.intdiv.php)
-
+Частка усікається до нуля. Нульовий дільник спричиняє `DivisionByZeroError`; `intdiv(PHP_INT_MIN, -1)` спричиняє `ArithmeticError` через переповнення результату.
 
 <a id="ieee-math"></a>
 
 ## Явні операції IEEE з дробовими числами
 
-**PHP 8.0+ | Ядро**
+**PHP 8.0+ | Ядро** | [PHP](https://www.php.net/manual/en/function.fdiv.php) | [PHP](https://www.php.net/manual/en/function.fpow.php)
 
-`fdiv()` виконує ділення за правилами IEEE, зокрема з результатами нескінченності та NaN. З PHP 8.4 `fpow()` явно застосовує такий підхід до степеня. Це корисно, коли нескінченні результати є свідомою частиною числової моделі.
+`fdiv()` виконує ділення IEEE з нескінченністю та NaN; з 8.4 `fpow()` явно виконує піднесення до степеня з рухомою комою. Ці функції доречні там, де нескінченні результати є свідомою частиною обчислень.
 
 ```php
-var_dump( fdiv(1.0, 0.0) ); # float(INF)
-var_dump( is_nan(fdiv(0.0, 0.0)) ); # bool(true)
+$infinity = fdiv( 1.0, 0.0 ); # INF
+$undefined = is_nan( fdiv(0.0, 0.0) ); # true
 
 # PHP 8.4+
-var_dump( fpow(0.0, -1.0) ); # float(INF)
+$power = fpow( 0.0, -1.0 ); # INF
 ```
 
-**Важливо:** Ці функції не роблять неправильні прикладні дані коректними. Перевіряйте `is_finite()`, якщо потрібен скінченний результат. NaN не дорівнює самому собі; використовуйте `is_nan()`.
-
-[Документація PHP: fdiv()](https://www.php.net/manual/en/function.fdiv.php) | [Документація PHP: fpow()](https://www.php.net/manual/en/function.fpow.php)
+Використовуйте `is_finite()`, коли потрібен скінченний результат, та `is_nan()` для NaN, який не дорівнює навіть собі.
 
 <a id="date-conversion"></a>
 
 ## Копіювання дат між змінним і незмінним API
 
-**PHP 8.0+ | date**
+**PHP 8.0+ | date** | [PHP](https://www.php.net/manual/en/datetimeimmutable.createfrominterface.php) | [PHP](https://www.php.net/manual/en/datetime.createfromimmutable.php)
 
-`DateTime::createFromInterface()` та `DateTimeImmutable::createFromInterface()` приймають обидва стандартні об’єкти дати через `DateTimeInterface`. Копія зберігає час і часовий пояс без зміни оригіналу.
+`DateTime::createFromInterface()` та `DateTimeImmutable::createFromInterface()` приймають обидві стандартні реалізації, зберігаючи час і часовий пояс. Це прибирає розгалуження, коли API приймає `DateTimeInterface`.
 
 ```php
 $source = new DateTime( '2026-01-01 12:00:00', new DateTimeZone('UTC') );
 $copy = DateTimeImmutable::createFromInterface( $source );
 $tomorrow = $copy->modify( '+1 day' );
-echo $source->format( 'Y-m-d' ) . PHP_EOL; # 2026-01-01
-echo $tomorrow->format( 'Y-m-d' ) . PHP_EOL; # 2026-01-02
+$original_day = $source->format( 'Y-m-d' ); # 2026-01-01
+$next_day = $tomorrow->format( 'Y-m-d' ); # 2026-01-02
 ```
 
-**Важливо:** `DateTime::createFromImmutable()` з’явилася ще у PHP 7.3. Сама `DateTimeImmutable` існувала до PHP 7. Нові фабрики для інтерфейсу прибирають необхідність розрізняти дві стандартні реалізації дати.
-
-[Документація PHP: createFromInterface()](https://www.php.net/manual/en/datetimeimmutable.createfrominterface.php) | [Документація PHP: createFromImmutable()](https://www.php.net/manual/en/datetime.createfromimmutable.php)
+Незмінна копія не змінює змінний оригінал. `DateTime::createFromImmutable()` уже існує з 7.3.
 
 <a id="date-exceptions"></a>
 
 ## Точне перехоплення помилок розбору дат
 
-**PHP 8.3+ | date**
+**PHP 8.3+ | date** | [PHP](https://www.php.net/manual/en/class.datemalformedstringexception.php)
 
-З PHP 8.3 розширення date має точнішу ієрархію винятків і помилок. `DateMalformedStringException` позначає некоректний рядок для конструктора або `modify()`, тож не потрібно перехоплювати всі помилки дат загальною Exception.
+З 8.3 розширення date має окремі винятки для некоректних рядків, часових поясів, інтервалів і періодів. `DateMalformedStringException` визначає некоректний ввід конструктора чи `modify()` без перехоплення всіх `Exception`.
 
 ```php
 try
 {
-	new DateTimeImmutable( 'not a date at all' );
+	$date = new DateTimeImmutable( 'not a date' );
 }
 catch( DateMalformedStringException $error )
 {
-	echo 'Invalid date' . PHP_EOL;
+	echo 'Invalid date';
 }
 ```
 
-**Важливо:** Деякі неможливі календарні дати нормалізуються замість відхилення. Успішний конструктор сам не є суворою перевіркою форми. Серед пов’язаних класів є `DateInvalidTimeZoneException`, `DateMalformedIntervalStringException` та `DateMalformedPeriodStringException`.
-
-[Документація PHP: DateMalformedStringException](https://www.php.net/manual/en/class.datemalformedstringexception.php)
+Деякі неможливі календарні дати нормалізуються замість відмови; успішне створення об’єкта не забезпечує суворої перевірки дати.
 
 <a id="strict-date-input"></a>
 
 ## Перевірка точної календарної дати
 
-**PHP 7.0+ | date | Контекст**
+**PHP 7.0+ | date | Контекст** | [PHP](https://www.php.net/manual/en/datetimeimmutable.createfromformat.php) | [PHP](https://www.php.net/manual/en/datetimeimmutable.getlasterrors.php)
 
-Для поля форми з одним точним форматом використовуйте `createFromFormat()`, перевіряйте помилки парсера та порівнюйте відформатований результат із введенням. API існувала до PHP 7; важлива зміна: з PHP 8.2 `getLastErrors()` повертає false за відсутності помилок.
+Сувора перевірка формату потребує діагностики розбору й зворотного форматування: 31 лютого може розібратися, але нормалізуватися до березня. Ці API існують до PHP 7.
 
 ```php
 $input = '2026-02-31';
@@ -115,25 +104,21 @@ $date = DateTimeImmutable::createFromFormat( '!Y-m-d', $input, new DateTimeZone(
 $errors = DateTimeImmutable::getLastErrors();
 $valid = $date !== false
 	&& ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0))
-	&& $date->format('Y-m-d') === $input;
-var_dump( $valid ); # bool(false)
+	&& $date->format('Y-m-d') === $input; # false
 ```
 
-**Важливо:** ! скидає невказані поля. Читайте `getLastErrors()` одразу після потрібного розбору. Допустимі діапазони дат і правила доступу залишаються рішенням програми.
-
-[Документація PHP: createFromFormat()](https://www.php.net/manual/en/datetimeimmutable.createfromformat.php) | [Документація PHP: getLastErrors()](https://www.php.net/manual/en/datetimeimmutable.getlasterrors.php)
+`!` скидає незадані поля; читайте `getLastErrors()` відразу після розбору. З 8.2 успішний розбір дає `false`, у попередніх версіях повертався масив.
 
 <a id="iso-period"></a>
 
 ## Повторюваний період із рядка ISO 8601
 
-**PHP 8.3+ | date**
+**PHP 8.3+ | date** | [PHP](https://www.php.net/manual/en/dateperiod.createfromiso8601string.php)
 
-`DatePeriod::createFromISO8601String()` явно створює період з опису повторюваного інтервалу. Обхід результату дає об’єкти `DateTimeImmutable`, що зручно для читання збереженого розкладу.
+`DatePeriod::createFromISO8601String()` перетворює повторюваний інтервал на ітеровані значення `DateTimeImmutable`, що зручно для збережених розкладів.
 
 ```php
 $period = DatePeriod::createFromISO8601String( 'R2/2026-01-01T00:00:00Z/P1D' );
-
 foreach( $period as $date )
 	echo $date->format( 'Y-m-d' ) . PHP_EOL;
 # 2026-01-01
@@ -141,86 +126,72 @@ foreach( $period as $date )
 # 2026-01-03
 ```
 
-**Важливо:** Початкова дата типово включена, тому два повторення тут дають три дати. PHP підтримує лише підмножину повторюваних інтервалів ISO 8601; довільні зсуви від UTC та R0 не підтримуються. Некоректне введення кидає `DateMalformedPeriodStringException`.
-
-[Документація PHP: DatePeriod factory](https://www.php.net/manual/en/dateperiod.createfromiso8601string.php)
+Початок включено, тому `R2` дає три дати. Підтримується лише частина ISO 8601 без `R0` і зсувів поза UTC; некоректний ввід спричиняє `DateMalformedPeriodStringException`.
 
 <a id="timestamp-microseconds"></a>
 
 ## Створення дат із дробових часових міток
 
-**PHP 8.4+ | date**
+**PHP 8.4+ | date** | [PHP](https://www.php.net/manual/en/datetimeimmutable.createfromtimestamp.php) | [PHP](https://www.php.net/manual/en/datetimeimmutable.setmicrosecond.php)
 
-`createFromTimestamp()` приймає цілу або дробову Unix-мітку часу. `getMicrosecond()` та `setMicrosecond()` дають прямий доступ до дробової частини без форматування й повторного розбору рядка U.u.
+`createFromTimestamp()` приймає цілі чи дробові Unix-мітки; методи мікросекунд дають доступ до дробової частини без форматування й повторного розбору.
 
 ```php
 $date = DateTimeImmutable::createFromTimestamp( 1_700_000_000.125 );
 $changed = $date->setMicrosecond( 500000 );
-echo $date->format( 'Y-m-d H:i:s.u' ) . PHP_EOL; # 2023-11-14 22:13:20.125000
-echo $changed->getMicrosecond() . PHP_EOL; # 500000
-echo $date->getMicrosecond() . PHP_EOL; # 125000
+$timestamp = $date->format( 'Y-m-d H:i:s.u' ); # 2023-11-14 22:13:20.125000
+$original = $date->getMicrosecond(); # 125000
+$updated = $changed->getMicrosecond(); # 500000
 ```
 
-**Важливо:** Незмінний setter повертає новий об’єкт; `DateTime` змінює себе. float може втратити точність ще до виклику. Unix-мітка позначає момент часу; під час показу читачеві явно вибирайте часовий пояс.
-
-[Документація PHP: createFromTimestamp()](https://www.php.net/manual/en/datetimeimmutable.createfromtimestamp.php) | [Документація PHP: setMicrosecond()](https://www.php.net/manual/en/datetimeimmutable.setmicrosecond.php)
+Незмінний сеттер повертає копію, а `DateTime` змінюється. Float уже міг втратити точність; часовий пояс для показу задається окремо від моменту часу.
 
 <a id="rounding-modes"></a>
 
 ## Явне правило округлення через `RoundingMode`
 
-**PHP 8.4+ | Ядро**
+**PHP 8.4+ | Ядро** | [PHP](https://www.php.net/manual/en/enum.roundingmode.php)
 
-`RoundingMode` задає для `round()` іменоване правило. HalfEven спрямовує точну половину до парного результату, HalfAwayFromZero спрямовує її від нуля. TowardsZero відкидає зайві цифри за вибраною точністю замість округлення до найближчого.
+`RoundingMode` задає спільне правило округлення для `round()`, `bcround()` і `BcMath\Number::round()`. HalfEven спрямовує точну половину до парного результату, HalfAwayFromZero від нуля.
 
 ```php
-echo round( 2.5, 0, RoundingMode::HalfEven ) . PHP_EOL; # 2
-echo round( 2.5, 0, RoundingMode::HalfAwayFromZero ) . PHP_EOL; # 3
-echo round( -2.9, 0, RoundingMode::TowardsZero ) . PHP_EOL; # -2
+$even = round( 2.5, 0, RoundingMode::HalfEven ); # 2
+$away = round( 2.5, 0, RoundingMode::HalfAwayFromZero ); # 3
+$truncated = round( -2.9, 0, RoundingMode::TowardsZero ); # -2
 ```
 
-**Важливо:** Цей enum також використовують `bcround()` та `BcMath\Number::round()`. Він не робить двійкову арифметику float точною десятковою. Вибирайте і представлення числа, і момент округлення, і правило.
-
-[Документація PHP: RoundingMode](https://www.php.net/manual/en/enum.roundingmode.php)
+Режим округлення не робить двійкові float десятково точними. Окремо обирайте подання числа й момент округлення; TowardsZero усікає до заданої точності.
 
 <a id="bcmath-number"></a>
 
 ## Десяткова арифметика через `BcMath\Number`
 
-**PHP 8.4+ | bcmath**
+**PHP 8.4+ | bcmath** | [PHP](https://www.php.net/manual/en/class.bcmath-number.php)
 
-`BcMath\Number` є незмінним об’єктом десяткового числа довільної точності з арифметичними операторами та явними методами. Передавайте десяткові рядки або цілі числа, щоб значення не проходило через округлення двійкового float.
+`BcMath\Number` надає незмінні десяткові числа довільної точності з арифметичними операторами й явними методами. Створюйте значення з рядків або цілих чисел, щоб уникнути попереднього округлення float.
 
 ```php
 $price = new BcMath\Number( '19.995' );
-$total = ($price * 3)->round( 2, RoundingMode::HalfAwayFromZero );
-echo $total . PHP_EOL; # 59.99
-
+$total = ($price * 3)->round( 2, RoundingMode::HalfAwayFromZero ); # 59.99
 $expected = new BcMath\Number( '59.99' );
-var_dump( $total->compare($expected) === 0 ); # bool(true)
+$equal = $total->compare( $expected ) === 0; # true
 ```
 
-**Важливо:** === для двох об’єктів Number перевіряє тотожність об’єктів, а не числову рівність; `compare()` === 0 виражає рівність чисел. Клас не керується bcmath.scale. Явно задавайте scale, зокрема для ділення, якщо цього потребує прикладне правило.
-
-[Документація PHP: BcMath\Number](https://www.php.net/manual/en/class.bcmath-number.php)
+`===` перевіряє тотожність об’єктів, а не рівність чисел; використовуйте `compare() === 0`. Клас ігнорує `bcmath.scale`, тому за потреби явно задавайте масштаб ділення.
 
 <a id="bcmath-rounding"></a>
 
 ## Округлення десяткових чисел і частка з остачею
 
-**PHP 8.4+ | bcmath**
+**PHP 8.4+ | bcmath** | [PHP](https://www.php.net/manual/en/function.bcround.php) | [PHP](https://www.php.net/manual/en/function.bcdivmod.php)
 
-`bcround()`, `bcfloor()` та `bcceil()` обробляють десяткові рядки без ручного обрізання дробової частини. `bcdivmod()` повертає частку й остачу разом і природно поєднується з розкладанням масиву.
+`bcround()`, `bcfloor()` та `bcceil()` округлюють десяткові рядки без перетворення на float. `bcdivmod()` повертає частку й остачу разом, у формі для деструктуризації.
 
 ```php
-echo bcround( '19.995', 2, RoundingMode::HalfAwayFromZero ) . PHP_EOL; # 20.00
-echo bcfloor( '-1.2' ) . PHP_EOL; # -2
-echo bcceil( '-1.2' ) . PHP_EOL; # -1
-
-[$quotient, $remainder] = bcdivmod( '17', '5', 0 );
-echo $quotient . ':' . $remainder . PHP_EOL; # 3:2
+$rounded = bcround( '19.995', 2, RoundingMode::HalfAwayFromZero ); # '20.00'
+$floor = bcfloor( '-1.2' ); # '-2'
+$ceiling = bcceil( '-1.2' ); # '-1'
+[$quotient, $remainder] = bcdivmod( '17', '5', 0 ); # ['3', '2']
 ```
 
-**Важливо:** Результати є числовими рядками. floor та ceil спрямовані відповідно до мінус і плюс нескінченності, що відрізняється від простого видалення дробової частини від’ємного числа. Явно задавайте scale у `bcdivmod()`, щоб не залежати від глобальних налаштувань.
-
-[Документація PHP: bcround()](https://www.php.net/manual/en/function.bcround.php) | [Документація PHP: bcdivmod()](https://www.php.net/manual/en/function.bcdivmod.php)
+Результати є числовими рядками. Floor і ceil прямують до мінус і плюс нескінченності, а не просто усікають число; задавайте масштаб `bcdivmod()` явно, щоб не залежати від глобальних налаштувань.
