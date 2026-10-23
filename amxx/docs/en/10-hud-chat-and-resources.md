@@ -4,28 +4,28 @@
 
 [Contents](../../README.md)
 
-Output that reaches the intended client, survives repeated updates and uses the correct resource paths. Examples use AMXX 1.9. Colored chat and the `StatusIcon` example are specific to CS 1.6 / Condition Zero.
+Show text to the right player, update HUD without piling up old messages, and prepare sounds and models ahead of time. The examples use AMXX 1.9. Colored chat and `StatusIcon` here are specific to CS 1.6 / Condition Zero.
 
 **In this chapter**
 
-- [Colored chat: recipient and color source are different](#colored-chat)
-- [Player text is data, not a format string](#format-player-text)
-- [Classic HUD has four channels per client](#classic-hud)
-- [Update and clear one HUD area with a sync object](#hud-sync)
-- [DHUD is a stack, not a reusable channel](#director-hud)
-- [A user message must match its protocol](#user-messages)
-- [Translate for the actual recipient](#localized-output)
-- [WAV sounds use paths relative to `sound/`](#precache-sound)
-- [Precache models and keep map-local indexes](#precache-models)
-- [Download registration is not sound precaching](#generic-downloads)
+- [Colored chat: who receives it and where the color comes from](#colored-chat)
+- [Pass player names through `%s`](#format-player-text)
+- [The four classic HUD channels](#classic-hud)
+- [Update and clear our HUD with a sync object](#hud-sync)
+- [Short announcements with DHUD](#director-hud)
+- [Build a game message in the required order](#user-messages)
+- [Show the translation in the recipient’s language](#localized-output)
+- [Precache a WAV using a path without `sound/`](#precache-sound)
+- [Precache models and sprites before the map starts](#precache-models)
+- [Register a download with `precache_generic()`](#generic-downloads)
 
 <a id="colored-chat"></a>
 
-## Colored chat: recipient and color source are different
+## Colored chat: who receives it and where the color comes from
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/client_print_color)
 
-In CS 1.6 and Condition Zero, `client_print_color()` is built into AMXX 1.9. The first argument chooses who receives the text; the second chooses the team-color source. Setting the sender to `print_team_red` does not limit delivery to Terrorists.
+For CS 1.6 and Condition Zero, AMXX 1.9 includes `client_print_color()`. The first argument selects who sees the message; the second selects the team-color source. These are separate choices: `print_team_red` makes the team color red, but does not select Terrorists as recipients.
 
 ```pawn
 #include <amxmodx>
@@ -37,20 +37,21 @@ public plugin_init()
 
 public command_colors( id )
 {
+	// Red selects the color, not recipients; only id gets the message.
 	client_print_color( id, print_team_red, "^4[Notes] ^3Red ^1default" );
 	return PLUGIN_HANDLED;
 }
 ```
 
-Only the caller receives this message. `^4` is green, `^3` is the selected team color and `^1` returns to the default color. Recipient `0` sends to everyone; filtering recipients is a separate operation. Do not include an old custom `ColorChat` implementation with the same native name.
+Only the player who entered the command sees this example's message. `^4` selects green, `^3` the chosen team color, and `^1` the default color. A first argument of `0` sends to everyone; select particular recipients separately. There is no need to include an old custom `ColorChat` implementation with the same native name.
 
 <a id="format-player-text"></a>
 
-## Player text is data, not a format string
+## Pass player names through `%s`
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/client_print)
 
-A player name can contain `%` and other formatting characters. Keep the format string fixed and pass the name through `%s`. The same rule applies to console output, logs, HUD messages and text loaded from a file.
+A player name may contain `%`, so the name must not become the format string itself. Keep the format fixed and pass the name as a separate `%s` argument. The same applies to console output, logs, HUD text and text read from files.
 
 ```pawn
 #include <amxmodx>
@@ -64,20 +65,21 @@ public command_name( id )
 {
 	new name[32];
 	get_user_name( id, name, charsmax( name ) );
+	// Any % characters in the name must stay text.
 	client_print( id, print_chat, "Your name: %s", name );
 	return PLUGIN_HANDLED;
 }
 ```
 
-A name such as `100% ready` stays text. Do not replace the final call with `client_print( id, print_chat, name )`. Formatting safety does not remove chat color/control codes; normalize those separately when displaying arbitrary text in colored chat.
+A name such as `100% ready` stays ordinary text here. Changing the call to `client_print( id, print_chat, name )` would let the name be interpreted as a format. `%s` does not remove chat color or control codes, though; handle those separately if they also need restricting.
 
 <a id="classic-hud"></a>
 
-## Classic HUD has four channels per client
+## The four classic HUD channels
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/set_hudmessage)
 
-`set_hudmessage()` sets parameters for the next output, not a permanent HUD object. Channels `1..4` overwrite the previous message in that channel. Channel `-1` chooses automatically; a fixed channel can make periodic text more stable, but other plugins still use the same client channels.
+Classic HUD gives each client four channels, `1..4`. A new message replaces the old one on the same channel; `-1` lets the engine choose automatically. `set_hudmessage()` sets up the next display rather than creating a permanent UI element. Here we show health on channel `2`.
 
 ```pawn
 #include <amxmodx>
@@ -95,15 +97,15 @@ public command_hud( id )
 }
 ```
 
-`-1.0` centers the horizontal position, while `0.2` places the text near the top. Set parameters immediately before showing the message: these settings are shared across plugins. A longer hold time does not update the health automatically.
+The `-1.0` position centers the text horizontally, while `0.2` puts it near the top. Settings are shared across plugins, so set them immediately before showing the message. A fixed channel can help with updates, but other plugins use it too. A longer hold time only keeps the text visible; it does not refresh the health value.
 
 <a id="hud-sync"></a>
 
-## Update and clear one HUD area with a sync object
+## Update and clear our HUD with a sync object
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/ShowSyncHudMsg)
 
-A sync object tracks the previous message for a logical HUD area. Reusing it replaces your old message cleanly even when auto channels are used. Create it once; one object can serve the same kind of display for several clients.
+For text that needs updating, create a sync object with `CreateHudSyncObj()`. It remembers the previous message so the next `ShowSyncHudMsg()` can replace our old output. Create it once; one object can serve the same kind of status for several players.
 
 ```pawn
 #include <amxmodx>
@@ -131,15 +133,15 @@ public command_clear_status( id )
 }
 ```
 
-`ShowSyncHudMsg()` manages the channel itself and ignores the channel chosen by `set_hudmessage()`. The object does not reserve a screen region or create more client channels. `ClearSyncHud()` clears the tracked display without allocating a new message channel.
+Here `/status` shows the status and `/clearstatus` clears it through the same object. `ShowSyncHudMsg()` chooses the channel itself, ignoring the number in `set_hudmessage()`. The object does not add channels or reserve screen space. `ClearSyncHud()` clears the tracked message without taking another channel for the clear operation.
 
 <a id="director-hud"></a>
 
-## DHUD is a stack, not a reusable channel
+## Short announcements with DHUD
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/show_dhudmessage)
 
-Director HUD is convenient for a short announcement. It supports up to eight simultaneous messages; new ones overwrite old ones in send order. You cannot clear a particular DHUD message with a sync object.
+Director HUD works well for a short announcement such as a practice starting soon. It supports up to eight simultaneous messages, with new ones replacing old ones in send order. Keep this in mind when repeating a display: DHUD does not offer a channel where we simply replace one label.
 
 ```pawn
 #include <amxmodx>
@@ -157,15 +159,15 @@ public command_notice( id )
 }
 ```
 
-The API caps the message at 128 characters. Repeated calls every frame will stack or replace announcements, not update one persistent label. Use classic HUD with synchronization for a frequently changing status.
+Text is limited to 128 characters. Calling it every frame stacks announcements or pushes older ones out. A sync object cannot clear one particular DHUD message, so classic synchronized HUD is a better fit for a constantly changing status.
 
 <a id="user-messages"></a>
 
-## A user message must match its protocol
+## Build a game message in the required order
 
 [AMX Mod X API](https://www.amxmodx.org/api/messages/message_begin)
 
-`message_begin()` and `message_end()` enclose one protocol message. The `write_*` order and types must match the game message exactly. This CS example sends a `StatusIcon`: enabled byte, sprite name, then three color bytes.
+Build a game message between `message_begin()` and `message_end()`. The client expects specific field types in a specific order, so the `write_*` calls are not interchangeable. This CS example sends `StatusIcon`: an enabled byte, the sprite name and three color bytes.
 
 ```pawn
 #include <amxmodx>
@@ -183,6 +185,7 @@ public command_icon( id )
 	if( !g_status_icon )
 		return PLUGIN_HANDLED;
 
+	// Checks are done; finish this message through message_end().
 	message_begin( MSG_ONE_UNRELIABLE, g_status_icon, _, id );
 	write_byte( 1 );
 	write_string( "buyzone" );
@@ -194,15 +197,15 @@ public command_icon( id )
 }
 ```
 
-This changes the displayed icon, not server-side buying permission. Do all validation before `message_begin()` and never return halfway through a message. Unreliable delivery may drop cosmetic updates; reliable delivery is not a reason to flood the channel. Send on meaningful changes or at a controlled refresh rate. [`StatusIcon` layout](https://wiki.alliedmods.net/Half-Life_1_Game_Events#StatusIcon).
+Only the displayed icon changes; server-side buying permission stays the same. Check everything before `message_begin()` so we do not return from an unfinished message. `MSG_ONE_UNRELIABLE` allows this cosmetic update to be lost. Reliable delivery is no reason to send every frame either: send on changes or limit the refresh rate. [`StatusIcon` layout](https://wiki.alliedmods.net/Half-Life_1_Game_Events#StatusIcon).
 
 <a id="localized-output"></a>
 
-## Translate for the actual recipient
+## Show the translation in the recipient’s language
 
 [AMX Mod X API](https://www.amxmodx.org/api/lang/register_dictionary)
 
-Register a dictionary from `addons/amxmodx/data/lang/`. `%L` takes a language selector, then the key, then the key's format arguments. Passing the recipient ID selects their language; `LANG_SERVER` explicitly selects the server language.
+Register a dictionary from `addons/amxmodx/data/lang/` to send each player a message in their language. After `%L`, pass the language selector, translation key and its arguments. Here the recipient's `id` selects the language, then the name is inserted into that translation. `LANG_SERVER` would select the server language instead.
 
 ```pawn
 #include <amxmodx>
@@ -222,7 +225,7 @@ public command_welcome( id )
 }
 ```
 
-Provide `notes.txt` with matching placeholders in every language. For a custom loop, format per recipient instead of translating once and reusing the result for everyone. Multibyte text still has to fit the output buffer and the game client's message limits.
+Translations in `notes.txt` must keep matching placeholders, `%s` in this case. In a custom send loop, translate for each player; one finished translation reused for everyone ignores their language choices. Multibyte text must still fit the buffer and the client's message limits.
 
 ```ini
 [en]
@@ -237,11 +240,11 @@ NOTE_WELCOME = Добро пожаловать, %s!
 
 <a id="precache-sound"></a>
 
-## WAV sounds use paths relative to `sound/`
+## Precache a WAV using a path without `sound/`
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/precache_sound)
 
-`precache_sound()` registers a WAV in the engine sound table during `plugin_precache()`. Its path omits the `sound/` prefix. `emit_sound()` uses that same relative path and plays a positional sound from an entity.
+Register a WAV with `precache_sound()` inside `plugin_precache()` before using it. The path is relative to `sound/`, without that prefix: `buttons/button9.wav` here. Pass the same path to `emit_sound()`, which plays the sound from the specified entity.
 
 ```pawn
 #include <amxmodx>
@@ -250,6 +253,7 @@ new const NOTE_SOUND[] = "buttons/button9.wav";
 
 public plugin_precache()
 {
+	// Register before the map starts; the path is already relative to sound/.
 	precache_sound( NOTE_SOUND );
 }
 
@@ -268,15 +272,15 @@ public command_sound( id )
 }
 ```
 
-The player index is the sound source, not an exclusive recipient: nearby clients can hear it. The sample uses a standard Half-Life sound. Custom files must exist on the server before map load, with the same spelling and case used in the download tree.
+Player `id` is the sound source here, not its only listener. Nearby clients can hear it too. This example uses a standard Half-Life file. Put custom sounds on the server before the map loads, keeping identical path spelling and letter case in the download tree.
 
 <a id="precache-models"></a>
 
-## Precache models and keep map-local indexes
+## Precache models and sprites before the map starts
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/precache_model)
 
-Models and sprites use paths such as `models/...mdl` and `sprites/...spr`, relative to the mod directory. `precache_model()` returns an engine resource index. Cache it for effects that need the index, but do not save it as a permanent resource ID across maps.
+Call `precache_model()` for a model or sprite to get its resource index for the current map. The path starts at the mod directory: `models/...mdl` for a model or `sprites/...spr` for a sprite. Keep the index for effects that need it, but do not treat it as a permanent ID across maps.
 
 ```pawn
 #include <amxmodx>
@@ -294,15 +298,15 @@ public plugin_init()
 }
 ```
 
-The precache phase comes before `plugin_init()` and final config execution. A model selected by a later cvar change cannot simply be precached on demand mid-map. Choose the required resources before this phase or register a small known set; engine resource tables are finite.
+Precaching happens before `plugin_init()` and final configs. A model selected by a late cvar change cannot simply be precached in the middle of a map. Choose resources ahead of time or register a small known set, since the engine's resource tables have limits.
 
 <a id="generic-downloads"></a>
 
-## Download registration is not sound precaching
+## Register a download with `precache_generic()`
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/precache_generic)
 
-`precache_generic()` registers a file for download without adding a WAV to the engine sound table. Use the full mod-relative path here, including `sound/` for an MP3. The file still needs to exist and be supported by the client that uses it.
+Use `precache_generic()` when a file needs to be registered for client download. Unlike a sound used with `emit_sound()`, it takes the full mod-relative path, including `sound/` for an MP3. The file must exist and be supported by the client. Here we check that optional music is present first.
 
 ```pawn
 #include <amxmodx>
@@ -321,4 +325,4 @@ public plugin_precache()
 }
 ```
 
-This only registers an optional file; it does not play music or guarantee that every client downloaded it. Keep custom paths fixed or allowlisted, maintain matching FastDL files when used, and ship only resources the feature actually needs. Registering a sound generically does not make it usable in `emit_sound()`.
+Registration does not play the music or guarantee every client downloaded it. Use fixed or explicitly allowed paths and add only needed files; keep matching files on FastDL when using it. Registering a WAV generically does not put it in the engine sound table, so this is not enough for `emit_sound()`.

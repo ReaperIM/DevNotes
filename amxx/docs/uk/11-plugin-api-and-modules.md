@@ -2,39 +2,39 @@
 
 [EN](../en/11-plugin-api-and-modules.md) | [UK](../uk/11-plugin-api-and-modules.md) | [RU](../ru/11-plugin-api-and-modules.md) | [Зміст](../../README.uk.md)
 
-Natives для запитів, forwards для сповіщень і контракти пам’яті та залежностей між плагінами. Приклади постачальника та споживача є окремими плагінами; кожен блок компілюється незалежно.
+Розбираємося, як один плагін викликає інший, передає йому дані та отримує відповідь. Natives використовуємо для викликів, forwards для сповіщень і перевірок перед дією. Постачальник і плагін виклику в прикладах збираються окремо: кожен блок це самостійний плагін.
 
-- [Include не є завантаженим модулем](#include-and-runtime)
-- [Native постачальника та її виклик](#register-native)
-- [Рядки між пам’яттю різних плагінів](#native-strings)
-- [Значення за посиланням потребують відповідного доступу](#native-byref)
-- [`Float`-параметри та cell результату native](#native-floats)
-- [Публікуємо forward і звільняємо handle](#publish-forward)
-- [Визначаємо зміст результатів споживача](#forward-return-policy)
-- [Готуємо масив перед forward](#forward-arrays)
-- [Необов’язкові natives потребують явного fallback](#optional-natives)
-- [Невеликий і явний контракт API](#api-contract)
+- [Чому одного include недостатньо](#include-and-runtime)
+- [Даємо іншому плагіну свою native](#register-native)
+- [Читаємо й записуємо рядки іншого плагіна](#native-strings)
+- [Змінюємо змінну іншого плагіна за посиланням](#native-byref)
+- [Передаємо `Float` через native без втрати значення](#native-floats)
+- [Сповіщаємо інші плагіни через forward](#publish-forward)
+- [Даємо іншому плагіну заборонити дію](#forward-return-policy)
+- [Передаємо масив у forward і забираємо зміни](#forward-arrays)
+- [Працюємо й без необов’язкової native](#optional-natives)
+- [Що пояснити у спільному include](#api-contract)
 
 <a id="include-and-runtime"></a>
-## Include не є завантаженим модулем
+## Чому одного include недостатньо
 
-`.inc` дає компілятору оголошення, константи й stocks. Native все одно потрібен постачальник під час роботи: модуль AMXX або інший плагін. Успішна компіляція підтверджує доступність імен і сигнатур компілятору, але не їх реалізації на сервері.
+Підключений `.inc` повідомляє компілятору, які імена, параметри й константи доступні. Код `stock` під час використання потрапить у наш плагін, а реалізацію native все одно має дати модуль або інший плагін на сервері. Тому успішна компіляція ще не означає, що native буде кому виконати.
 
 | Вид | Компілюється у твій плагін? | Постачальник під час роботи |
 | --- | --- | --- |
 | `stock` з Pawn-кодом | Використаний код додається | Твій плагін |
 | Native з `<cstrike>` | Лише оголошення | Модуль CStrike |
 | Native іншого плагіна | Лише оголошення | Плагін-постачальник `.amxx` |
-| Native ReAPI | Лише оголошення | Окремий модуль ReAPI та потрібний engine / game API |
+| Native ReAPI | Лише оголошення | Окремий модуль ReAPI та потрібний API рушія або гри |
 
-Includes AMXX зазвичай містять вимоги до модулів і metadata для autoload. Не повертай `plugin_modules` / `require_module`: вони застарілі й не забезпечують сучасне завантаження. Став плагіни-постачальники перед споживачами у `plugins.ini` та описуй залежність.
+В includes AMXX зазвичай уже записані вимоги до модулів і дані для їх автоматичного завантаження. Старі `plugin_modules` і `require_module` повертати не потрібно, вони застаріли. Якщо native дає інший плагін, ставимо його перед плагіном, який її використовує, у `plugins.ini` й описуємо цю залежність.
 
 Джерела: [AMXX include declarations](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc), [CStrike include](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/cstrike.inc).
 
 <a id="register-native"></a>
-## Native постачальника та її виклик
+## Даємо іншому плагіну свою native
 
-Реєструй natives у `plugin_natives`, що виконується до `plugin_init`. Стиль `0` отримує ID викликаючого плагіна та кількість аргументів; самі параметри читаються через `get_param` та споріднені natives.
+Один плагін може дати іншому свою функцію через native. Реєструємо її в `plugin_natives()`, ще до `plugin_init()`. У звичайного стилю `0` обробник отримує ID плагіна виклику й кількість аргументів, а їхні значення забирає через `get_param()` і схожі функції. У прикладі обмежуємо переданий рахунок діапазоном `0..100`.
 
 **Плагін-постачальник:**
 ```pawn
@@ -73,14 +73,14 @@ public plugin_init()
 }
 ```
 
-Споживач друкує `100`. У спільному API перенеси оголошення та `#pragma reqlib notes_api` до include. Вимога бібліотеки дає явну помилку завантаження без постачальника. Natives стилю `1` застарілі; для нового API вони не потрібні. Не викликай ту саму native рекурсивно з її handler.
+Другий блок це окремий плагін: він передасть `135` і виведе `100`. Оголошення native й `#pragma reqlib notes_api` для спільного використання виносимо в include. Без постачальника вимога бібліотеки дасть зрозумілу помилку завантаження. Стиль `1` застарів і для нового API не потрібен. З обробника не викликаємо ту саму native рекурсивно.
 
 Джерела: [`plugin_natives`](https://www.amxmodx.org/api/amxmodx/plugin_natives), [`register_native`](https://www.amxmodx.org/api/amxmodx/register_native), [`register_library`](https://www.amxmodx.org/api/amxmodx/register_library).
 
 <a id="native-strings"></a>
-## Рядки між пам’яттю різних плагінів
+## Читаємо й записуємо рядки іншого плагіна
 
-Параметр-рядок не є адресою локального рядка постачальника. Вхід читається через `get_string`, вихід записується через `set_string`. API прикладу: `native notes_make_label( const prefix[], output[], maxlen )`.
+У різних плагінів своя пам'ять, тому переданий рядок не стає звичайним локальним рядком обробника. Читаємо його через `get_string()`, записуємо відповідь через `set_string()`. Тут оголошення для плагіна виклику таке: `native notes_make_label( const prefix[], output[], maxlen )`.
 
 
 ```pawn
@@ -114,14 +114,14 @@ public native_make_label( plugin_id, params )
 }
 ```
 
-Для `new label[64]` виклик передає `charsmax( label )`, а не `sizeof label`. Префікс `VIP` дає `[VIP] ready`, з обрізанням для меншого буфера. Реальну місткість знає викликаюча сторона; постачальник не може вивести її з довільного числа. Масиви так само передаються через `get_array` / `set_array` з явною кількістю cells.
+Для буфера `new label[64]` передаємо `charsmax( label )`, а не `sizeof label`, залишаючи місце під кінець рядка. Із префікса `VIP` вийде `[VIP] ready`; у меншому буфері рядок обріжеться. Справжній розмір знає плагін виклику, обробник не може перевірити його за довільним числом. Для масивів аналогічно є `get_array()` і `set_array()`, їм явно передаємо кількість комірок.
 
 Джерела: [`get_string`](https://www.amxmodx.org/api/amxmodx/get_string), [`set_string`](https://www.amxmodx.org/api/amxmodx/set_string), [`get_array`](https://www.amxmodx.org/api/amxmodx/get_array).
 
 <a id="native-byref"></a>
-## Значення за посиланням потребують відповідного доступу
+## Змінюємо змінну іншого плагіна за посиланням
 
-У `native notes_add_bonus( &score, bonus )` аргумент `1` посилається на cell споживача. `get_param( 1 )` прочитав би значення адреси аргументу, а не score у цій cell.
+Якщо native має змінити змінну плагіна виклику, оголошуємо її за посиланням: `native notes_add_bonus( &score, bonus )`. Перший аргумент указує на комірку з чужим `score`. Звичайний `get_param( 1 )` прочитав би адресу, а нам потрібен вміст за цією адресою, тому використовуємо `get_param_byref()`.
 
 
 ```pawn
@@ -140,6 +140,7 @@ public native_add_bonus( plugin_id, params )
 		return 0;
 	}
 
+	// Потрібен сам score плагіна виклику, не адреса його cell.
 	new score = get_param_byref( 1 );
 	score += get_param( 2 );
 	set_param_byref( 1, score );
@@ -147,14 +148,14 @@ public native_add_bonus( plugin_id, params )
 }
 ```
 
-Якщо `score = 20`, виклик `notes_add_bonus( score, 5 )` залишить у споживача `25`. Для посилань на `Float` є `get_float_byref` / `set_float_byref`. В API визнач, що повертається: оновлене значення, ознака успіху чи код помилки.
+`set_param_byref()` записує нове значення назад плагіну виклику. Було `score = 20`, викликали `notes_add_bonus( score, 5 )`, стало `25`. Для посилання на `Float` є `get_float_byref()` і `set_float_byref()`. Окремо описуємо результат самої native: нове значення, успішність операції чи код помилки.
 
 Джерела: [`get_param_byref`](https://www.amxmodx.org/api/amxmodx/get_param_byref), [`set_param_byref`](https://www.amxmodx.org/api/amxmodx/set_param_byref), [`get_float_byref`](https://www.amxmodx.org/api/amxmodx/get_float_byref).
 
 <a id="native-floats"></a>
-## `Float`-параметри та cell результату native
+## Передаємо `Float` через native без втрати значення
 
-Для `native Float:notes_scale( Float:value, Float:factor )` читай параметри через `get_param_f`. Handler native стилю 0 повертає cell без тега; прибери тег, не перетворюючи float на ціле число.
+Для `native Float:notes_scale( Float:value, Float:factor )` параметри читаємо через `get_param_f()`. Обробник стилю `0` повертає звичайну комірку без тегу. Тому з результату знімаємо тег через `_:`: самі біти дробового числа потрібно зберегти, а не округлити число до цілого.
 
 
 ```pawn
@@ -175,18 +176,19 @@ public native_scale( plugin_id, params )
 
 	new Float:value = get_param_f( 1 );
 	new Float:factor = get_param_f( 2 );
+	// Біти Float зберігаємо, знімаємо лише тег результату.
 	return _:(value * factor);
 }
 ```
 
-Оголошення у споживача надає повернутим бітам тег `Float`. `notes_scale( 2.5, 2.0 )` дає `5.0`. `floatround` тут змінив би подання результату й порушив контракт оголошення. Зняття тега через `_:` та числове перетворення є різними операціями.
+У плагіна виклику оголошення знову позначить ці біти як `Float`, і `notes_scale( 2.5, 2.0 )` дасть `5.0`. Якщо замість зняття тегу викликати `floatround()`, представлення результату зміниться й код виклику прочитає його неправильно. `_:` змінює лише тег, числове перетворення робить іншу роботу.
 
 Джерела: [`get_param_f`](https://www.amxmodx.org/api/amxmodx/get_param_f), [`register_native`](https://www.amxmodx.org/api/amxmodx/register_native).
 
 <a id="publish-forward"></a>
-## Публікуємо forward і звільняємо handle
+## Сповіщаємо інші плагіни через forward
 
-Native дає споживачу можливість викликати постачальника. Forward дозволяє постачальнику сповіщати споживачів. `CreateMultiForward` знаходить відповідні `public`-функції у плагінах; збережи handle та звільни його після завершення постачальника.
+Через native інший плагін викликає нас, а через forward ми викликаємо обробники інших плагінів. Наприклад, повідомляємо, що ранг гравця змінився. `CreateMultiForward()` знайде відповідні `public`-функції; його handle зберігаємо й наприкінці роботи звільняємо через `DestroyForward()`.
 
 
 ```pawn
@@ -215,21 +217,21 @@ public plugin_end()
 }
 ```
 
-Споживач реалізує `public notes_rank_changed( player, rank )`. `ET_IGNORE` означає, що сповіщення не використовує результати споживачів. Сам `ExecuteForward` повертає успішність виконання; вихідний `result` містить об’єднаний результат callbacks. Це різні значення. `CreateOneForward` адресує один плагін замість усіх відповідних споживачів.
+Інший плагін має оголосити `public notes_rank_changed( player, rank )`. З `ET_IGNORE` його відповідь нам не потрібна, це лише сповіщення. Сам `ExecuteForward()` повідомляє про успішність виконання, а змінна `result` містить об'єднані відповіді обробників. Це різні результати. Якщо потрібен один конкретний плагін, є `CreateOneForward()`.
 
 Джерела: [forward API declarations](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc), [`ExecuteForward`](https://www.amxmodx.org/api/amxmodx/ExecuteForward), [`DestroyForward`](https://www.amxmodx.org/api/amxmodx/DestroyForward).
 
 <a id="forward-return-policy"></a>
-## Визначаємо зміст результатів споживача
+## Даємо іншому плагіну заборонити дію
 
-Forward перед дією може дозволити відмову, але лише якщо постачальник перевірить результат до виконання дії. Режим виконання є частиною контракту API.
+Якщо інший плагін може заборонити дію, викликаємо forward до самої дії й перевіряємо відповідь. Для нагороди це означає спочатку запитати дозвіл і лише потім її видати. Режим `ET_*` визначає, які обробники будуть викликані та як зібрати їхні результати.
 
 | Режим | Поведінка |
 | --- | --- |
-| `ET_IGNORE` | Ігнорувати результати callbacks |
+| `ET_IGNORE` | Ігнорувати результати обробників |
 | `ET_STOP` | Зупинитися на першому результаті понад `0` |
 | `ET_STOP2` | Зупинитися саме на `PLUGIN_HANDLED` (`1`); інакше зберігати найбільший результат |
-| `ET_CONTINUE` | Викликати всі callbacks і зберегти найбільший результат |
+| `ET_CONTINUE` | Викликати всіх обробників і зберегти найбільший результат |
 
 
 ```pawn
@@ -262,14 +264,14 @@ public plugin_end()
 }
 ```
 
-Контракт споживача: `PLUGIN_CONTINUE` дозволяє, `PLUGIN_HANDLED` забороняє. Без споживачів результат нульовий і перевірка дозволяє дію. Приклад забороняє її за помилки створення чи виконання forward. Сповіщення після дії не скасує вже видану нагороду.
+Тут `PLUGIN_CONTINUE` дозволяє нагороду, `PLUGIN_HANDLED` забороняє. Без обробників отримаємо нуль, і перевірка дозволить дію. Якщо створити чи виконати forward не вдалося, приклад забороняє нагороду. Сповіщення після видачі вже нічого не скасує, тому порядок викликів важливий.
 
 Джерела: [ET constants](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxconst.inc), [forward execution](https://github.com/alliedmodders/amxmodx/blob/1.9-dev/amxmodx/CForward.cpp).
 
 <a id="forward-arrays"></a>
-## Готуємо масив перед forward
+## Передаємо масив у forward і забираємо зміни
 
-`FP_ARRAY` не передається як звичайна адреса локального масиву. `PrepareArray` створює параметр для `ExecuteForward`. `copyback = 1` потрібен лише тоді, коли зміни споживачів треба повернути до вихідного масиву.
+Для масиву у forward потрібен `PrepareArray()`, однієї локальної адреси недостатньо. Отримане значення передаємо на місце параметра `FP_ARRAY` в `ExecuteForward()`. Останній аргумент `1` у `PrepareArray()` дозволяє скопіювати зміни обробників назад у вихідний масив; без такої задачі копіювання назад не потрібне.
 
 
 ```pawn
@@ -283,6 +285,7 @@ public plugin_cfg()
 		return;
 
 	new values[] = { 10, 20, 30 };
+	// Остання 1 потрібна, щоб зміни повернулися у values.
 	new prepared = PrepareArray( values, sizeof values, 1 );
 	new result;
 	ExecuteForward( handle, result, prepared, sizeof values );
@@ -291,14 +294,14 @@ public plugin_cfg()
 }
 ```
 
-Споживач реалізує `public notes_adjust_values( values[], count )` і працює лише в межах `count`. Довжина передається явно, бо callback не отримує початкове оголошення масиву. Підготовлене значення призначене для виконання forward, а не є handle контейнера `Array:`; його не передають до `ArrayDestroy`.
+Інший плагін реалізує `public notes_adjust_values( values[], count )` і працює лише до `count`. Розмір передаємо окремо: вихідного оголошення масиву в обробника немає. Підготовлене значення потрібне для виклику forward, це не контейнер `Array:`, і в `ArrayDestroy()` його передавати не можна.
 
 Джерела: [`PrepareArray`](https://www.amxmodx.org/api/amxmodx/PrepareArray), [`ExecuteForward`](https://www.amxmodx.org/api/amxmodx/ExecuteForward).
 
 <a id="optional-natives"></a>
-## Необов’язкові natives потребують явного fallback
+## Працюємо й без необов’язкової native
 
-Runtime `if` сам не робить відсутню native необов’язковою: плагін може не завантажитися. Для одного необов’язкового API відфільтруй лише потрібну native у `plugin_natives` і захисти її виклик. Цей споживач використовує постачальника `notes_api` з попереднього прикладу.
+Одного `if` перед викликом недостатньо, щоб native стала необов'язковою: без неї плагін може не завантажитися ще до виконання коду. У `plugin_natives()` ставимо фільтр саме для потрібної native, а перед викликом перевіряємо постачальника. У прикладі без `notes_api` використовуємо звичайний `clamp()`.
 
 
 ```pawn
@@ -313,6 +316,7 @@ public plugin_natives()
 
 public filter_optional_native( const native_name[], index, trap )
 {
+	// Дозволяємо відсутність лише цієї native під час завантаження.
 	if( !trap && equal( native_name, "notes_clamp_score" ) )
 		return PLUGIN_HANDLED;
 
@@ -332,22 +336,22 @@ public plugin_cfg()
 }
 ```
 
-Тут навмисно немає обов’язкового `#pragma reqlib notes_api`. `trap = 0` означає відсутність native під час пошуку; `trap = 1` означає спробу її виклику. Не приховуй другу помилку чи сторонні missing natives загальним фільтром. Include з вимогою необов’язкового модуля може також потребувати точного module filter або окремої збірки: native filter не виконує вимогу бібліотеки.
+Обов'язкового `#pragma reqlib notes_api` тут навмисно немає. `trap = 0` означає, що native не знайшлася під час завантаження, `trap = 1` що відсутню native вже спробували викликати. Другий випадок і чужі помилки загальним фільтром не приховуємо. Якщо include окремо вимагає модуль, може знадобитися точковий фільтр модулів або окрема збірка: фільтр native вимогу бібліотеки не скасовує.
 
-Джерела: [native and module filter declarations](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc), [`LibraryExists`](https://www.amxmodx.org/api/amxmodx/LibraryExists).
+Джерела: [описи фільтрів native і модулів](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc), [`LibraryExists`](https://www.amxmodx.org/api/amxmodx/LibraryExists).
 
 <a id="api-contract"></a>
-## Невеликий і явний контракт API
+## Що пояснити у спільному include
 
-Спільний include має пояснювати те, чого споживач не дізнається лише із сигнатури:
+У спільному include описуємо не лише параметри. Інший плагін має розуміти, як правильно викликати нашу функцію й що робити з результатом:
 
-- потрібний постачальник і версія API; наявність бібліотеки ще не доводить сумісність;
-- чи ID є слотом гравця, userid, індексом сутності або окремим handle;
-- чи дозволені від’єднані гравці, боти й нульові значення;
-- максимальна довжина виходу та власник повернутого handle;
-- результати успіху, помилки й callbacks;
-- чи forward виконується до або після зміни стану й чи можуть споживачі змінювати аргументи.
+- який плагін чи модуль потрібен і яка версія API підходить; самої наявності бібліотеки недостатньо;
+- що саме означає ID: слот гравця, userid, індекс сутності чи окремий handle;
+- чи можна передати відключеного гравця, бота або нуль;
+- скільки символів уміститься у вихідний буфер і хто закриє повернений handle;
+- що функція повертає за успіху й помилки та що означають відповіді обробників;
+- коли приходить forward: до зміни чи після, і чи дозволено змінювати його аргументи.
 
-Не змінюй порядок чи зміст параметрів існуючої native непомітно. За зміни сумісності додай перевірку версії або нову точку входу. `log_error( AMX_ERR_NATIVE, ... )` показує помилку перевірки постачальника як помилку у викликаючому плагіні; це корисніше за прийняття невалідного гравця чи handle з пізнім падінням.
+Порядок і зміст параметрів наявної native непомітно не змінюємо. Якщо сумісність змінюється, додаємо перевірку версії або нову функцію API. Для неправильного аргументу використовуємо `log_error( AMX_ERR_NATIVE, ... )`: помилка буде показана в плагіна виклику, ближче до її причини. Це зрозуміліше, ніж прийняти поганий ID чи handle і зламатися пізніше в іншому місці.
 
 Джерела: [`register_library`](https://www.amxmodx.org/api/amxmodx/register_library), [`log_error`](https://www.amxmodx.org/api/amxmodx/log_error).

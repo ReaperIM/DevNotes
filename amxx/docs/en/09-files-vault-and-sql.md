@@ -4,24 +4,24 @@
 
 [Contents](../../README.md)
 
-Configuration files, structured data and persistent storage. Examples that write files or open databases are API examples, not automatic startup code for a production plugin.
+Read configs from files, save points in nVault, or keep shared data in a database. Below, we cover reading, writing and releasing resources. File and database examples show individual API calls; choose when to save according to your own plugin’s job.
 
 - [Build paths from AMXX directories](#paths)
-- [Read a text file with one open handle](#read-lines)
+- [Read a file sequentially and close it](#read-lines)
 - [Append text without replacing the file](#append)
 - [Parse JSON and check its structure](#json)
-- [Open nVault and keep the handle](#vault-open)
+- [Open nVault once for the plugin](#vault-open)
 - [Distinguish a missing key from a stored zero](#vault-missing)
-- [Timestamps and pruning are explicit](#vault-expiry)
-- [Threaded SQL and its callback](#threaded-sql)
-- [`SQL_PrepareQuery` is not parameter binding](#sql-quoting)
-- [A query result can outlive the player connection](#sql-player-context)
+- [Remove outdated records by timestamp](#vault-expiry)
+- [Send a SQL query and receive the reply later](#threaded-sql)
+- [Insert a string value into SQL safely](#sql-quoting)
+- [The player left while the database reply was pending](#sql-player-context)
 
 <a id="paths"></a>
 
 ## Build paths from AMXX directories
 
-Use `get_configsdir()` for configuration and `get_datadir()` for stored data instead of assuming an installation path.
+Avoid depending on the server’s installation path. Get the config directory with `get_configsdir()` and the data directory with `get_datadir()`. Below, we append `notes.txt` to the data directory and print the resulting path.
 
 ```pawn
 #include <amxmodx>
@@ -36,15 +36,15 @@ public plugin_init()
 }
 ```
 
-A base directory does not make a user-supplied filename safe. Keep names controlled; do not append arbitrary `../` or absolute paths from commands.
+A filename received from a command still needs checking. A correct base directory does not stop `../` or an absolute path from reaching elsewhere. Keeping the allowed names under the plugin’s control is simpler.
 
 [`get_datadir`](https://www.amxmodx.org/api/amxmisc/get_datadir)
 
 <a id="read-lines"></a>
 
-## Read a text file with one open handle
+## Read a file sequentially and close it
 
-Open once, read sequentially, then close. `fgets()` reads a bounded piece, so the buffer must accommodate the intended line format.
+To read a whole text file, open it once, read lines through `fgets()`, then close it. The example skips empty lines and lines beginning with `;`. Choose the `line` buffer size for the allowed record length.
 
 ```pawn
 #include <amxmodx>
@@ -71,7 +71,7 @@ public plugin_cfg()
 }
 ```
 
-A line longer than the buffer can be truncated with its tail discarded. Limit line lengths in the format or use a reader that handles long records explicitly. Trimming and skipping `;` here are example rules, not a full INI parser.
+An oversized line can be truncated and its tail discarded. Limit the format’s line length or handle long records explicitly. Trimming and skipping `;` alone do not provide a complete INI parser.
 
 [`fgets`](https://www.amxmodx.org/api/file/fgets)
 
@@ -79,7 +79,7 @@ A line longer than the buffer can be truncated with its tail discarded. Limit li
 
 ## Append text without replacing the file
 
-Mode `at` appends; `wt` truncates an existing file. Use `fputs()` for literal text so `%` in the data is not treated as a format string.
+To add text at the end of a file, open it with `at`. Using `wt` would clear its existing contents. Write the text through `fputs()` so the `%` in `Progress: 100%` remains an ordinary character.
 
 ```pawn
 #include <amxmodx>
@@ -104,7 +104,7 @@ public plugin_init()
 }
 ```
 
-Opening files or flushing on every frame is expensive work for the server thread. Save on meaningful changes or in batches; `fflush()` is not a transaction.
+Opening files or forcing buffered data out every frame delays the server thread. Save on meaningful changes or collect writes into batches. `fflush()` flushes a buffer; it does not make several operations an atomic transaction.
 
 [`fputs`](https://www.amxmodx.org/api/file/fputs)
 
@@ -112,7 +112,7 @@ Opening files or flushing on every frame is expensive work for the server thread
 
 ## Parse JSON and check its structure
 
-The JSON module separates parsing from reading fields. A syntactically valid document can still have the wrong shape or field type.
+A successful `json_parse()` means the JSON could be parsed. It can still contain a string instead of an object, or text where a number was expected. Below, we check for an object and a numeric `limit` field before reading the value.
 
 ```pawn
 #include <amxmodx>
@@ -124,6 +124,7 @@ public plugin_init()
 	if( document == Invalid_JSON )
 		return;
 
+	// Successful parsing alone does not guarantee the expected field type.
 	if( json_is_object(document) && json_object_has_value(document, "limit", JSONNumber) )
 		server_print( "Limit: %d", json_object_get_number(document, "limit") );
 
@@ -131,15 +132,15 @@ public plugin_init()
 }
 ```
 
-Free JSON values you own. Native handles for nested values and serialization buffers have their own lifetime and size rules; do not assume that a parent frees every independently created handle.
+Release the created document through `json_free()`. When obtaining or creating nested values separately, check their handle rules: closing a parent does not replace cleanup of all independently created resources. When serializing back to text, account for the output buffer size too.
 
 [`json_parse`](https://www.amxmodx.org/api/json/json_parse) | [`json_free`](https://www.amxmodx.org/api/json/json_free)
 
 <a id="vault-open"></a>
 
-## Open nVault and keep the handle
+## Open nVault once for the plugin
 
-nVault is a local key/value store. Open a named vault once, check `INVALID_HANDLE`, and close it when the plugin ends.
+nVault keeps local records under keys. Open a named vault, save its handle and reuse it. Close it in `plugin_end()`. A failed open returns `INVALID_HANDLE`, so check that immediately.
 
 ```pawn
 #include <amxmodx>
@@ -160,7 +161,7 @@ public plugin_end()
 }
 ```
 
-nVault failure is `-1`, not a generic false handle. Values are strings; key design and account identity remain application concerns.
+The failure value is `-1`; an ordinary false check will miss it. nVault stores values as strings. Your plugin defines the key format and how it identifies the intended account.
 
 [`nvault_open`](https://www.amxmodx.org/api/nvault/nvault_open)
 
@@ -168,7 +169,7 @@ nVault failure is `-1`, not a generic false handle. Values are strings; key desi
 
 ## Distinguish a missing key from a stored zero
 
-`nvault_lookup()` returns whether the entry exists and fills the value and timestamp separately. This preserves meaningful `0` and empty values.
+A player having `0` points does not mean their record is missing. `nvault_lookup()` reports whether the key was found separately from the value string and timestamp it fills. Below, the stored `"0"` is found successfully. An empty string can be a stored value too.
 
 ```pawn
 #include <amxmodx>
@@ -189,15 +190,15 @@ public plugin_init()
 }
 ```
 
-The two-argument numeric `nvault_get()` cannot by itself distinguish a missing key from a stored numeric zero.
+The two-argument numeric `nvault_get()` cannot distinguish a missing key from a stored zero on its own. Use a separate existence check if that distinction matters when initializing data.
 
 [`nvault_lookup`](https://www.amxmodx.org/api/nvault/nvault_lookup)
 
 <a id="vault-expiry"></a>
 
-## Timestamps and pruning are explicit
+## Remove outdated records by timestamp
 
-`nvault_set()` updates an entry timestamp. `nvault_prune()` removes entries in a time interval; nVault does not apply your own TTL policy automatically.
+`nvault_set()` updates a record’s timestamp. To remove old records, call `nvault_prune()` with the intended interval. Below, we remove cache entries from the period before the cutoff 30 days ago. nVault does not apply a custom retention period automatically; run that cleanup explicitly.
 
 ```pawn
 #include <amxmodx>
@@ -216,15 +217,15 @@ public plugin_init()
 }
 ```
 
-Use pruning for data that is actually disposable. Permanent entries created with `nvault_pset()` are not removed by prune.
+Only prune data that can be discarded, such as cache entries. This cleanup leaves permanent records created with `nvault_pset()` intact.
 
 [`nvault_prune`](https://www.amxmodx.org/api/nvault/nvault_prune)
 
 <a id="threaded-sql"></a>
 
-## Threaded SQL and its callback
+## Send a SQL query and receive the reply later
 
-`SQL_MakeDbTuple()` stores connection settings; it does not connect. `SQL_ThreadQuery()` runs a query asynchronously and calls a `public` handler with either failure details or a result.
+Use `SQL_ThreadQuery()` so the server does not wait for the database here. When the query finishes, AMXX calls `query_ready()`, where we check for failure and read the result. `SQL_MakeDbTuple()` keeps connection settings ready; calling it does not open a connection.
 
 ```pawn
 #include <amxmodx>
@@ -245,6 +246,7 @@ public plugin_init()
 
 public query_ready( failstate, Handle:query, error[], errnum, data[], size, Float:queuetime )
 {
+	// Check query success before reading the result.
 	if( failstate != TQUERY_SUCCESS )
 	{
 		log_amx( "SQL failed (%d): %s", errnum, error );
@@ -262,15 +264,15 @@ public plugin_end()
 }
 ```
 
-This example selects the SQLite driver. MySQL needs real connection settings from server configuration. Do not free the callback query handle: SQLX owns it. The handler still must avoid expensive work on the game thread.
+The example chooses SQLite. For MySQL, use real settings from the server configuration. SQLX releases the callback’s `query` handle, so do not close it yourself. The handler itself runs on the game thread; keep expensive work out of it too.
 
 [`SQL_ThreadQuery`](https://www.amxmodx.org/api/sqlx/SQL_ThreadQuery) | [`SQL_MakeDbTuple`](https://www.amxmodx.org/api/sqlx/SQL_MakeDbTuple)
 
 <a id="sql-quoting"></a>
 
-## `SQL_PrepareQuery` is not parameter binding
+## Insert a string value into SQL safely
 
-The format arguments of SQLX are string formatting, not PDO-style placeholders. Escape external string values for the active connection before inserting them into SQL.
+In `SQL_PrepareQuery()`, `%s` only formats query text. It does not bind a parameter as PDO does. Before inserting an external string, call `SQL_QuoteString()` for the active connection. The name `O'Brien` below is escaped and read back with its apostrophe intact.
 
 ```pawn
 #include <amxmodx>
@@ -294,6 +296,7 @@ public plugin_init()
 	new name[] = "O'Brien", escaped[2 * sizeof name];
 	if( SQL_QuoteString(db, escaped, charsmax(escaped), name) != -1 )
 	{
+		// Only insert the value after escaping it for this connection.
 		new Handle:query = SQL_PrepareQuery( db, "SELECT '%s'", escaped );
 		if( query != Empty_Handle )
 		{
@@ -311,15 +314,15 @@ public plugin_init()
 }
 ```
 
-This is deliberately synchronous to show escaping with a real connection; do not open a blocking connection for each gameplay event. Escaping values does not validate table names or sort expressions. `SQL_SetCharset()` on a MySQL tuple belongs before connections/queries.
+The example uses a synchronous connection to demonstrate this. Opening one for every game event would make the server wait. Escaping a value does not validate table names or sort expressions. For MySQL, call `SQL_SetCharset()` on the tuple before opening connections or sending queries.
 
 [`SQL_PrepareQuery`](https://www.amxmodx.org/api/sqlx/SQL_PrepareQuery) | [`SQL_QuoteString`](https://www.amxmodx.org/api/sqlx/SQL_QuoteString)
 
 <a id="sql-player-context"></a>
 
-## A query result can outlive the player connection
+## The player left while the database reply was pending
 
-Put a userid in the query data, not just the slot. Resolve it in the callback and reject results for a connection that has already ended.
+By the time the database replies, the player may have disconnected. Put the connection userid into the query data, then find the player again in the handler. If the connection cannot be found, it no longer needs the result.
 
 ```pawn
 #include <amxmodx>
@@ -350,6 +353,7 @@ public query_player( failstate, Handle:query, error[], errnum, data[], size, Flo
 		return;
 	}
 
+	// The reply may arrive after the original player has left.
 	new id = find_player( "k", data[0] );
 	if( id == 0 || SQL_NumResults(query) == 0 )
 		return;
@@ -364,6 +368,6 @@ public plugin_end()
 }
 ```
 
-Userid prevents applying an old result to a new occupant. Multiple requests within the same connection can still arrive out of order: add a request generation if the latest result must win. Persistent writes use an authorized account key, not the userid.
+Checking userid prevents an old reply from reaching a new person in the same slot. Several requests for one connection can still finish out of order. Keep a request number too if only the latest result should apply. Persistent account data uses an authorized account key rather than a userid.
 
 [`SQL_ThreadQuery`](https://www.amxmodx.org/api/sqlx/SQL_ThreadQuery) | [`find_player`](https://www.amxmodx.org/api/amxmodx/find_player)

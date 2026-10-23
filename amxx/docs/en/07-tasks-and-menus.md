@@ -4,20 +4,20 @@
 
 [Contents](../../README.md)
 
-Delayed work and interactive menus share the same trap: the world can change before the callback runs. Keep ownership, identity and cleanup visible. Examples use AMXX 1.9; the `Think` example also uses Engine.
+While a timer waits or a player chooses a menu item, the server can change. Keep the connection identity, check conditions again before acting, and clean up tasks and menus when finished. These examples use AMXX 1.9; the `Think` example also needs Engine.
 
-**In this chapter**
+**Topics in this chapter**
 
 - [Call a `public` function later](#one-shot-task)
-- [Readable repeat flags with `set_task_ex()`](#repeat-flags)
-- [Keep unrelated task IDs separate](#task-id-ownership)
-- [A delayed player action needs connection identity](#player-task-identity)
-- [Start and stop a repeating task explicitly](#stop-repeat-task)
-- [Use a deadline for a cooldown](#cooldowns-and-clocks)
-- [Attach timing to an entity with `Think`](#entity-think)
-- [Destroy a dynamic menu on every completion path](#dynamic-menu)
-- [A shared menu has a different lifetime](#shared-menu)
-- [Recheck permissions when an item is selected](#menu-access)
+- [Repeat a task a few times or until stopped](#repeat-flags)
+- [Keep one pending task with one ID](#task-id-ownership)
+- [Check the player again after a delay](#player-task-identity)
+- [Start repeating once, and stop when finished](#stop-repeat-task)
+- [Add a cooldown without a separate timer](#cooldowns-and-clocks)
+- [Give an entity recurring work through `Think`](#entity-think)
+- [Create a menu for one display and release it afterward](#dynamic-menu)
+- [Reuse one menu for several displays](#shared-menu)
+- [Check permissions when the item is selected](#menu-access)
 
 <a id="one-shot-task"></a>
 
@@ -25,7 +25,7 @@ Delayed work and interactive menus share the same trap: the world can change bef
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/set_task)
 
-A task schedules a callback without blocking the server. The callback must be `public` because AMXX finds it by name. With no parameter array, the callback can receive the task ID as its first argument.
+Need to do something later? `set_task()` schedules a call and immediately gives control back to the server. Mark the handler `public` so AMXX can find it by name. Without a parameter array, its first argument can receive the task ID.
 
 ```pawn
 #include <amxmodx>
@@ -43,15 +43,15 @@ public task_ready( task_id )
 }
 ```
 
-The message appears on a later server frame, roughly two seconds later. Tasks are not worker threads and do not make expensive SQL, file work or loops asynchronous.
+The example prints roughly two seconds later, on a subsequent server frame. Work inside the task still runs on the server: a long synchronous SQL query, file read or expensive loop can hold up the game there too.
 
 <a id="repeat-flags"></a>
 
-## Readable repeat flags with `set_task_ex()`
+## Repeat a task a few times or until stopped
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmisc/set_task_ex)
 
-`set_task_ex()` is the `amxmisc` `stock` with named task flags. `SetTask_RepeatTimes` repeats a fixed number of times; `SetTask_Repeat` keeps running until stopped. The older `set_task()` uses `"a"` and `"b"` for the same modes.
+The `amxmisc` function `set_task_ex()` gives task flags readable names. `SetTask_RepeatTimes` repeats a fixed number of times; `SetTask_Repeat` continues until stopped. The older `set_task()` uses `"a"` and `"b"` for those modes. Below, we choose three repeats.
 
 ```pawn
 #include <amxmodx>
@@ -71,15 +71,15 @@ public task_pulse()
 }
 ```
 
-This prints three pulses. `SetTask_AfterMapStart` (`"c"`) and `SetTask_BeforeMapChange` (`"d"`) change the meaning of the time argument; they are map-relative scheduling modes, not shorter intervals.
+This produces three messages. `SetTask_AfterMapStart` (`"c"`) and `SetTask_BeforeMapChange` (`"d"`) schedule relative to map start or map change. They change what the time argument means rather than simply making the interval shorter.
 
 <a id="task-id-ownership"></a>
 
-## Keep unrelated task IDs separate
+## Keep one pending task with one ID
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/remove_task)
 
-Calling `set_task()` twice with the same ID does not mean replacement. Several tasks may share an ID; `remove_task()` removes all matching ones. Remove before scheduling when the intended behavior is one pending task.
+Calling `set_task()` again with the same ID does not replace the previous task; several tasks can share it. `remove_task()` removes all matches. For one pending refresh, remove the old task before scheduling its replacement.
 
 ```pawn
 #include <amxmodx>
@@ -93,6 +93,7 @@ public plugin_init()
 
 public command_refresh()
 {
+	// Remove the previous task so repeated requests leave only one.
 	remove_task( TASK_REFRESH );
 	set_task( 1.0, "task_refresh", TASK_REFRESH );
 	return PLUGIN_HANDLED;
@@ -104,15 +105,15 @@ public task_refresh()
 }
 ```
 
-Repeated requests now postpone a single refresh. IDs are scoped to the current plugin by default. The `outside` argument deliberately reaches other plugins; leave it at `0` for ordinary plugin-owned tasks.
+Each command call now postpones one refresh until a second after the last request. IDs belong to the current plugin by default. The `outside` parameter can reach other plugins; leave it at `0` for an ordinary task of your own.
 
 <a id="player-task-identity"></a>
 
-## A delayed player action needs connection identity
+## Check the player again after a delay
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/get_user_userid)
 
-A player index is a reusable slot. After a disconnect, another player may occupy the same `id` before a callback runs. Store the connection userid alongside the slot, remove the task on disconnect, and verify both at execution.
+In five seconds, a player can leave and someone else can take their slot. Save the connection userid alongside `id` so the welcome does not reach the new person. Remove the task on disconnect, then check the connection again inside the handler.
 
 ```pawn
 #include <amxmodx>
@@ -137,6 +138,7 @@ public task_welcome( const data[] )
 {
 	new id = data[0];
 
+	// The slot may already belong to a different connection.
 	if( !is_user_connected( id ) || get_user_userid( id ) != data[1] )
 		return;
 
@@ -144,15 +146,15 @@ public task_welcome( const data[] )
 }
 ```
 
-With a parameter array, that array becomes the callback's first argument. Use `sizeof data`, not `charsmax( data )`: this is cell data, not a terminated string. A userid identifies a connection, not a persistent account.
+With a parameter array, the array becomes the handler’s first argument. Its length is `sizeof data`: pass all cells, without applying the string rule of `charsmax()`. A userid identifies one connection; a persistent account needs a different key.
 
 <a id="stop-repeat-task"></a>
 
-## Start and stop a repeating task explicitly
+## Start repeating once, and stop when finished
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/task_exists)
 
-`task_exists()` is useful for an idempotent start: enabling an already running feature should not create a second timer. Stop the timer when the feature is disabled instead of leaving it to wake up and immediately return forever.
+A repeated enable command should not create a second timer. Check `task_exists()` and create the task only when it is absent. On disable, remove it entirely so it stops waking up just to do nothing. Below, status prints every ten seconds until the stop command is called.
 
 ```pawn
 #include <amxmodx>
@@ -186,15 +188,15 @@ public task_status()
 }
 ```
 
-Choose different ID ranges for unrelated player tasks and global tasks. A round restart does not automatically cancel your plugin's task; hook the relevant round lifecycle when cancellation is part of the rule.
+Use separate ID ranges for unrelated player tasks and global tasks. A round restart does not cancel your task automatically. If it should end with the round, add cleanup to the appropriate event.
 
 <a id="cooldowns-and-clocks"></a>
 
-## Use a deadline for a cooldown
+## Add a cooldown without a separate timer
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/get_gametime)
 
-A cooldown usually needs no ticking task. Store a game-time deadline and compare it when the action is requested. `get_gametime()` counts from map start; `get_systime()` is a Unix timestamp for calendar time and persistence. Do not compare values from those clocks.
+A command cooldown usually only needs the next allowed time. Compare it with `get_gametime()` when another command arrives. Below, `/ping` works at most once every three seconds. Game time counts from map start; `get_systime()` provides a Unix timestamp for dates and saved data. Do not compare values from those two clocks.
 
 ```pawn
 #include <amxmodx>
@@ -224,15 +226,15 @@ public command_ping( id )
 }
 ```
 
-The slot state is reset for a new connection. Game time is constant during one engine frame, so it is unsuitable for measuring how long an individual function takes.
+Reset slot state for a new connection. `get_gametime()` stays unchanged within one frame, so it cannot measure the duration of an individual function.
 
 <a id="entity-think"></a>
 
-## Attach timing to an entity with `Think`
+## Give an entity recurring work through `Think`
 
 [AMX Mod X API](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/engine.inc)
 
-When the timed behavior belongs to an entity, its `nextthink` can express ownership directly. This example creates one invisible `info_target`, gives it a distinct classname and schedules its next `Think` after each call. It requires the Engine module.
+If a timed action belongs to an entity, keep its next call time in `nextthink`. Below, we create an invisible `info_target`, give it a distinct classname, and schedule another call each time it runs. This example needs Engine.
 
 ```pawn
 #include <amxmodx>
@@ -257,15 +259,15 @@ public on_clock_think( entity )
 }
 ```
 
-`Think` does not repeat unless you schedule another `nextthink`. Removing the entity removes this owner of the timer. It is still frame-driven server work, not a background thread or a reason to create one entity per simple cooldown.
+`Think` does not repeat by itself: set `nextthink` again. Removing the entity also removes the object that owns this timer. The work still follows server frames; an ordinary command cooldown does not need a separate entity for each player.
 
 <a id="dynamic-menu"></a>
 
-## Destroy a dynamic menu on every completion path
+## Create a menu for one display and release it afterward
 
 [AMX Mod X API](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/newmenus.inc)
 
-A menu created for one display owns a resource until `menu_destroy()`. A selection, Exit, timeout or cancellation can all reach its handler. Check `item < 0` before reading item data; cancellation is not always just `MENU_EXIT`.
+A menu created with `menu_create()` needs releasing through `menu_destroy()`. Its handler can run after a selection, Exit, cancellation or timeout. Check `item < 0` before reading item data: a negative result is not always just `MENU_EXIT`.
 
 ```pawn
 #include <amxmodx>
@@ -286,6 +288,7 @@ public command_choice( id )
 
 public menu_choice( id, menu, item )
 {
+	// Cancellation has no selected item to read.
 	if( item < 0 )
 	{
 		menu_destroy( menu );
@@ -300,15 +303,15 @@ public menu_choice( id, menu, item )
 }
 ```
 
-The item info is a stable action key; the visible caption can later change or be translated. Do not immediately call `menu_display()` from a handler with negative `item`: the API forbids that re-entrant cancellation path. A timeout is reported on subsequent menu interaction, not a promise that the callback runs exactly at the deadline.
+The `info` string holds an action key, so the visible caption can be renamed or translated. Do not immediately call `menu_display()` from a handler with negative `item`; the API forbids that re-entry during cancellation. A timeout is reported on subsequent menu interaction, so do not expect a callback exactly at the deadline.
 
 <a id="shared-menu"></a>
 
-## A shared menu has a different lifetime
+## Reuse one menu for several displays
 
 [AMX Mod X API](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/newmenus.inc)
 
-For identical static choices, create the menu once and reuse its handle. A player closing it must not destroy it for everyone else. Keep this separate from the create-per-display pattern above.
+For identical choices that do not vary by player, create the menu once and reuse its handle. One player closing it must not destroy it for everyone else, so this handler does not call `menu_destroy()`.
 
 ```pawn
 #include <amxmodx>
@@ -346,15 +349,15 @@ public plugin_end()
 }
 ```
 
-The menu survives individual selections and is released at plugin shutdown. The menu object is shared too: changing its title, item text or properties for one player changes that same object. Use separate menus for genuinely personalized contents.
+The menu remains after individual selections and is released in `plugin_end()`. Its title, items and properties are shared too: changing them for one player changes the same object. Use separate menus for personalized contents.
 
 <a id="menu-access"></a>
 
-## Recheck permissions when an item is selected
+## Check permissions when the item is selected
 
 [AMX Mod X API](https://www.amxmodx.org/api/newmenus/menu_additem)
 
-An item access mask or drawing callback controls how a menu looks now. The action happens later, when the player may have lost permission or the game state may have changed. Recheck the actual action conditions in the handler.
+An item access flag or drawing callback describes the menu when it is displayed. While the player chooses, permissions may change or the target may leave. Check everything the actual action requires again just before performing it.
 
 ```pawn
 #include <amxmodx>
@@ -384,4 +387,4 @@ public menu_admin_note( id, menu, item )
 }
 ```
 
-This menu has one action, so no item-data lookup is needed. For a player-target menu, store a connection userid as the target key and resolve or verify it at selection time; a stored slot alone can refer to someone else.
+This menu has only one action, so item data does not need reading. For a menu targeting another player, save the target’s userid and verify or resolve it at selection time. A saved slot alone may belong to someone else by then.

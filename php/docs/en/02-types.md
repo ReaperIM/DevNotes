@@ -4,29 +4,29 @@
 
 [Contents](../../README.md)
 
-- [Scalar parameters and return types](#scalar-types)
-- [`strict_types`](#strict-types)
-- [Nullable types](#nullable)
-- [`void`](#void)
-- [`iterable` / `object`](#iterable-object)
-- [Typed properties](#typed-properties)
-- [Covariance / contravariance](#variance)
-- [Union: `A|B`](#union)
-- [`mixed`](#mixed)
-- [Return type `static`](#static-return)
-- [Intersection: `A&B`](#intersection)
-- [`never`](#never)
-- [DNF: `(A&B)|C`](#dnf)
-- [Standalone `true` / `false` / `null`](#literal-types)
-- [Typed constants](#typed-constants)
-- [PHPDoc vs native types](#native-type-limits)
+- [Parameter and return types](#scalar-types)
+- [Keep types strict with `strict_types`](#strict-types)
+- [Allow `null` with `?T`](#nullable)
+- [Do something without returning a value: `void`](#void)
+- [Accept iterable values and objects](#iterable-object)
+- [Give a property a type](#typed-properties)
+- [Refine types in a child class](#variance)
+- [Allow one of several types: `A|B`](#union)
+- [Accept any value with `mixed`](#mixed)
+- [Return the right child class with `static`](#static-return)
+- [Require both types with `A&B`](#intersection)
+- [A function that does not return: `never`](#never)
+- [Combine requirements and alternatives: `(A&B)|C`](#dnf)
+- [Return exactly `true`, `false` or `null`](#literal-types)
+- [Give a class constant a type](#typed-constants)
+- [What PHP checks and what PHPDoc adds](#native-type-limits)
 
 <a id="scalar-types"></a>
-## Scalar parameters and return types
+## Parameter and return types
 
 **PHP 7.0+** | [PHP](https://www.php.net/manual/en/migration70.new-features.php)
 
-Scalar parameter and return types make a function's contract visible in its signature. PHP checks values at the call boundary; a separate PHPDoc type is no longer needed for this.
+The declaration tells us what to pass in and what comes back. Here the price is a `float`, the quantity is an `int` and the result is a `float`. PHP checks those types itself, so repeating them in PHPDoc does not add the same runtime check.
 
 ```php
 function line_total( float $price, int $quantity ): float
@@ -37,14 +37,14 @@ function line_total( float $price, int $quantity ): float
 echo line_total( 12.5, 3 ); # 37.5
 ```
 
-The scalar names are `int`, `float`, `string` and `bool`; conversion rules depend on `strict_types`.
+The scalar types are `int`, `float`, `string` and `bool`. Whether PHP converts a value to the declared type depends on `strict_types`.
 
 <a id="strict-types"></a>
-## `strict_types`
+## Keep types strict with `strict_types`
 
 **PHP 7.0+** | [PHP](https://www.php.net/manual/en/language.types.declarations.php#language.types.declarations.strict)
 
-Use `strict_types` when a numeric `string` should not silently satisfy an `int` parameter. Place the declaration at the beginning of the PHP file.
+The string `'3'` looks like a number, but it is still a string. Turn on `strict_types` at the start of the file if PHP should not silently accept it for an `int` parameter. This call then throws `TypeError`.
 
 <!-- example: fragment -->
 ```php
@@ -58,14 +58,14 @@ function double_count( int $count ): int
 double_count( '3' ); # TypeError
 ```
 
-Argument strictness follows the caller's file; `return` checks follow the defining file. `int` is still accepted for `float`.
+Argument checks follow the file making the call. Return-value checks follow the file declaring the function. One conversion is still allowed: an `int` can be passed where a `float` is expected.
 
 <a id="nullable"></a>
-## Nullable types
+## Allow `null` with `?T`
 
 **PHP 7.1+** | [PHP](https://www.php.net/manual/en/migration71.new-features.php)
 
-`?T` describes a value that may be absent: for example, an optional name or an unsuccessful lookup. The `= null` default separately allows the argument to be omitted.
+The name can be a string, or there may be no name. `?string` explicitly allows both. The `= null` default does a separate job: it lets callers leave the argument out entirely.
 
 ```php
 function display_name( ?string $name = null ): string
@@ -76,14 +76,14 @@ function display_name( ?string $name = null ): string
 echo display_name(); # Guest
 ```
 
-`string|null` is another spelling from 8.0. The implicit form `string $name = null` is deprecated from 8.4.
+That is why calling without a name prints `Guest`. From PHP 8.0, `string|null` is another way to write the type. The old implicit form `string $name = null` is deprecated from PHP 8.4.
 
 <a id="void"></a>
-## `void`
+## Do something without returning a value: `void`
 
 **PHP 7.1+** | [PHP](https://www.php.net/manual/en/language.types.void.php)
 
-`void` marks an action with no useful `return` value. An early `return` without a value is allowed, but `return null` is not.
+This function only prints a status; callers do not need a value back. That is what `void` says. If the status is hidden, a plain `return;` lets the function finish early.
 
 ```php
 function print_status( bool $visible ): void
@@ -95,12 +95,14 @@ function print_status( bool $visible ): void
 }
 ```
 
+`return null;` is not allowed, because that explicitly returns a value too.
+
 <a id="iterable-object"></a>
-## `iterable` / `object`
+## Accept iterable values and objects
 
 **PHP 7.1 / 7.2+** | [PHP](https://www.php.net/manual/en/language.types.iterable.php)
 
-`iterable` (7.1) lets the same function accept an `array` or `Traversable`, including a generator. It is useful when the function only needs to iterate, rather than access `array` indexes. `object` (7.2) accepts any `object`.
+If a function only needs `foreach`, it does not have to demand an array. From PHP 7.1, `iterable` accepts arrays and `Traversable` objects, including generators. The sum here does not depend on how the values are stored.
 
 ```php
 function sum_values( iterable $values ): int
@@ -116,14 +118,14 @@ function sum_values( iterable $values ): int
 echo sum_values( [2, 3, 5] ); # 10
 ```
 
-`iterable` does not constrain element types.
+`iterable` does not check the types of its elements. The separate `object` type, added in PHP 7.2, accepts any object without requiring a particular class.
 
 <a id="typed-properties"></a>
-## Typed properties
+## Give a property a type
 
 **PHP 7.4+** | [PHP](https://www.php.net/manual/en/language.oop5.properties.php)
 
-A property can declare its own type. A typed property without an initial value remains uninitialized; even a nullable declaration does not automatically assign `null`.
+A property can declare its type directly. Declaring it and giving it a value are separate steps, though. Here `id` has no value yet, while `email` already holds `null`. The `?` alone does not assign `null`.
 
 ```php
 class Profile
@@ -136,14 +138,14 @@ $profile = new Profile();
 var_dump( isset($profile->id), $profile->email ); # false, null
 ```
 
-Reading `id` before assignment throws `Error`. `isset()` is safe but does not distinguish uninitialized from `null`. `callable` is not a property type; use `Closure` for a stored closure.
+Reading `id` before assigning it throws `Error`. `isset()` is safe, but returns `false` for both an uninitialized property and `null`. Properties cannot use the `callable` type; use `Closure` when storing a closure.
 
 <a id="variance"></a>
-## Covariance / contravariance
+## Refine types in a child class
 
 **PHP 7.4+** | [PHP](https://www.php.net/manual/en/language.oop5.variance.php)
 
-An overriding method may accept a broader input type and `return` a more specific one. Here the implementation accepts any `object` instead of only `stdClass`, while promising `stdClass` instead of a general `object`.
+An overriding method can accept more kinds of input and return a more specific result. These changes are called parameter contravariance and return-type covariance. Here we accept any `object` instead of only `stdClass`, but promise to return a `stdClass`.
 
 ```php
 interface Factory
@@ -160,14 +162,14 @@ class CustomFactory implements Factory
 }
 ```
 
-7.2 already allowed removing a parameter type. Ordinary read/write properties remain invariant.
+Anything accepted by the original method is still accepted by the new one. PHP 7.2 already allowed removing a parameter type entirely. Ordinary properties that can be both read and written do not have that flexibility: their type must stay invariant.
 
 <a id="union"></a>
-## Union: `A|B`
+## Allow one of several types: `A|B`
 
 **PHP 8.0+** | [PHP](https://www.php.net/manual/en/language.types.type-system.php)
 
-When a function genuinely returns more than one kind of value, list the alternatives in its return type. `int|false` matches a position lookup where zero is a valid successful result.
+Use `|` to list the allowed alternatives. A position lookup, for example, returns an integer or `false` when nothing is found. `int|false` says that directly.
 
 ```php
 function find_position( string $text, string $needle ): int|false
@@ -178,14 +180,14 @@ function find_position( string $text, string $needle ): int|false
 echo find_position( 'php', 'p' ); # 0
 ```
 
-`false` is allowed in unions from 8.0, standalone from 8.2. Check failure with `!== false` rather than discarding position zero.
+The position found here is zero, which is a successful result. Use `!== false` to distinguish it from failure. `false` is allowed in a union from PHP 8.0 and as a standalone type from PHP 8.2.
 
 <a id="mixed"></a>
-## `mixed`
+## Accept any value with `mixed`
 
 **PHP 8.0+** | [PHP](https://www.php.net/manual/en/language.types.mixed.php)
 
-`mixed` explicitly accepts every PHP value, including `null`. It fits a generic formatter or container whose contract really does not narrow the input.
+Some functions really do need to accept anything, such as a value inspector or a general-purpose container. `mixed` makes that explicit: every PHP value is accepted, including `null`.
 
 ```php
 function describe_value( mixed $value ): string
@@ -196,14 +198,14 @@ function describe_value( mixed $value ): string
 echo describe_value( ['id' => 42] ); # array
 ```
 
-`mixed` already includes `null`, so `?mixed` and `mixed|null` are invalid.
+There is no need to add `null` again. `?mixed` and `mixed|null` are invalid because `mixed` already includes it.
 
 <a id="static-return"></a>
-## Return type `static`
+## Return the right child class with `static`
 
 **PHP 8.0+** | [PHP](https://www.php.net/manual/en/language.types.relative-class-types.php)
 
-`static` follows the class used by the call, while `self` refers to the class declaring the method. This keeps an inherited factory's return type precise for its child classes.
+The creation method is declared in `Record`, but we call it through `UserRecord`. A `static` return type follows the class used for the call, so the child does not need its own method just to describe the result correctly.
 
 ```php
 class Record
@@ -219,14 +221,14 @@ class UserRecord extends Record {}
 echo get_class( UserRecord::create() ); # UserRecord
 ```
 
-8.5: an override in a `final` class may replace `static` with `self` or the `final` class name.
+`self` instead refers to the class declaring the method. From PHP 8.5, an override in a `final` class can replace a `static` return type with `self` or that class’s name.
 
 <a id="intersection"></a>
-## Intersection: `A&B`
+## Require both types with `A&B`
 
 **PHP 8.1+** | [PHP](https://www.php.net/manual/en/language.types.declarations.php#language.types.declarations.composite.intersection)
 
-`A&B` requires one `object` to satisfy both contracts. `Countable&Iterator` is useful when a function needs both iteration methods and the item count.
+Sometimes we need both capabilities, not either one. `Countable&Iterator` requires an object that supports iterator methods and lets us count its elements.
 
 ```php
 function item_count( Countable&Iterator $items ): int
@@ -237,14 +239,14 @@ function item_count( Countable&Iterator $items ): int
 echo item_count( new ArrayIterator([10, 20]) ); # 2
 ```
 
-Scalar intersections such as `int&string` are invalid.
+`ArrayIterator` meets both requirements. Intersections work with object types; scalar combinations such as `int&string` are not allowed.
 
 <a id="never"></a>
-## `never`
+## A function that does not return: `never`
 
 **PHP 8.1+** | [PHP](https://www.php.net/manual/en/language.types.never.php)
 
-`never` says the function cannot `return` normally: it throws, exits or loops indefinitely. It makes an abort path explicit without pretending it returns an ordinary value.
+Use `never` when a function always throws, exits the process or keeps looping forever. It tells callers that normal execution will not continue at the next line after the call.
 
 ```php
 function reject_request(): never
@@ -253,14 +255,14 @@ function reject_request(): never
 }
 ```
 
-Even a bare `return` is forbidden; reaching the end throws `TypeError`.
+Every call in this example throws. Even a bare `return;` is forbidden, and reaching the end of the function would throw `TypeError`.
 
 <a id="dnf"></a>
-## DNF: `(A&B)|C`
+## Combine requirements and alternatives: `(A&B)|C`
 
 **PHP 8.2+** | [PHP](https://www.php.net/manual/en/migration82.new-features.php)
 
-DNF combines intersections with alternatives. This signature accepts an `object` that is both `Countable` and `Iterator`, or `null` when there is no collection.
+Combine `&` and `|` when a parameter can be an object with both required capabilities or a different alternative. This form is called DNF. Here we accept an object that is both `Countable` and `Iterator`, or `null` when there is no collection.
 
 ```php
 function optional_count( (Countable&Iterator)|null $items ): int
@@ -272,14 +274,14 @@ echo optional_count( null ); # 0
 echo optional_count( new ArrayIterator([1, 2]) ); # 2
 ```
 
-Parentheses around intersection groups are required. `A&(B|C)` is not accepted.
+Parentheses around the `&` group are required. You cannot rearrange the groups freely: PHP does not accept `A&(B|C)`.
 
 <a id="literal-types"></a>
-## Standalone `true` / `false` / `null`
+## Return exactly `true`, `false` or `null`
 
 **PHP 8.2+** | [PHP](https://www.php.net/manual/en/language.types.singleton.php)
 
-A return type can promise exactly `true`, `false` or `null`. For example, `true` is useful for an operation that returns success and throws on failure.
+A return type can allow one specific value instead of any `bool`. For example, `true` fits an operation that returns `true` on success and throws on failure.
 
 ```php
 function confirm_ready(): true
@@ -293,14 +295,14 @@ function missing_value(): null
 }
 ```
 
-`true|false` is invalid; use `bool`. `null` is a returned value, unlike `void`.
+If both `true` and `false` are allowed, write `bool`; `true|false` is not accepted. A `null` return type still returns a particular value, so it is different from `void`.
 
 <a id="typed-constants"></a>
-## Typed constants
+## Give a class constant a type
 
 **PHP 8.3+** | [PHP](https://www.php.net/manual/en/language.oop5.constants.php)
 
-Class constants can declare a type as part of an inherited contract. A child override must remain type-compatible. This also applies to interface, trait and enum constants.
+A class constant can declare a type too. If a child class overrides it, the new declaration must stay type-compatible. That keeps the expected kind of value consistent through inheritance.
 
 ```php
 class Limits
@@ -310,16 +312,18 @@ class Limits
 }
 ```
 
-Ordinary global `const` does not support this type declaration.
+This also works for constants in interfaces, traits and enums. An ordinary global `const` cannot declare its type this way.
 
 <a id="native-type-limits"></a>
-## PHPDoc vs native types
+## What PHP checks and what PHPDoc adds
 
 **PHP 7.0-8.5 | Background** | [PHP](https://www.php.net/manual/en/language.types.declarations.php)
 
-An `array` declaration checks the container type, not its keys or element types. PHPDoc such as `list<User>` adds useful detail for an IDE or static analyzer, but PHP itself does not enforce that annotation. Likewise, `string` alone does not guarantee a valid email, a trusted path or safe HTML; those checks belong to the application.
+An `array` declaration only tells PHP to expect an array. It does not check the keys or the types of the elements. PHPDoc such as `list<User>` helps an editor or static analyzer understand that it contains a list of users, but PHP itself does not enforce that annotation.
 
 ```php
 /** @param list<User> $users */
 function take_users( array $users ) {}
 ```
+
+The same applies to `string`: it may still contain an invalid email, an untrusted path or unsafe HTML. Types catch some mistakes; the contents still need checking where the value is used.

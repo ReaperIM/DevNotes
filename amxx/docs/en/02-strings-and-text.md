@@ -4,23 +4,23 @@
 
 [Contents](../../README.md)
 
-- [Buffer size and `charsmax`](#buffers-and-charsmax)
+- [How much text fits in a buffer](#buffers-and-charsmax)
 - [Format values into a buffer](#format-values)
-- [`format` when input and output overlap](#overlapping-buffers)
-- [Build text with a write offset](#append-with-offset)
-- [Caret escaping in Pawn source](#caret-escaping)
+- [When to use `format` instead of `formatex`](#overlapping-buffers)
+- [Append text in parts](#append-with-offset)
+- [Quotes and newlines with `^`](#caret-escaping)
 - [String comparison and substring position](#comparison-and-search)
 - [`parse` for a known number of fields](#parse-fields)
 - [First argument plus the remaining text](#argbreak-and-argparse)
 - [Trim outer whitespace and quotes](#trim-and-remove-quotes)
-- [Parse a whole numeric token](#number-parsing)
+- [Check the whole numeric input](#number-parsing)
 - [UTF-8 bytes and case conversion](#unicode-bytes)
 - [Dictionary messages with `%L`](#multilingual-messages)
 
 <a id="buffers-and-charsmax"></a>
-## Buffer size and `charsmax`
+## How much text fits in a buffer
 
-An ordinary AMXX string is an array terminated by a zero cell. A buffer of 16 cells holds at most 15 bytes of text plus the terminator. `charsmax()` gives that usable text capacity.
+A string buffer needs one cell for the terminating zero. That leaves room for up to 15 bytes of text in `name[16]`. `charsmax(name)` gives us that limit of `15`, while `strlen(name)` tells us how many bytes are already used. The name `Ada` uses just three.
 
 ```pawn
 #include <amxmodx>
@@ -34,14 +34,14 @@ public plugin_init()
 }
 ```
 
-Use the length convention of the specific API: many string natives take a maximum text length, while some array APIs take a cell count. `sizeof` and `charsmax` are not interchangeable.
+Pass the kind of length the function expects. String functions often want the limit without the terminating zero; an array API may want the full cell count. Check before replacing `charsmax` with `sizeof`.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/string/strlen)
 
 <a id="format-values"></a>
 ## Format values into a buffer
 
-`formatex()` writes a bounded result directly into the destination. Match the format specifier to the value: `%d` for integers, `%f` for `Float` and `%s` for strings.
+Use `formatex()` to build text from a name, numbers and other values. Pass the buffer and available length, followed by the format string: `%d` for integers, `%f` for `Float`, and `%s` for text. Here, `%.2f` keeps two decimal places, and `%%` prints an ordinary percent sign.
 
 ```pawn
 #include <amxmodx>
@@ -58,14 +58,14 @@ public plugin_init()
 }
 ```
 
-Pass external text as a value: `server_print( "%s", text )`. If it becomes the format string, percent signs in that text can be interpreted as formatting directives.
+Pass external text through `%s`: `server_print( "%s", text )`. A percent sign in a name or message will then stay part of the text instead of being treated as a formatting instruction.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/string/formatex)
 
 <a id="overlapping-buffers"></a>
-## `format` when input and output overlap
+## When to use `format` instead of `formatex`
 
-`formatex()` cannot read from the buffer it is currently overwriting. For an in-place transformation with overlapping source and destination, `format()` provides the necessary copy-back handling.
+To put brackets around a name and write it back into the same string, use `format()`, as below. It handles the input and output sharing a buffer. `formatex()` can overwrite text it has not finished reading, so it does not suit this case.
 
 ```pawn
 #include <amxmodx>
@@ -79,14 +79,14 @@ public plugin_init()
 }
 ```
 
-This also applies when the source is a slice such as `text[5]`. Use `formatex()` for the usual case where all source buffers are separate.
+The same applies to a slice of that buffer, such as `text[5]`. When the source strings are separate from the destination, the usual `formatex()` call is fine.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/string/format)
 
 <a id="append-with-offset"></a>
-## Build text with a write offset
+## Append text in parts
 
-Track how much text has already been written when building a small message in parts. Each call receives only the remaining capacity, not the capacity of the whole buffer.
+Build a message in pieces by keeping track of the length already written. Start the next piece at `text[length]` and pass only the space that remains. Here, the score is appended after the name without replacing the first part.
 
 ```pawn
 #include <amxmodx>
@@ -95,6 +95,7 @@ public plugin_init()
 {
 	new text[64], length;
 	length += formatex( text[length], charsmax( text ) - length, "Player: %s", "Ada" );
+	// Only pass the capacity still available after the first part.
 	length += formatex( text[length], charsmax( text ) - length, "; score: %d", 7 );
 
 	server_print( "%s", text );
@@ -102,14 +103,14 @@ public plugin_init()
 }
 ```
 
-In a loop, stop adding when no capacity remains. Never construct the offset from an unchecked external length, and do not read an earlier part of the same buffer through a `%s` argument here.
+When appending in a loop, stop once the buffer is full. Check the offset itself too. Do not read an earlier part of this same buffer through `%s` in that `formatex()` call: the source and destination would overlap.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/string/formatex)
 
 <a id="caret-escaping"></a>
-## Caret escaping in Pawn source
+## Quotes and newlines with `^`
 
-The usual AMXX Pawn source escape character is `^`: `^"` inserts a quotation mark, `^n` a newline and `^^` a caret. These are source escapes, not chat-color codes.
+In ordinary AMXX Pawn source, `^` introduces special characters. Write `^"` for a quotation mark, `^n` for a newline, and `^^` for one caret. The first output below has quotes around the name and a literal `^` after it. These escapes are processed in the source; they are separate from chat colors.
 
 ```pawn
 #include <amxmodx>
@@ -125,14 +126,14 @@ public plugin_init()
 }
 ```
 
-A string read from a file does not automatically turn its literal `^n` characters into a newline. Source parsing and runtime text processing are different operations.
+Reading the literal characters `^n` from a file does not create a newline automatically. The compiler handles escapes in source strings; text received while the plugin runs needs separate processing if that is desired.
 
 [AMXX / Pawn](https://wiki.alliedmods.net/Pawn_Tutorial#Strings)
 
 <a id="comparison-and-search"></a>
 ## String comparison and substring position
 
-`equal()` checks equality, `equali()` ignores case, and `containi()` returns a substring position. Position zero means a match at the beginning, not failure.
+Use `equal()` to compare strings, or `equali()` when case should be ignored. `containi()` searches without regard to case and returns the match position. In the example, `admin` is found at position `0`, right at the start.
 
 ```pawn
 #include <amxmodx>
@@ -151,14 +152,14 @@ public plugin_init()
 }
 ```
 
-Do not write `if( containi(...) )`: it rejects position 0 and accepts the failure value -1. For Unicode case-insensitive rules, check whether the chosen API supports the required characters.
+Check the search result with `!= -1`. Writing `if( containi(...) )` rejects a valid match at `0` and accepts the failure value `-1`. For case-insensitive Unicode searches, check that the chosen API supports the characters you need.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/string/containi)
 
 <a id="parse-fields"></a>
 ## `parse` for a known number of fields
 
-`parse()` splits whitespace-separated fields while preserving quoted groups. Supply a separate buffer and maximum text length for every output field.
+When a line should contain several fields, `parse()` splits them into separate buffers. Spaces separate fields, while quoted text stays together. That puts all of `Ada Lovelace` into `name` and `42` into `score_text`. Pass an allowed text length for each buffer.
 
 ```pawn
 #include <amxmodx>
@@ -175,14 +176,14 @@ public plugin_init()
 }
 ```
 
-Check the returned field count before using the outputs. This is a command-style tokenizer, not a CSV parser; it does not implement CSV escaping rules.
+Check the number of fields before using them. We expect `2` here; an incomplete line needs handling first. For CSV data, use an appropriate parser: `parse()` follows command-argument rules and does not implement CSV escaping.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/string/parse)
 
 <a id="argbreak-and-argparse"></a>
 ## First argument plus the remaining text
 
-`argbreak()` is useful when only the first argument has structure and the remainder must stay as text. It recognizes a quoted first argument; `argparse()` also allows repeated tokenization using an offset.
+Sometimes only the first argument needs to be separated, with the remaining text kept together. Use `argbreak()` for that. Below, the quoted name goes into `target`, and the rest goes into `message`. To continue reading arguments one at a time, `argparse()` lets you resume from an offset.
 
 ```pawn
 #include <amxmodx>
@@ -199,14 +200,14 @@ public plugin_init()
 }
 ```
 
-`-1` means no argument was found; an empty quoted argument is still an argument. Prefer these APIs over the deprecated `strbreak()`.
+A result of `-1` means no argument was found. An empty quoted string still counts as an argument. For new code, use these functions instead of the deprecated `strbreak()`.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/string/argparse)
 
 <a id="trim-and-remove-quotes"></a>
 ## Trim outer whitespace and quotes
 
-Normalize an entire quoted value with `trim()` and `remove_quotes()`. This suits a single value; do not remove the quotes from a multi-argument line before tokenizing it.
+For a single value such as a name, first use `trim()` to remove surrounding whitespace, then `remove_quotes()` to remove the outer quotes. The example leaves `Ada Lovelace`. If the line contains several arguments, parse them first so removing quotes does not change what the spaces mean.
 
 ```pawn
 #include <amxmodx>
@@ -221,14 +222,14 @@ public plugin_init()
 }
 ```
 
-The order matters here: `trim` first so the quotes become the actual outer characters. If the quote contents may have meaningful whitespace, do not `trim` again after removing the quotes.
+The order matters: `trim()` brings the quotes to the edges so `remove_quotes()` can remove them. If whitespace inside the quotes is meaningful, leave it alone instead of trimming again afterward.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/string/remove_quotes)
 
 <a id="number-parsing"></a>
-## Parse a whole numeric token
+## Check the whole numeric input
 
-`str_to_num()` alone does not establish that the entire input is numeric. With `strtol()` the end position lets you reject a valid numeric prefix followed by junk.
+The beginning of `12x` can be read as `12`, but that does not make the whole input a valid number. `strtol()` returns the value and tells us where parsing stopped. Below, we check that a number was found, no text remains, and the value is within `1..32`.
 
 ```pawn
 #include <amxmodx>
@@ -247,14 +248,14 @@ public plugin_init()
 }
 ```
 
-This example accepts the native’s whitespace/sign rules and then checks the allowed range. If a format must contain digits only, validate that requirement separately; a numeric conversion is not a complete format validator.
+This accepts whitespace and a sign according to the function’s own rules. If the format allows digits only, check that separately. `str_to_num()` alone cannot confirm that the entire input is valid.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/string/strtol)
 
 <a id="unicode-bytes"></a>
 ## UTF-8 bytes and case conversion
 
-UTF-8 letters can occupy several bytes. `strlen()` measures bytes, not visible letters; capacity calculations must still reserve enough space for those bytes. Use the `mb_*` case functions for UTF-8 text.
+A UTF-8 letter can use several bytes. That is why `strlen()` returns `6` for `Кіт`, even though it has three visible letters. Buffer space still needs to be counted in bytes. Use the `mb_*` functions to change the case of this text; the example produces `КІТ`.
 
 ```pawn
 #include <amxmodx>
@@ -269,14 +270,14 @@ public plugin_init()
 }
 ```
 
-Changing case can change byte length, so pass the actual writable capacity. Cutting at an arbitrary byte offset can split a UTF-8 sequence; byte length is also not a grapheme count.
+Case conversion can change the byte length, so pass the buffer’s actual capacity. Cutting at an arbitrary byte can split a UTF-8 character. A byte count also does not tell you how many visible grapheme clusters the text contains.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/string/mb_strtoupper)
 
 <a id="multilingual-messages"></a>
 ## Dictionary messages with `%L`
 
-Register a dictionary once, then let `%L` resolve its key for a language target. This example uses the standard `common.txt` dictionary, where `YES` is already defined.
+When a message depends on the player’s language, put it in a dictionary and use `%L`. Register the dictionary once, then pass the language target and message key. This example uses the existing `YES` key in the standard `common.txt`; an English server gets `Yes`.
 
 ```pawn
 #include <amxmodx>
@@ -292,6 +293,6 @@ public plugin_init()
 }
 ```
 
-For one player, pass that player’s index instead of `LANG_SERVER`. `LANG_PLAYER` is intended for supported multi-recipient printing, not a language to preformat once into a shared buffer. The dictionary file must exist on the server.
+For one player, pass that player’s index instead of `LANG_SERVER`. `LANG_PLAYER` is for printing functions that support multiple recipients; it cannot preformat different languages into one shared buffer. The dictionary file must be present on the server.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/lang/register_dictionary)

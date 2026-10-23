@@ -4,23 +4,23 @@
 
 [Contents](../../README.md)
 
-Map setup, player identity and cleanup. The most important distinction is between a reusable slot and a particular connection.
+A player connection has several separate stages: connecting, authorization and entering the game. Below, we work through when to prepare data, when to clear it, and how to avoid confusing a player who left with someone new in the same slot.
 
 - [Register once per map](#registration)
-- [`plugin_cfg` is not the end of configuration](#initialization-order)
+- [When the configs have finished running](#initialization-order)
 - [Authorization and entering the game are separate](#authorization-order)
-- [Validate a player index before using player state](#player-index)
-- [Use userid for the current connection](#userid)
+- [First check that the index belongs to a player](#player-index)
+- [Find the same connection later](#userid)
 - [Read account identity after authorization](#authid)
-- [Iterate a filtered list of players](#player-list)
+- [Get the players you need and walk the list](#player-list)
 - [Clean up on disconnect, not after a slot is reused](#disconnect-cleanup)
-- [Close resources owned by the plugin](#handle-cleanup)
+- [What to close when the plugin ends](#handle-cleanup)
 
 <a id="registration"></a>
 
 ## Register once per map
 
-`plugin_init()` registers commands, hooks and plugin metadata. Keep per-player initialization in the player forwards.
+Register commands and hooks in `plugin_init()`: this sets up the plugin for the map. The plugin name and version go here too. Prepare a particular player’s data in the client callbacks, once that connection exists.
 
 ```pawn
 #include <amxmodx>
@@ -39,15 +39,15 @@ public command_ready( id )
 }
 ```
 
-Globals describe the current plugin instance, not persistent storage. A map change is not a substitute for saving data.
+Global variables belong to the current plugin instance. If data must survive a map change, save it to a store separately.
 
 [`plugin_init`](https://www.amxmodx.org/api/amxmodx/plugin_init)
 
 <a id="initialization-order"></a>
 
-## `plugin_cfg` is not the end of configuration
+## When the configs have finished running
 
-`plugin_cfg()` runs after all `plugin_init()` callbacks. To use final AMXX configuration values, use `OnConfigsExecuted()` rather than assuming buffered commands have already run.
+Need to read a cvar after the configs load? Use `OnConfigsExecuted()`. All `plugin_init()` calls have finished by `plugin_cfg()`, but some config commands may still be queued. Below, we read the limit once the normal AMXX configs have executed.
 
 ```pawn
 #include <amxmodx>
@@ -65,7 +65,7 @@ public OnConfigsExecuted()
 }
 ```
 
-This covers the normal AMXX config phase, not an arbitrary later `exec` issued by another plugin. See [cvar bindings and config changes](05-commands-cvars-and-configs.md).
+Another plugin may still run its own `exec` later. This callback covers the normal AMXX configuration order. See [cvar bindings and config changes](05-commands-cvars-and-configs.md).
 
 [`OnConfigsExecuted`](https://www.amxmodx.org/api/amxmodx/OnConfigsExecuted)
 
@@ -73,7 +73,7 @@ This covers the normal AMXX config phase, not an arbitrary later `exec` issued b
 
 ## Authorization and entering the game are separate
 
-`client_authorized()` may run before or after `client_putinserver()`. If an action needs both conditions, store both and check them together.
+Authorization can happen before or after `client_putinserver()`. If an action needs both authorization and entry into the game, track them separately. Each callback below checks the other flag, so the message appears once both conditions are met.
 
 ```pawn
 #include <amxmodx>
@@ -101,15 +101,15 @@ public client_putinserver( id )
 }
 ```
 
-The action runs in whichever forward arrives second. Bots are also authorized; this alone does not identify a human or grant access.
+Whichever callback runs second does the work. Bots authorize too: these flags alone do not establish that the player is human or has permission to use a command.
 
 [`client_authorized`](https://www.amxmodx.org/api/amxmodx/client_authorized)
 
 <a id="player-index"></a>
 
-## Validate a player index before using player state
+## First check that the index belongs to a player
 
-Player slots start at 1; 0 is the server or world in many APIs. First check the range, then connection or life state required by the operation.
+Player slots start at `1`; in many functions, `0` means the server or the world. Before reading health, check the range and then the player state. This command only applies to a living player, so `is_user_alive()` is the state check we need.
 
 ```pawn
 #include <amxmodx>
@@ -129,15 +129,15 @@ public command_health( id )
 }
 ```
 
-Pawn permits chained comparisons, but explicit `id >= 1 && id <= MaxClients` is easier to transfer to other languages. Do not treat every entity index as a player.
+An entity index is not always suitable for player functions. Writing `id >= 1 && id <= MaxClients` makes the range explicit. Pawn supports chained comparisons, but this form is easier to read and port.
 
 [`is_user_alive`](https://www.amxmodx.org/api/amxmodx/is_user_alive)
 
 <a id="userid"></a>
 
-## Use userid for the current connection
+## Find the same connection later
 
-A slot can be occupied by another player after disconnect. `get_user_userid()` identifies the current connection; resolve it again when a delayed result arrives.
+A player leaves and someone else takes the slot. If we save only `id`, a delayed welcome may reach the new player. Save the current connection’s userid with `get_user_userid()`, then look up its slot before printing. If that connection has ended, `find_player()` will not find it.
 
 ```pawn
 #include <amxmodx>
@@ -145,6 +145,7 @@ A slot can be occupied by another player after disconnect. `get_user_userid()` i
 public client_putinserver( id )
 {
 	new data[1];
+	// Remember the connection; the slot can later belong to someone else.
 	data[0] = get_user_userid( id );
 	set_task( 2.0, "show_welcome", 0, data, sizeof data );
 }
@@ -157,7 +158,7 @@ public show_welcome( const data[] )
 }
 ```
 
-Userid is not an account key for saved progress. The same rule applies to SQL callbacks and menu targets. [Task lifecycle](07-tasks-and-menus.md).
+Userid suits a delayed action within one connection. Saving account progress needs a different key. The same technique helps with SQL replies and menu targets. See [task lifetime](07-tasks-and-menus.md).
 
 [`get_user_userid`](https://www.amxmodx.org/api/amxmodx/get_user_userid)
 
@@ -165,7 +166,7 @@ Userid is not an account key for saved progress. The same rule applies to SQL ca
 
 ## Read account identity after authorization
 
-Use the `authid` supplied by `client_authorized()` when creating a persistent account key. Names and IP addresses are not stable substitutes.
+For an account key used to save data, take `authid` from `client_authorized()`: the identifier is available by then. Names and IPs can change, so they do not suit that key. Below, we print the authid while skipping bots and HLTV.
 
 ```pawn
 #include <amxmodx>
@@ -179,15 +180,15 @@ public client_authorized( id, const authid[] )
 }
 ```
 
-The identity guarantees depend on the server authentication setup. Do not award privileges merely because a string starts with `STEAM_`; bot auth is `BOT`.
+How reliable that identifier is depends on the server’s authorization setup. A `STEAM_` prefix alone does not grant permissions. A bot’s auth value is `BOT`.
 
 [`get_user_authid`](https://www.amxmodx.org/api/amxmodx/get_user_authid)
 
 <a id="player-list"></a>
 
-## Iterate a filtered list of players
+## Get the players you need and walk the list
 
-`get_players_ex()` produces a dense list of matching slot indexes. Iterate its count, not all possible slots, when you already need that list.
+`get_players_ex()` puts matching indexes next to each other in `players` and writes their count to `count`. Below, we exclude bots and HLTV, then walk only that list. There is no need to check every possible slot again for this loop.
 
 ```pawn
 #include <amxmodx>
@@ -209,7 +210,7 @@ public command_players()
 }
 ```
 
-`players[index]` is a slot; `index` is just the list position. An empty result means the loop does not run.
+Here, `index` is a position in the list, and `players[index]` is the player slot. If nobody matches, `count` is `0` and the loop does not run.
 
 [`get_players_ex`](https://www.amxmodx.org/api/amxmisc/get_players_ex)
 
@@ -217,7 +218,7 @@ public command_players()
 
 ## Clean up on disconnect, not after a slot is reused
 
-`client_disconnected()` also covers aborted connections and replaces deprecated `client_disconnect()`. The entity is still available at this point, but client messages can no longer reach it.
+Use `client_disconnected()` for cleanup after a player leaves. It also covers interrupted connections and replaces the old `client_disconnect()`. Below, we remove the task and clear the slot’s points so the next player does not inherit them. The entity still exists at this point, but messages can no longer reach the departing client.
 
 ```pawn
 #include <amxmodx>
@@ -232,19 +233,20 @@ public client_connect( id )
 public client_disconnected( id )
 {
 	remove_task( TASK_HINT + id );
+	// The next player in this slot must start with their own state.
 	g_points[id] = 0;
 }
 ```
 
-`client_remove()` is later, after the entity is removed. Save the data you need before clearing it; do not assume that `is_user_connected()` is already false inside `client_disconnected()`.
+Save anything you need before clearing it. `client_remove()` runs later, after the entity is gone. In `client_disconnected()`, `is_user_connected()` may still return true, so use the disconnect event itself to decide that cleanup is needed.
 
 [`client_disconnected`](https://www.amxmodx.org/api/amxmodx/client_disconnected)
 
 <a id="handle-cleanup"></a>
 
-## Close resources owned by the plugin
+## What to close when the plugin ends
 
-Keep long-lived handles in globals and release them in `plugin_end()`. The correct destroy function depends on the API; handles are not interchangeable integers.
+Keep a map-long `Trie` in a global variable and release it in `plugin_end()`. Its handle refers to a particular resource, so use the matching cleanup function: `TrieDestroy()` here. Handle numbers from different APIs are not interchangeable.
 
 ```pawn
 #include <amxmodx>
@@ -262,6 +264,6 @@ public plugin_end()
 }
 ```
 
-Closing an owned handle is different from freeing a borrowed callback handle. In particular, a threaded SQL query handle is owned by SQLX. [Storage](09-files-vault-and-sql.md).
+Close resources managed by your plugin. A handle received in a callback may belong to the API itself. For example, SQLX releases the result of a threaded SQL query. See [storage](09-files-vault-and-sql.md).
 
 [`plugin_end`](https://www.amxmodx.org/api/amxmodx/plugin_end)

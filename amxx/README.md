@@ -2,9 +2,9 @@
 
 [EN](README.md) | [UK](README.uk.md) | [RU](README.ru.md)
 
-Draft working notes on AMX Mod X: useful APIs, examples and the details that affect real plugin behavior. English is the primary version; Ukrainian and Russian cover the same material.
+Notes on writing AMXX plugins: working with players, commands, menus, hooks and data. Each topic shows what the code does and where an easily missed detail can change the result.
 
-The baseline is AMXX 1.9. Game-specific APIs and optional ReAPI dependencies are identified in their sections.
+The examples start from AMXX 1.9. When a topic needs ReAPI or a particular game, that requirement is written next to the example.
 
 [Versions and compatibility](docs/en/COMPATIBILITY.md)
 

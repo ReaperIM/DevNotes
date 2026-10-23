@@ -2,7 +2,7 @@
 
 [EN](README.md) | [UK](README.uk.md) | [RU](README.ru.md)
 
-Draft notes on useful language and bundled-extension features: syntax, examples and gotchas.
+Working notes on PHP 7.0-8.5: what was added, what it does in a small example and which details are easy to miss. Pick a topic below, or use the version list when you remember roughly when a feature appeared.
 
 [By version](docs/en/VERSIONS.md) | [Migration notes](docs/en/MIGRATION.md)
 

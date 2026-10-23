@@ -6,21 +6,21 @@
 
 - [Fixed arrays and valid indexes](#fixed-array-bounds)
 - [Rows, columns and `sizeof`](#multidimensional-size)
-- [Record-shaped arrays with `enum` fields](#enum-records)
+- [Keep record fields together with `enum`](#enum-records)
 - [`Array` handles: capacity is not size](#dynamic-cell-array)
 - [Dynamic arrays of strings](#dynamic-strings)
 - [Read, change and write a dynamic record](#dynamic-records)
 - [Delete entries without skipping the next one](#delete-while-iterating)
-- [Clone data and own every handle](#clone-and-ownership)
+- [Make and release a separate `Array` copy](#clone-and-ownership)
 - [`Trie` lookup: missing is not zero](#trie-presence-and-zero)
 - [Snapshot of `Trie` keys](#trie-snapshot)
 - [Built-in integer and `Array` sorting](#built-in-sorting)
-- [`ArraySort` vs `ArraySortEx` callbacks](#custom-sorting)
+- [What `ArraySort` and `ArraySortEx` pass to the handler](#custom-sorting)
 
 <a id="fixed-array-bounds"></a>
 ## Fixed arrays and valid indexes
 
-A fixed array has a compile-time capacity. Valid indexes run from zero to `sizeof array - 1`; an external index needs both a lower and an upper bound check.
+An ordinary array has a size known at compile time. The `scores` array below has three elements, at indexes `0`, `1` and `2`. Before reading an index received from elsewhere, check both ends: it must not be negative or greater than `sizeof scores - 1`.
 
 ```pawn
 #include <amxmodx>
@@ -36,14 +36,14 @@ public plugin_init()
 }
 ```
 
-For partially filled buffers, keep a separate item count and check against that count. Capacity answers how much can fit, not how many entries are currently meaningful.
+If an array is only partly filled, keep a separate count of its records. Capacity tells us how much could fit; the count tells us how much has actually been stored. Use that count when reading the filled part.
 
 [AMXX / Pawn](https://wiki.alliedmods.net/Pawn_Tutorial#Arrays)
 
 <a id="multidimensional-size"></a>
 ## Rows, columns and `sizeof`
 
-For a multidimensional array, `sizeof array` gives the first dimension and `sizeof array[]` the second. This makes parallel loops and string capacities follow the declaration.
+The declaration `names[3][16]` gives us three rows with 16 cells each. `sizeof names` returns the row count, and `sizeof names[]` returns the size of one row. This keeps loops and buffers tied to the array declaration without repeating the sizes by hand.
 
 ```pawn
 #include <amxmodx>
@@ -63,14 +63,14 @@ public plugin_init()
 }
 ```
 
-`sizeof` measures declared cells, not the runtime length of the string in a row. For a row’s text capacity, reserve one cell for its terminator.
+`sizeof` measures allocated space, not the length of the stored text. Each string still needs one cell for its terminating zero.
 
 [AMXX / Pawn](https://wiki.alliedmods.net/Pawn_Tutorial#Two_Dimensional_Arrays)
 
 <a id="enum-records"></a>
-## Record-shaped arrays with `enum` fields
+## Keep record fields together with `enum`
 
-An `enum` can describe offsets and sizes inside one record. This keeps related data together without parallel arrays and gives named access to its fields.
+A player’s score, speed and name are useful together. The `enum` below defines where each field sits in the array and how much space it takes. Names such as `player_score` replace numeric offsets, without needing a separate array for every field.
 
 ```pawn
 #include <amxmodx>
@@ -94,14 +94,14 @@ public plugin_init()
 }
 ```
 
-This is still an array layout, not a class or a C struct. A buffer passed to a native must have the size that native expects; the `enum` does not add runtime validation.
+This is still an array with a field layout. Check the buffer size expected by a native yourself: `enum` does not add runtime bounds checks or turn the record into a class or C struct.
 
 [AMXX / Pawn](https://wiki.alliedmods.net/Pawn_Tutorial#Arrays)
 
 <a id="dynamic-cell-array"></a>
 ## `Array` handles: capacity is not size
 
-`ArrayCreate(1, 8)` creates an empty dynamic array of one-cell entries with space reserved for eight items. Only pushed or resized entries are valid to access.
+Use a dynamic `Array` when you do not know the record count in advance. `ArrayCreate(1, 8)` reserves room for eight single-cell records, but the array starts empty. Its size is `0` before the additions and `2` afterward. Only elements added through `ArrayPushCell()`, other `ArrayPush*()` functions or `ArrayResize()` can be accessed.
 
 ```pawn
 #include <amxmodx>
@@ -120,14 +120,14 @@ public plugin_init()
 }
 ```
 
-Choose a fixed array for a small known limit. Dynamic `Array` is useful when item count really varies; it adds native calls and handle ownership, not a faster replacement for direct array access.
+The result of `ArrayCreate()` is called a handle: an identifier we pass to the array functions and eventually release. For a small known size, an ordinary array is enough. A dynamic array adds native calls and cleanup to manage; it does not make direct access faster.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/cellarray/ArrayCreate)
 
 <a id="dynamic-strings"></a>
 ## Dynamic arrays of strings
 
-For string entries, `cellsize` is the capacity of every stored string, including its terminator. Match it to the buffers used for pushing and reading text.
+For an array of strings, specify the number of cells available to each string, including its terminating zero. That is the `cellsize` parameter. Here, `sizeof name` makes each record the same size as our read buffer. Index `1` gives us the second name, `Grace`.
 
 ```pawn
 #include <amxmodx>
@@ -146,14 +146,14 @@ public plugin_init()
 }
 ```
 
-A one-cell `Array` is not a container for arbitrary strings. A larger output buffer cannot recover text already truncated by the entry’s storage capacity.
+An array with `cellsize = 1` cannot hold arbitrary strings. A larger read buffer will not recover text that was already cut off when written into a record that was too small.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/cellarray/ArrayPushString)
 
 <a id="dynamic-records"></a>
 ## Read, change and write a dynamic record
 
-`ArrayGetArray()` copies an entry into a local buffer. Editing that buffer does not update the container until you call `ArraySetArray()`.
+`ArrayGetArray()` reads a record into a separate local buffer. We change the price in `row`, then save the record back with `ArraySetArray()`. Without that write-back, the price inside `items` would stay unchanged. After saving, the example reads back `125`.
 
 ```pawn
 #include <amxmodx>
@@ -174,6 +174,7 @@ public plugin_init()
 
 	ArrayGetArray( items, 0, row );
 	row[item_price] += 25;
+	// Save the changed copy back into the array.
 	ArraySetArray( items, 0, row );
 
 	ArrayGetArray( items, 0, row );
@@ -184,14 +185,14 @@ public plugin_init()
 }
 ```
 
-The local record must hold the entry’s complete `cellsize` when using the default copy size. A smaller destination is not made safe by a matching `enum` field name.
+For the default copy operation, `row` must hold the element’s full `cellsize`. A matching `enum` field name is not enough; the actual buffer size must fit.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/cellarray/ArrayGetArray)
 
 <a id="delete-while-iterating"></a>
 ## Delete entries without skipping the next one
 
-Deleting an `Array` entry shifts later entries left. Iterate backwards when removing matching entries so the shifted values have already been considered.
+Deleting from an `Array` moves the following elements one position left. Incrementing the index at that point can skip an element. Work backward when deleting by a condition: this removes both negative numbers below and keeps `10` and `20`.
 
 ```pawn
 #include <amxmodx>
@@ -204,6 +205,7 @@ public plugin_init()
 	ArrayPushCell( values, -2 );
 	ArrayPushCell( values, 20 );
 
+	// Walk backward so a shifted element is not skipped.
 	for( new index = ArraySize( values ) - 1; index >= 0; index-- )
 	{
 		if( ArrayGetCell( values, index ) < 0 )
@@ -217,14 +219,14 @@ public plugin_init()
 }
 ```
 
-After deletion, stored numeric indexes can refer to a different item. Use a stable ID inside the record if another part of the plugin must identify the same item later.
+Indexes saved earlier can change meaning after deletion too. If another part of the plugin needs to find the same record later, store a stable ID inside that record.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/cellarray/ArrayDeleteItem)
 
 <a id="clone-and-ownership"></a>
-## Clone data and own every handle
+## Make and release a separate `Array` copy
 
-Assigning an `Array` handle copies its identifier, not its data. `ArrayClone()` creates a separate container; both handles then require their own cleanup.
+Assigning an `Array` handle to another variable makes both variables refer to the same array. Use `ArrayClone()` for a separate copy. Here, changing the copy to `99` leaves `10` in the original. Release both arrays when finished.
 
 ```pawn
 #include <amxmodx>
@@ -244,14 +246,14 @@ public plugin_init()
 }
 ```
 
-Destroying resets the handle variable passed by reference, but not its aliases. Cloning copies stored cells: if a cell itself contains another handle, that nested object is not recursively cloned or destroyed.
+`ArrayDestroy()` clears the variable passed to it, but other copies of that handle keep the old identifier. If a cell contains another object’s handle, only that identifier is cloned. Nested objects are not copied or destroyed separately by this operation.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/cellarray/ArrayClone)
 
 <a id="trie-presence-and-zero"></a>
 ## `Trie` lookup: missing is not zero
 
-`Trie` stores values under string keys. `TrieGetCell()` reports whether retrieval succeeded separately from the stored value, so zero remains a valid value.
+A `Trie` is useful for storing values under string keys. `TrieGetCell()` reports whether a record was found separately from the value it writes into `score`. A stored `0` therefore remains a valid result. The record below is found even though the player has no points yet.
 
 ```pawn
 #include <amxmodx>
@@ -272,14 +274,14 @@ public plugin_init()
 }
 ```
 
-Use the matching Get/Set family for cells, strings or arrays. Do not use a player’s display name as a durable identity unless name changes and collisions are part of the intended behavior.
+Choose the matching Get/Set functions for cells, strings or arrays. If a key represents an account, consider what it identifies: duplicate names and renames can mix up different players’ records.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/celltrie/TrieGetCell)
 
 <a id="trie-snapshot"></a>
 ## Snapshot of `Trie` keys
 
-A `Trie` snapshot freezes its list of keys, not the values. Later additions and deletions do not change that list, so re-check a key when reading a value from the current map.
+A `Trie` snapshot keeps the list of keys present when it was created. It does not copy their values. In this example, `Ada` remains in the snapshot after being deleted from the `Trie`. We check `TrieGetCell()` again during iteration and print only `Grace=9`.
 
 ```pawn
 #include <amxmodx>
@@ -297,6 +299,7 @@ public plugin_init()
 	for( new index; index < TrieSnapshotLength( keys ); index++ )
 	{
 		TrieSnapshotGetKey( keys, index, key, charsmax( key ) );
+		// A key in the snapshot may already be gone from the Trie.
 		if( TrieGetCell( scores, key, score ) )
 			server_print( "%s=%d", key, score );
 	}
@@ -307,14 +310,14 @@ public plugin_init()
 }
 ```
 
-Keys are not sorted. The example controls key lengths; for arbitrary keys, inspect `TrieSnapshotKeyBufferSize()` instead of silently truncating them. A snapshot owns a separate handle that must also be destroyed.
+The keys are not guaranteed to be sorted. These names fit in `key`; for arbitrary keys, check `TrieSnapshotKeyBufferSize()` so they are not silently truncated. The snapshot has its own handle to release too.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/celltrie/TrieSnapshotCreate)
 
 <a id="built-in-sorting"></a>
 ## Built-in integer and `Array` sorting
 
-Use a built-in sorter when the ordering is ordinary numeric or string order. It avoids writing a comparison callback for a standard operation.
+Ordinary numeric or string ordering already has built-in sorting functions. Below, `SortIntegers()` puts numbers in ascending order, while `SortADTArray()` puts the largest value first. These cases do not need a custom comparison handler.
 
 ```pawn
 #include <amxmodx>
@@ -337,14 +340,14 @@ public plugin_init()
 }
 ```
 
-Choose the sort type to match the stored representation. Sorting mutates the array; it changes item indexes and does not promise an application-specific order for equal values.
+Choose a sort type that matches the stored data. Sorting moves elements to different indexes. For equal values, these settings do not define an extra order for your plugin’s logic.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/sorting/SortADTArray)
 
 <a id="custom-sorting"></a>
-## `ArraySort` vs `ArraySortEx` callbacks
+## What `ArraySort` and `ArraySortEx` pass to the handler
 
-`ArraySort()` passes entry indexes to its callback. `ArraySortEx()` passes the entries themselves: scalar values when `cellsize` is 1, arrays when `cellsize` is larger. Do not mix these callback contracts.
+For your own ordering, pass a comparison function. `ArraySort()` gives it record indexes, while `ArraySortEx()` gives it the records themselves: scalar values for `cellsize = 1`, or arrays for larger records. We compare numbers directly below, so we use `ArraySortEx()`.
 
 ```pawn
 #include <amxmodx>
@@ -370,6 +373,6 @@ public compare_cells( Array:array, first, second )
 }
 ```
 
-Return `-1`, `0` or `1` for before, equal or after. Comparing directly avoids overflow from `first - second`. Keep callbacks free of container mutations and expensive repeated work.
+Return `-1`, `0` or `1` to put the first value before, equal to or after the second. Comparing as shown avoids the overflow possible with `first - second`. Do not modify the array inside the handler, and remember that expensive work there repeats for every comparison.
 
 [AMXX / Pawn](https://www.amxmodx.org/api/cellarray/ArraySortEx)

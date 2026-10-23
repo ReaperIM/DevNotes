@@ -4,29 +4,29 @@
 
 [Contents](../../README.md)
 
-Command entry points, access checks and settings that remain predictable after configs and live edits. Examples use the AMXX 1.9 API.
+A command needs the right registration, an access check and argument handling. Settings need care too: when they load and how they change during play both matter. The examples below use the AMXX 1.9 API.
 
-**In this chapter**
+**Topics in this chapter**
 
-- [Client, server and shared console commands](#command-routes)
+- [Where a command can be called from](#command-routes)
 - [Check access inside the handler](#command-access)
-- [One argument or the whole argument line](#read-arguments)
-- [Intercept a chat command without swallowing all chat](#chat-commands)
-- [Keep the cvar pointer, not repeated name lookups](#cvar-pointers)
-- [Describe cvars and give numeric values bounds](#cvar-bounds)
+- [Read one argument or the whole command text](#read-arguments)
+- [Handle your command and let other chat through](#chat-commands)
+- [Keep a cvar pointer for repeated reads](#cvar-pointers)
+- [Give a cvar a description and allowed range](#cvar-bounds)
 - [Bind live settings to global variables](#cvar-bindings)
 - [React to a cvar change](#cvar-hooks)
 - [Generate a plugin config with `AutoExecConfig()`](#auto-config)
-- [Use final config values in `OnConfigsExecuted()`](#configs-executed)
-- [Keep player text out of executable command strings](#safe-command-values)
+- [Check settings after the configs load](#configs-executed)
+- [Change a cvar without executing external text](#safe-command-values)
 
 <a id="command-routes"></a>
 
-## Client, server and shared console commands
+## Where a command can be called from
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/register_concmd)
 
-Choose the registration by who can call the command. `register_clcmd()` listens to a client, `register_srvcmd()` to the server console, and `register_concmd()` to both. A shared handler receives `id == 0` for the server, so do not pass it straight into player-only natives.
+First decide who will call the command. Use `register_clcmd()` for a player, `register_srvcmd()` for the server console, or `register_concmd()` for both. In a shared handler, the server arrives with `id == 0`. Do not pass that index to functions that require a player.
 
 ```pawn
 #include <amxmodx>
@@ -47,7 +47,7 @@ public command_status( id, level, command_id )
 }
 ```
 
-The same command now replies in the caller's console, including the server console. A player-specific chat shortcut belongs in `register_clcmd( "say /notes", ... )` instead.
+In this example, the command replies in the console it was called from, including the server console. For a player chat shortcut, register a separate route through `register_clcmd( "say /notes", ... )`.
 
 <a id="command-access"></a>
 
@@ -55,7 +55,7 @@ The same command now replies in the caller's console, including the server conso
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmisc/cmd_access)
 
-Registration flags describe the command; the handler still needs `cmd_access()`. Pass the supplied `level`, not a hardcoded replacement, so `cmdaccess.ini` changes work. The argument count includes the command itself: `2` means one required argument.
+Setting a flag when registering a command is not enough: call `cmd_access()` in its handler. Pass the supplied `level` so changes in `cmdaccess.ini` take effect. The last number counts the command name too: `2` means one argument is required after it.
 
 ```pawn
 #include <amxmodx>
@@ -68,6 +68,7 @@ public plugin_init()
 
 public command_mode( id, level, command_id )
 {
+	// The command name counts too: require one more argument.
 	if( !cmd_access( id, level, command_id, 2 ) )
 		return PLUGIN_HANDLED;
 
@@ -85,15 +86,15 @@ public command_mode( id, level, command_id )
 }
 ```
 
-`cmd_access()` checks privileges and the minimum count, not argument validity. Its normal flag check accepts any matching bit; if an operation needs every flag in a mask, use `(get_user_flags( id ) & mask) == mask`. Server-console access has its own treatment in the `stock`.
+Privileges and argument count are checked, but the value still needs checking separately: this example accepts only `on` and `off`. The usual `cmd_access()` flag check accepts any matching bit. If all bits are required, use `(get_user_flags( id ) & mask) == mask`. The `stock` handles server-console access separately.
 
 <a id="read-arguments"></a>
 
-## One argument or the whole argument line
+## Read one argument or the whole command text
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/read_argv)
 
-`read_argv( 0, ... )` is the command name, `read_argv( 1, ... )` the first parsed argument. `read_args()` reads the complete argument line. Quoted text is useful for a message, but `remove_quotes()` only removes surrounding quotes; it is not validation or command escaping.
+`read_argv( 0, ... )` gives the command name, and `read_argv( 1, ... )` the first parsed argument. Use `read_args()` for all text after the command. Below, we remove surrounding quotes and print the message. `remove_quotes()` only removes those quotes; it does not validate the contents or make them safe to execute as a command.
 
 ```pawn
 #include <amxmodx>
@@ -118,15 +119,15 @@ public command_echo( id )
 }
 ```
 
-`note_echo "hello world"` prints `hello world`. A fixed buffer can truncate input; do not silently treat a truncated token as a valid identifier for a sensitive action.
+Calling `note_echo "hello world"` prints `hello world`. A line longer than the buffer can be truncated. For a sensitive action, check this explicitly so truncated text cannot become a different valid identifier.
 
 <a id="chat-commands"></a>
 
-## Intercept a chat command without swallowing all chat
+## Handle your command and let other chat through
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/register_clcmd)
 
-A `say` hook sees ordinary messages too. Return `PLUGIN_CONTINUE` for text that is not yours, and `PLUGIN_HANDLED` only for the recognized command. Register `say_team` separately when the shortcut should also work in team chat.
+A `say` hook receives ordinary messages as well as your command. Let everything other than `/notes` through with `PLUGIN_CONTINUE`. For the recognized command, print a reply and return `PLUGIN_HANDLED`. Register `say_team` separately if it should work in team chat too.
 
 ```pawn
 #include <amxmodx>
@@ -144,6 +145,7 @@ public command_say( id )
 	remove_quotes( text );
 	trim( text );
 
+	// Leave other messages available to chat and other handlers.
 	if( !equali( text, "/notes" ) )
 		return PLUGIN_CONTINUE;
 
@@ -152,15 +154,15 @@ public command_say( id )
 }
 ```
 
-The exact comparison prevents `/notes_extra` from triggering the command. Other chat plugins may also hook `say`; blocking and ordering must be checked with the actual server plugin list.
+The exact comparison prevents `/notes_extra` from accidentally triggering `/notes`. Other plugins can handle `say` too, so check ordering and blocking with the server’s actual plugin list.
 
 <a id="cvar-pointers"></a>
 
-## Keep the cvar pointer, not repeated name lookups
+## Keep a cvar pointer for repeated reads
 
 [AMX Mod X API](https://www.amxmodx.org/api/cvars/get_cvar_pointer)
 
-`create_cvar()` returns a handle for your setting. For an existing game cvar, get its pointer once and check for `0`. Read or write it with `get_pcvar_*` / `set_pcvar_*`; the pointer itself is not the cvar value.
+For your own setting, `create_cvar()` returns a handle. For an existing game cvar, get its pointer once with `get_cvar_pointer()`. This identifies the setting; read its value through `get_pcvar_*` and change it through `set_pcvar_*`. Below, we check that the pointer was found before reading `mp_roundtime`.
 
 ```pawn
 #include <amxmodx>
@@ -183,15 +185,15 @@ public command_roundtime()
 }
 ```
 
-Do not register a game-owned cvar just to obtain a pointer. A missing pointer can mean that this mod does not provide the setting.
+A pointer of `0` means it was not found: the mod may not provide that setting at all. Do not register a game-owned cvar just to obtain a pointer.
 
 <a id="cvar-bounds"></a>
 
-## Describe cvars and give numeric values bounds
+## Give a cvar a description and allowed range
 
 [AMX Mod X API](https://www.amxmodx.org/api/cvars/create_cvar)
 
-A description and bounds keep the setting understandable both in code and in generated configs. Here a delay stays between `0.1` and `60.0`; code using it does not need to clamp it on every event.
+Set a clear description and allowed bounds when creating a setting. They help both in the source and in generated configs. Here, the delay stays between `0.1` and `60.0`, so code does not need to clamp it again on every game event.
 
 ```pawn
 #include <amxmodx>
@@ -203,7 +205,7 @@ public plugin_init()
 }
 ```
 
-The default is applied on first registration since server startup, not on every map. Creating an already existing cvar does not duplicate it, but the call can replace its bounds. Use a distinctive prefix for plugin settings.
+The default applies on first registration after server startup, not on every map. An existing cvar is not duplicated, but this call can replace its bounds. Use a distinctive prefix to avoid affecting another plugin’s settings.
 
 <a id="cvar-bindings"></a>
 
@@ -211,7 +213,7 @@ The default is applied on first registration since server startup, not on every 
 
 [AMX Mod X API](https://www.amxmodx.org/api/cvars/bind_pcvar_num)
 
-Bindings keep variables updated when a cvar changes. They are useful for frequently read settings: an integer switch, a floating delay, or a short text prefix. Bound storage must be global or static; a local stack variable cannot outlive its function.
+For a frequently read setting, bind it to a variable. AMXX then updates the number, delay or string when its cvar changes. The command below can read the current `g_enabled`, `g_delay` and `g_prefix` directly. Bind to global or static storage: an ordinary local variable is no longer suitable once its function returns.
 
 ```pawn
 #include <amxmodx>
@@ -235,7 +237,7 @@ public command_settings()
 }
 ```
 
-Changing `note_enabled` changes `g_enabled` automatically. Writing to `g_enabled` does not write back to the cvar. Use `set_pcvar_*` when changing the actual setting; do not bind the same variable to several cvars.
+Changing `note_enabled` updates `g_enabled`, but assigning to `g_enabled` does not change the cvar. Use `set_pcvar_*` to change the setting itself. Do not bind one variable to several cvars: it would have no single setting to represent.
 
 <a id="cvar-hooks"></a>
 
@@ -243,7 +245,7 @@ Changing `note_enabled` changes `g_enabled` automatically. Writing to `g_enabled
 
 [AMX Mod X API](https://www.amxmodx.org/api/cvars/hook_cvar_change)
 
-A binding is enough when you only need the current value. A change hook is useful when a new value must rebuild derived data or restart a timer. The callback receives old and new values as strings; its return value cannot veto the change.
+A binding is enough when you only need to read the current value. If a change must rebuild data or restart a timer, add `hook_cvar_change()`. Its handler receives the old and new values as strings. Returning a value from the handler cannot cancel the change.
 
 ```pawn
 #include <amxmodx>
@@ -260,7 +262,7 @@ public on_enabled_changed( cvar, const old_value[], const new_value[] )
 }
 ```
 
-Changing the same cvar from its own hook can recurse indefinitely. Prefer creation-time bounds for simple ranges; initialize derived state after configs as well, instead of relying on a change event to happen.
+Changing the same cvar from its handler can start an endless chain of calls. For ordinary limits, prefer creation-time bounds. Prepare the initial state after configs too: a change event may never happen.
 
 <a id="auto-config"></a>
 
@@ -268,7 +270,7 @@ Changing the same cvar from its own hook can recurse indefinitely. Prefer creati
 
 [AMX Mod X API](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc)
 
-Call `AutoExecConfig()` after registering your cvars. With automatic creation enabled, a missing config is generated from the plugin's cvars and then scheduled for execution. An existing file is used as it is; new defaults in the source do not rewrite the administrator's settings.
+Call `AutoExecConfig()` after registering your cvars. With creation enabled, AMXX fills a missing file with the plugin’s settings, then queues it for execution. An existing config is used as it stands. Changing a source default does not overwrite the administrator’s settings.
 
 ```pawn
 #include <amxmodx>
@@ -281,15 +283,15 @@ public plugin_init()
 }
 ```
 
-This uses `addons/amxmodx/configs/plugins/notes.cfg`. Pass the base name without `.cfg` and without dots. The optional folder is under `configs/plugins/`, not an arbitrary filesystem path.
+This example uses `addons/amxmodx/configs/plugins/notes.cfg`. Pass the name without `.cfg` or dots. An optional folder sits inside `configs/plugins/`; that parameter does not accept an arbitrary disk path.
 
 <a id="configs-executed"></a>
 
-## Use final config values in `OnConfigsExecuted()`
+## Check settings after the configs load
 
 [AMX Mod X API](https://www.amxmodx.org/api/amxmodx/OnConfigsExecuted)
 
-`plugin_cfg()` is not a guarantee that every queued config command has already run. `OnConfigsExecuted()` runs once per map after server, AMXX, plugin and per-map configs. This is the place to derive startup behavior from their final values.
+Config commands may still be queued in `plugin_cfg()`. `OnConfigsExecuted()` runs once per map after server, AMXX, plugin and per-map configs. Use it to read the resulting values and prepare the plugin’s startup behavior.
 
 ```pawn
 #include <amxmodx>
@@ -306,6 +308,7 @@ public plugin_init()
 
 public OnConfigsExecuted()
 {
+	// Separate cvar bounds cannot check this relationship.
 	if( g_min_players > g_max_players )
 	{
 		set_fail_state( "note_min_players must not exceed note_max_players" );
@@ -316,15 +319,15 @@ public OnConfigsExecuted()
 }
 ```
 
-Individual cvar bounds cannot express relationships between settings. This example checks the relationship at map startup; if live edits are supported, validate it on changes too. The forward still runs if a scheduled config file fails to execute, so validate required settings yourself.
+Separate cvar bounds cannot check that the minimum is no greater than the maximum. In this example, we compare the settings together. This checks map startup; if live changes are supported, validate those too. The callback runs even if a scheduled config file fails to execute, so check required values yourself.
 
 <a id="safe-command-values"></a>
 
-## Keep player text out of executable command strings
+## Change a cvar without executing external text
 
 [AMX Mod X API](https://www.amxmodx.org/api/cvars/set_pcvar_string)
 
-A formatting placeholder is not command escaping. `server_cmd( "hostname %s", text )` still feeds the result to a command parser, where separators and quotes have meaning. For a cvar, write through its pointer; for a real command argument, accept only the intended values.
+Text substituted into `server_cmd( "hostname %s", text )` still goes through a command parser. Quotes and separators can change what the result means; `%s` does not neutralize them. For a cvar, write directly through its pointer. For an actual command, allow only the intended argument values.
 
 ```pawn
 #include <amxmodx>
@@ -350,9 +353,10 @@ public command_hostname( id, level, command_id )
 	if( !hostname[0] )
 		return PLUGIN_HANDLED;
 
+	// Store a value directly, without passing it through a command parser.
 	set_pcvar_string( g_hostname, hostname );
 	return PLUGIN_HANDLED;
 }
 ```
 
-The value is stored as a cvar string instead of being executed. The same principle applies to `client_cmd()` and `console_cmd()`: fixed command names do not make arbitrary concatenated arguments safe.
+In this example, the server name is stored as a cvar string. Take the same care with `client_cmd()` and `console_cmd()`: a fixed command name does not make arbitrary appended text safe.

@@ -2,23 +2,23 @@
 
 [EN](../en/11-plugin-api-and-modules.md) | [UK](../uk/11-plugin-api-and-modules.md) | [RU](../ru/11-plugin-api-and-modules.md) | [Contents](../../README.md)
 
-Natives for requests, forwards for notifications, and the memory / dependency contracts between plugins. Provider and consumer examples are separate plugins; each block compiles independently.
+Work through how one plugin calls another, passes data and receives a result. Natives provide calls; forwards provide notifications and checks before an action. The provider and caller examples are built separately: each code block is a standalone plugin.
 
-- [An include is not a loaded module](#include-and-runtime)
-- [A provider native and its consumer](#register-native)
-- [Strings cross plugin memory boundaries](#native-strings)
-- [By-reference values need by-reference access](#native-byref)
-- [`Float` parameters and native return cells](#native-floats)
-- [Publish a forward and release its handle](#publish-forward)
-- [Define what consumer returns mean](#forward-return-policy)
-- [Prepare arrays before calling a forward](#forward-arrays)
-- [Optional natives need a deliberate fallback](#optional-natives)
-- [Keep the API contract small and explicit](#api-contract)
+- [Why an include alone is not enough](#include-and-runtime)
+- [Expose a native to another plugin](#register-native)
+- [Read and write another plugin’s strings](#native-strings)
+- [Change another plugin’s variable by reference](#native-byref)
+- [Pass a `Float` through a native without changing its value](#native-floats)
+- [Notify other plugins through a forward](#publish-forward)
+- [Let another plugin veto an action](#forward-return-policy)
+- [Pass an array to a forward and copy changes back](#forward-arrays)
+- [Keep working without an optional native](#optional-natives)
+- [What to explain in a shared include](#api-contract)
 
 <a id="include-and-runtime"></a>
-## An include is not a loaded module
+## Why an include alone is not enough
 
-An `.inc` gives the compiler declarations, constants and stocks. A native still needs a provider at runtime: either an AMXX module or another plugin. Compiling successfully proves that the names and signatures are available to the compiler, not that the server has their implementation.
+An included `.inc` tells the compiler which names, parameters and constants exist. A used `stock` is compiled into our plugin, but a native still needs an implementation supplied by a module or another server plugin. Successful compilation does not prove that implementation is available at runtime.
 
 | Kind | Compiled into your plugin? | Runtime provider |
 | --- | --- | --- |
@@ -27,14 +27,14 @@ An `.inc` gives the compiler declarations, constants and stocks. A native still 
 | Native from another plugin | Declaration only | Provider `.amxx` |
 | ReAPI native | Declaration only | Separate ReAPI module and required engine / game API |
 
-AMXX includes normally declare module requirements and autoload metadata. Do not bring back `plugin_modules` / `require_module`: they are deprecated and do not provide a modern loading mechanism. Keep provider plugins before their consumers in `plugins.ini` and document the dependency.
+AMXX includes usually already contain module requirements and information for automatic loading. Do not bring back the deprecated `plugin_modules` or `require_module`. If another plugin supplies the native, put it before the calling plugin in `plugins.ini` and document that dependency.
 
 Sources: [AMXX include declarations](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc), [CStrike include](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/cstrike.inc).
 
 <a id="register-native"></a>
-## A provider native and its consumer
+## Expose a native to another plugin
 
-Register natives in `plugin_natives`, which runs before `plugin_init`. Style `0` receives the calling plugin ID and argument count; actual parameters are read through `get_param` and related natives.
+One plugin can expose a function to another as a native. Register it in `plugin_natives()`, before `plugin_init()`. With the usual style `0`, the handler receives the calling plugin ID and argument count, then reads values with `get_param()` and related functions. This example clamps the supplied score to `0..100`.
 
 **Provider plugin:**
 ```pawn
@@ -73,14 +73,14 @@ public plugin_init()
 }
 ```
 
-The consumer prints `100`. In a shared API, put the declaration and `#pragma reqlib notes_api` in its include. The library requirement gives a clear load failure when the provider is absent. Style `1` natives are deprecated; do not use them for a new API. Never call the same native recursively from its own handler.
+The second block is a separate plugin: it passes `135` and prints `100`. For shared use, move the native declaration and `#pragma reqlib notes_api` into an include. The library requirement produces a clear load failure without the provider. Style `1` is deprecated and unnecessary for a new API. Do not recursively call the same native from its handler.
 
 Sources: [`plugin_natives`](https://www.amxmodx.org/api/amxmodx/plugin_natives), [`register_native`](https://www.amxmodx.org/api/amxmodx/register_native), [`register_library`](https://www.amxmodx.org/api/amxmodx/register_library).
 
 <a id="native-strings"></a>
-## Strings cross plugin memory boundaries
+## Read and write another plugin’s strings
 
-A string parameter is not a local string address in the provider. Copy input with `get_string`; write output with `set_string`. The public API below is `native notes_make_label( const prefix[], output[], maxlen )`.
+Each plugin has its own memory, so a passed string is not an ordinary local string in the handler. Read it with `get_string()` and write the answer with `set_string()`. The caller's declaration here is `native notes_make_label( const prefix[], output[], maxlen )`.
 
 
 ```pawn
@@ -114,14 +114,14 @@ public native_make_label( plugin_id, params )
 }
 ```
 
-A caller with `new label[64]` passes `charsmax( label )`, not `sizeof label`. A prefix of `VIP` produces `[VIP] ready`, truncated if the destination is smaller. The caller owns the real buffer size; the provider cannot infer a correct capacity from an arbitrary integer. Array parameters similarly use `get_array` / `set_array` with an explicit cell count.
+For `new label[64]`, pass `charsmax( label )`, not `sizeof label`, leaving room for the string terminator. Prefix `VIP` produces `[VIP] ready`, truncated in a smaller buffer. The caller knows the real capacity; the handler cannot verify it from an arbitrary number. Arrays similarly use `get_array()` and `set_array()` with an explicit cell count.
 
 Sources: [`get_string`](https://www.amxmodx.org/api/amxmodx/get_string), [`set_string`](https://www.amxmodx.org/api/amxmodx/set_string), [`get_array`](https://www.amxmodx.org/api/amxmodx/get_array).
 
 <a id="native-byref"></a>
-## By-reference values need by-reference access
+## Change another plugin’s variable by reference
 
-For `native notes_add_bonus( &score, bonus )`, argument `1` refers to a cell in the consumer. `get_param( 1 )` would read the argument’s address value, not the score stored there.
+To change a caller's variable through a native, declare it by reference: `native notes_add_bonus( &score, bonus )`. The first argument points to the cell holding the caller's `score`. Plain `get_param( 1 )` would read the address; use `get_param_byref()` to read the value stored there.
 
 
 ```pawn
@@ -140,6 +140,7 @@ public native_add_bonus( plugin_id, params )
 		return 0;
 	}
 
+	// Read the caller’s score value, not the address of its cell.
 	new score = get_param_byref( 1 );
 	score += get_param( 2 );
 	set_param_byref( 1, score );
@@ -147,14 +148,14 @@ public native_add_bonus( plugin_id, params )
 }
 ```
 
-Starting with `score = 20`, a call `notes_add_bonus( score, 5 )` leaves the consumer’s score at `25`. For `Float` references use `get_float_byref` / `set_float_byref`. Specify in the API whether the result is the updated value, a success flag or an error code.
+`set_param_byref()` writes the updated value back to the caller. Starting at `score = 20`, `notes_add_bonus( score, 5 )` leaves `25`. For `Float` references, use `get_float_byref()` and `set_float_byref()`. Also specify what the native itself returns: the new value, success or an error code.
 
 Sources: [`get_param_byref`](https://www.amxmodx.org/api/amxmodx/get_param_byref), [`set_param_byref`](https://www.amxmodx.org/api/amxmodx/set_param_byref), [`get_float_byref`](https://www.amxmodx.org/api/amxmodx/get_float_byref).
 
 <a id="native-floats"></a>
-## `Float` parameters and native return cells
+## Pass a `Float` through a native without changing its value
 
-For `native Float:notes_scale( Float:value, Float:factor )`, read parameters with `get_param_f`. A style-0 native handler returns an untagged cell; remove the tag without numerically converting the float.
+For `native Float:notes_scale( Float:value, Float:factor )`, read the arguments with `get_param_f()`. A style-0 handler returns an untagged cell. Remove the result's tag with `_:` so the floating-point bits remain intact, rather than rounding the number to an integer.
 
 
 ```pawn
@@ -175,18 +176,19 @@ public native_scale( plugin_id, params )
 
 	new Float:value = get_param_f( 1 );
 	new Float:factor = get_param_f( 2 );
+	// Keep the Float bits; remove only the result tag.
 	return _:(value * factor);
 }
 ```
 
-The declaration on the consumer side restores the `Float` tag for the returned bits. `notes_scale( 2.5, 2.0 )` produces `5.0`. `floatround` here would change the result’s representation and break that declaration. Tag removal with `_:` and numeric conversion are different operations.
+The caller's declaration marks those returned bits as `Float`, so `notes_scale( 2.5, 2.0 )` gives `5.0`. Using `floatround()` instead would change the representation and make the caller read it incorrectly. `_:` only changes the tag; a numeric conversion changes the value representation.
 
 Sources: [`get_param_f`](https://www.amxmodx.org/api/amxmodx/get_param_f), [`register_native`](https://www.amxmodx.org/api/amxmodx/register_native).
 
 <a id="publish-forward"></a>
-## Publish a forward and release its handle
+## Notify other plugins through a forward
 
-A native lets a consumer call the provider. A forward lets the provider notify consumers. `CreateMultiForward` targets matching `public` functions in plugins; keep its handle and destroy it when the provider ends.
+A native lets another plugin call us; a forward lets us call handlers in other plugins. For example, we can announce that a player's rank changed. `CreateMultiForward()` finds matching `public` functions; keep its handle and release it with `DestroyForward()` when done.
 
 
 ```pawn
@@ -215,14 +217,14 @@ public plugin_end()
 }
 ```
 
-A consumer implements `public notes_rank_changed( player, rank )`. `ET_IGNORE` means the notification does not use consumer return values. `ExecuteForward` itself returns whether execution succeeded; its `result` output is the aggregated callback result. Those are separate meanings. `CreateOneForward` targets one specified plugin rather than all matching consumers.
+The other plugin declares `public notes_rank_changed( player, rank )`. With `ET_IGNORE`, we do not use its return value; this is only a notification. `ExecuteForward()` itself reports execution success, while `result` holds the combined handler responses. Those results mean different things. Use `CreateOneForward()` to target one particular plugin.
 
 Sources: [forward API declarations](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc), [`ExecuteForward`](https://www.amxmodx.org/api/amxmodx/ExecuteForward), [`DestroyForward`](https://www.amxmodx.org/api/amxmodx/DestroyForward).
 
 <a id="forward-return-policy"></a>
-## Define what consumer returns mean
+## Let another plugin veto an action
 
-A pre-action forward can offer a veto, but only when the provider checks its result before applying the action. Choose the execution mode as part of the API contract.
+If another plugin can veto an action, call the forward before acting and check the response. For a reward, ask permission first and grant it afterwards. The `ET_*` mode determines which handlers run and how their results are combined.
 
 | Mode | Policy |
 | --- | --- |
@@ -262,14 +264,14 @@ public plugin_end()
 }
 ```
 
-The consumer contract is `PLUGIN_CONTINUE` to allow, `PLUGIN_HANDLED` to deny. With no consumers the result is zero and the check allows the action. This example treats forward creation or execution failure as denial. A post-notification cannot cancel a reward already applied.
+Here `PLUGIN_CONTINUE` allows the reward and `PLUGIN_HANDLED` denies it. With no handlers, the result is zero and the check allows the action. Failure to create or execute the forward denies it in this example. A notification sent after granting the reward cannot undo it, so the order matters.
 
 Sources: [ET constants](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxconst.inc), [forward execution](https://github.com/alliedmodders/amxmodx/blob/1.9-dev/amxmodx/CForward.cpp).
 
 <a id="forward-arrays"></a>
-## Prepare arrays before calling a forward
+## Pass an array to a forward and copy changes back
 
-`FP_ARRAY` is not passed as an ordinary local array address. `PrepareArray` creates the parameter expected by `ExecuteForward`. Set `copyback = 1` only when consumer modifications should be copied back.
+A forward needs `PrepareArray()` for an array; a plain local address is not enough. Pass the prepared value as the `FP_ARRAY` argument of `ExecuteForward()`. The final `1` in `PrepareArray()` allows handler changes to be copied back into the original array; leave copyback off when that is not needed.
 
 
 ```pawn
@@ -283,6 +285,7 @@ public plugin_cfg()
 		return;
 
 	new values[] = { 10, 20, 30 };
+	// The final 1 copies handler changes back into values.
 	new prepared = PrepareArray( values, sizeof values, 1 );
 	new result;
 	ExecuteForward( handle, result, prepared, sizeof values );
@@ -291,14 +294,14 @@ public plugin_cfg()
 }
 ```
 
-A consumer implements `public notes_adjust_values( values[], count )` and stays within `count`. The length is passed explicitly because the callback does not receive the original array declaration. The prepared value is for forward execution, not an `Array:` container handle; do not pass it to `ArrayDestroy`.
+The other plugin implements `public notes_adjust_values( values[], count )` and stays within `count`. Pass the length separately because the handler does not have the original array declaration. The prepared value is for calling the forward, not an `Array:` container; do not pass it to `ArrayDestroy()`.
 
 Sources: [`PrepareArray`](https://www.amxmodx.org/api/amxmodx/PrepareArray), [`ExecuteForward`](https://www.amxmodx.org/api/amxmodx/ExecuteForward).
 
 <a id="optional-natives"></a>
-## Optional natives need a deliberate fallback
+## Keep working without an optional native
 
-A runtime `if` does not by itself make an unresolved native optional: the plugin may fail while loading. For one optional plugin API, filter exactly the missing native during `plugin_natives` and guard its call. This consumer uses the `notes_api` provider from the earlier example.
+An `if` before a call does not make a native optional: the plugin may fail to load before any code runs. Install a filter for exactly that native in `plugin_natives()`, then check the provider before calling it. Without `notes_api`, this example falls back to ordinary `clamp()`.
 
 
 ```pawn
@@ -313,6 +316,7 @@ public plugin_natives()
 
 public filter_optional_native( const native_name[], index, trap )
 {
+	// Allow only this native to be missing during loading.
 	if( !trap && equal( native_name, "notes_clamp_score" ) )
 		return PLUGIN_HANDLED;
 
@@ -332,22 +336,22 @@ public plugin_cfg()
 }
 ```
 
-This intentionally has no hard `#pragma reqlib notes_api`. `trap = 0` means the native was not found during resolution; `trap = 1` means code attempted to call a missing native. Do not hide the latter error, or unrelated missing natives, behind a blanket filter. An include that also requires an optional module may additionally need a narrowly scoped module filter or separate build; removing a native error does not satisfy a library requirement.
+There is deliberately no required `#pragma reqlib notes_api`. `trap = 0` means resolution could not find the native; `trap = 1` means code tried to call a missing native. Do not hide the latter case or unrelated errors with a blanket filter. An include requiring a module may also need a narrow module filter or a separate build: a native filter does not cancel the library requirement.
 
 Sources: [native and module filter declarations](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/amxmodx.inc), [`LibraryExists`](https://www.amxmodx.org/api/amxmodx/LibraryExists).
 
 <a id="api-contract"></a>
-## Keep the API contract small and explicit
+## What to explain in a shared include
 
-A shared include should explain what a consumer cannot discover from the signature alone:
+A shared include should explain more than the parameters. The calling plugin needs to know how to use our function correctly and what to do with its result:
 
-- required provider and API version; library presence alone does not prove compatibility;
-- whether an ID is a player slot, userid, entity index or opaque handle;
-- whether disconnected players, bots and zero values are accepted;
-- maximum output length and who owns any returned handle;
-- success, failure and callback return values;
-- whether a forward runs before or after state changes and whether consumers may modify its arguments.
+- which plugin or module is required and which API version works; a library being present is not enough;
+- what an ID means: player slot, userid, entity index or a separate handle;
+- whether disconnected players, bots or zero are accepted;
+- how much fits in the output buffer and who releases a returned handle;
+- what success and failure return, and what handler responses mean;
+- whether a forward runs before or after the change, and whether its arguments may be modified.
 
-Do not change an existing native’s parameter order or meaning silently. Add a version check or a new entry point when compatibility changes. `log_error( AMX_ERR_NATIVE, ... )` reports a provider-side validation failure as an error in the calling plugin, which is more useful than accepting an invalid player or handle and failing later.
+Do not silently change an existing native's parameter order or meaning. Add a version check or a new API function when compatibility changes. Report an invalid argument with `log_error( AMX_ERR_NATIVE, ... )`: it points to the calling plugin, closer to the cause. That is clearer than accepting a bad ID or handle and failing somewhere else later.
 
 Sources: [`register_library`](https://www.amxmodx.org/api/amxmodx/register_library), [`log_error`](https://www.amxmodx.org/api/amxmodx/log_error).

@@ -4,21 +4,23 @@
 
 [Contents](../../README.md)
 
+Start processes, read and send HTTP data, and work with uploads, cookies and sessions. The examples point out what must already be prepared and which results still need checking.
+
 **In this chapter**
 
 - [Process arguments as an array](#process-arguments)
 - [Flush file data with `fsync()`](#flush-to-disk)
 - [Several stream options in one call](#stream-options)
 - [Parse form bodies outside `POST`](#request-body)
-- [Read and modify URI objects](#uri-objects)
+- [Change address parts through a URI object](#uri-objects)
 - [cURL handles are objects](#curl-objects)
 - [Upload a string as a file](#curl-string-file)
 - [Reuse cURL data between requests](#persistent-curl-share)
-- [List handles in a multi handle](#multi-handles)
+- [Which handles have been added to cURL multi](#multi-handles)
 - [Read the last stream response headers](#http-response-headers)
 - [Directory uploads and `full_path`](#upload-paths)
 - [Cookie options and `Partitioned`](#cookie-options)
-- [Read a session and release its lock](#read-only-session)
+- [Read a session and release the lock immediately](#read-only-session)
 
 <a id="process-arguments"></a>
 
@@ -26,7 +28,7 @@
 
 **PHP 7.4+ | standard** [PHP manual](https://www.php.net/manual/en/function.proc-open.php)
 
-An argument array keeps the executable and its arguments separate and bypasses shell parsing. This is useful when passing values to a known program.
+`proc_open()` can take the program and its arguments as an array. We do not have to build a command string for a shell to parse: the first element selects the program and the rest are its arguments. Here we start another PHP process and read its output from a pipe.
 
 <!-- example: fragment -->
 ```php
@@ -41,7 +43,7 @@ $exit_code = proc_close( $process );
 var_dump( $output, $exit_code ); # string(5) "ready", int(0)
 ```
 
-On Windows, array argument escaping assumes VC runtime rules; program options still need their own validation.
+On Windows, array arguments are escaped according to VC runtime rules. Still check the arguments the program accepts: bypassing the shell does not stop someone from passing an unwanted option to the program itself.
 
 <a id="flush-to-disk"></a>
 
@@ -49,18 +51,18 @@ On Windows, array argument escaping assumes VC runtime rules; program options st
 
 **PHP 8.1+ | standard** [PHP manual](https://www.php.net/manual/en/function.fsync.php)
 
-`fflush()` flushes PHP buffering. `fsync()` synchronizes file data and metadata; `fdatasync()` synchronizes data and only the metadata needed to retrieve it.
+A successful buffered write does not mean the file has been synchronized to disk yet. `fflush()` flushes PHP's buffer, while `fsync()` synchronizes file data and metadata. `fdatasync()` synchronizes the data and only the metadata needed to read it.
 
 <!-- example: fragment -->
 ```php
-# $stream is an open local file, for example fopen($log_path, 'ab').
+# $stream is already an open local file, for example fopen($log_path, 'ab').
 $data = "checkpoint\n";
 
 if( fwrite($stream, $data) !== strlen($data) || !fsync($stream) )
 	throw new RuntimeException( 'Cannot persist checkpoint' );
 ```
 
-Not every stream supports synchronization.
+Here we check both that the whole string was written and that synchronization succeeded: a partial checkpoint is not useful. Support depends on the stream, so this check is not suitable for every arbitrary stream.
 
 <a id="stream-options"></a>
 
@@ -68,7 +70,7 @@ Not every stream supports synchronization.
 
 **PHP 8.3+ | standard** [PHP manual](https://www.php.net/manual/en/function.stream-context-set-options.php)
 
-`stream_context_set_options()` applies a nested options array to an existing stream context.
+Use `stream_context_set_options()` to add several settings to an existing stream context in one call. The outer array keys select a wrapper, such as `http` or `ssl`, with its settings nested inside. Here we set a timeout, disable following redirects and keep TLS certificate checks enabled.
 
 ```php
 $context = stream_context_create();
@@ -79,7 +81,7 @@ stream_context_set_options( $context, [
 var_dump( stream_context_get_options($context)['http']['timeout'] ); # int(5)
 ```
 
-The older singular `stream_context_set_option()` already supported an array overload.
+The `int(5)` output shows that the existing context now contains the timeout. The older `stream_context_set_option()` also accepted an array; the plural name does not mean this capability is entirely new.
 
 <a id="request-body"></a>
 
@@ -87,11 +89,11 @@ The older singular `stream_context_set_option()` already supported an array over
 
 **PHP 8.4+ | standard** [PHP manual](https://www.php.net/manual/en/function.request-parse-body.php)
 
-`request_parse_body()` returns form fields and uploads for handlers such as `PUT` and `PATCH`, without populating superglobals.
+Use `request_parse_body()` for a form submitted with a method such as `PUT` or `PATCH`. It returns two arrays: form fields and uploaded files. It does not fill `$_POST` or `$_FILES`, so the example works with `$fields` and `$files` directly.
 
 <!-- example: fragment -->
 ```php
-# HTTP handler receiving a form-encoded PUT request.
+# This handler receives a form through PUT, not JSON.
 [$fields, $files] = request_parse_body( [
 	'post_max_size' => '2M',
 	'upload_max_filesize' => '1M',
@@ -99,25 +101,25 @@ The older singular `stream_context_set_option()` already supported an array over
 $name = $fields['name'] ?? null;
 ```
 
-Call before reading `php://input`: the body is consumed once, is not buffered there, and JSON is unsupported.
+Call it before reading `php://input`. The request body is consumed once and is not buffered there after this call. The function parses form bodies, not JSON.
 
 <a id="uri-objects"></a>
 
-## Read and modify URI objects
+## Change address parts through a URI object
 
 **PHP 8.5+ | uri** [PHP manual](https://www.php.net/manual/en/class.uri-rfc3986-uri.php)
 
-The URI extension provides separate RFC 3986 and WHATWG models for URI or browser URL rules. In the RFC model below, `withPath()` returns a modified copy.
+Instead of assembling an address by hand, we can work with a URI object. The extension offers two models: RFC 3986 for URIs and WHATWG for browser-style URLs. This example uses the RFC model: `withPath()` returns a copy with a different path and keeps the rest of the address.
 
 ```php
 $uri = new Uri\Rfc3986\Uri( 'https://example.com/catalog?page=2' );
 $next = $uri->withPath( '/archive' );
 echo $uri->getHost(), "\n"; # example.com
 echo $next->toString(), "\n"; # https://example.com/archive?page=2
-echo $uri->getPath(), "\n"; # /catalog: the original is unchanged
+echo $uri->getPath(), "\n"; # /catalog: the original stays unchanged
 ```
 
-Malformed input can throw `Uri\InvalidUriException`.
+`$next` now points to `/archive`, while the original `$uri` still has `/catalog`. An invalid address can throw `Uri\InvalidUriException`, so creating the object can also need error handling.
 
 <a id="curl-objects"></a>
 
@@ -125,7 +127,7 @@ Malformed input can throw `Uri\InvalidUriException`.
 
 **PHP 8.0+ | curl** [PHP manual](https://www.php.net/manual/en/function.curl-init.php)
 
-cURL easy, multi and share handles have classes instead of `resource` types.
+Since PHP 8.0, cURL returns objects instead of resources for easy, multi and share handles. An old `is_resource()` check therefore no longer tells us whether initialization succeeded. Here a valid `CurlHandle` passes `instanceof`, but `is_resource()` returns `false`.
 
 ```php
 $handle = curl_init();
@@ -137,7 +139,7 @@ var_dump( $handle instanceof CurlHandle ); # bool(true)
 var_dump( is_resource($handle) ); # bool(false)
 ```
 
-`curl_init()` can still return `false`; `is_resource()` is no longer an initialization check.
+`curl_init()` can still return `false` on failure. Check that result before using the handle.
 
 <a id="curl-string-file"></a>
 
@@ -145,7 +147,7 @@ var_dump( is_resource($handle) ); # bool(false)
 
 **PHP 8.1+ | curl** [PHP manual](https://www.php.net/manual/en/class.curlstringfile.php)
 
-`CURLStringFile` uploads in-memory bytes as a multipart file without creating a temporary file.
+If the file contents are already in a string, there is no need to write a temporary file just to upload it. `CURLStringFile` presents those bytes as a file in a multipart request. Here the CSV lives in memory, but the receiver gets a file named `report.csv` with type `text/csv`.
 
 <!-- example: fragment -->
 ```php
@@ -156,10 +158,10 @@ if( $handle === false )
 
 $file = new CURLStringFile( "id,total\n7,42\n", 'report.csv', 'text/csv' );
 curl_setopt( $handle, CURLOPT_POSTFIELDS, ['report' => $file] );
-# curl_exec($handle) would send the multipart request.
+# curl_exec($handle) sends the actual multipart request.
 ```
 
-Constructor arguments are contents, upload filename and MIME type; use `CURLFile` for an existing large file.
+The constructor takes contents, upload filename and MIME type, in that order. For a large file already on disk, use `CURLFile` rather than loading it all into a string first.
 
 <a id="persistent-curl-share"></a>
 
@@ -167,7 +169,7 @@ Constructor arguments are contents, upload filename and MIME type; use `CURLFile
 
 **PHP 8.5+ | curl** [PHP manual](https://www.php.net/manual/en/function.curl-share-init-persistent.php)
 
-`curl_share_init_persistent()` reuses shared DNS and connection data across requests in the same long-lived process.
+In a long-running PHP process, DNS data and connections do not always need to be rebuilt for every request. `curl_share_init_persistent()` lets requests in that process reuse selected cURL data. Here an easy handle shares DNS data and connections.
 
 <!-- example: fragment -->
 ```php
@@ -180,15 +182,15 @@ if( $handle === false )
 curl_setopt( $handle, CURLOPT_SHARE, $share );
 ```
 
-The share is process-local, not a pool across workers; `CURL_LOCK_DATA_COOKIE` is forbidden.
+The shared data belongs to one process; it is not a pool shared by every PHP process. Cookies cannot be shared this way: `CURL_LOCK_DATA_COOKIE` is not allowed for this function.
 
 <a id="multi-handles"></a>
 
-## List handles in a multi handle
+## Which handles have been added to cURL multi
 
 **PHP 8.5+ | curl** [PHP manual](https://www.php.net/manual/en/function.curl-multi-get-handles.php)
 
-`curl_multi_get_handles()` lists easy handles currently attached to a multi handle.
+Use `curl_multi_get_handles()` to get the easy handles added to a multi handle. Here we add one handle, see one item in the list, then remove it again.
 
 ```php
 $multi = curl_multi_init();
@@ -202,7 +204,7 @@ var_dump( count(curl_multi_get_handles($multi)) ); # int(1)
 curl_multi_remove_handle( $multi, $handle );
 ```
 
-Listing handles neither executes requests nor reports transfer completion.
+Reading the list does not start any requests. It also does not tell us which transfers have finished; it only lists the handles currently added.
 
 <a id="http-response-headers"></a>
 
@@ -210,7 +212,7 @@ Listing handles neither executes requests nor reports transfer completion.
 
 **PHP 8.4+ | standard** [PHP manual](https://www.php.net/manual/en/function.http-get-last-response-headers.php)
 
-`http_get_last_response_headers()` reads the HTTP stream wrapper's stored headers, or `null` when none are stored.
+After an HTTP stream request, such as `file_get_contents()`, use `http_get_last_response_headers()` to read the response headers. It returns `null` if none are stored. Here we clear old headers before the request and clear them again after collecting the result.
 
 <!-- example: fragment -->
 ```php
@@ -222,7 +224,7 @@ http_clear_last_response_headers();
 var_dump( $headers ); # Response-header lines, or null.
 ```
 
-Redirects can produce multiple response-header blocks.
+Redirects can leave several response-header blocks in the list. Do not assume that the entire array describes just one response.
 
 <a id="upload-paths"></a>
 
@@ -230,16 +232,16 @@ Redirects can produce multiple response-header blocks.
 
 **PHP 8.1+ | standard** [PHP manual](https://www.php.net/manual/en/features.file-upload.multiple.php)
 
-Directory uploads expose the client's relative path in `full_path`.
+When uploading a directory, filenames alone do not preserve its nested folders. The client sends each file's relative path in `full_path`, which we can read from `$_FILES`. Here we take the first file's path if it was supplied.
 
 <!-- example: fragment -->
 ```php
-# Directory upload field: files[].
+# The files come from a directory upload field named files[].
 $relative_path = $_FILES['files']['full_path'][0] ?? null;
 var_dump( $relative_path );
 ```
 
-This is untrusted metadata: reject absolute paths and traversal components before using it for storage.
+The client controls this path, so do not trust it. Reject absolute paths and parent-directory traversal before saving, or a file could end up outside the intended folder.
 
 <a id="cookie-options"></a>
 
@@ -247,11 +249,11 @@ This is untrusted metadata: reject absolute paths and traversal components befor
 
 **PHP 7.3+ options / PHP 8.5+ `partitioned` | standard** [PHP manual](https://www.php.net/manual/en/function.setcookie.php)
 
-Cookie options use named array entries; PHP 8.5 adds `partitioned` for storage partitioned by the top-level site in supporting clients.
+An options array makes `setcookie()` easier to read: the path, `secure`, `httponly` and `samesite` are named explicitly. PHP 8.5 adds `partitioned`. In supporting clients, this keeps a widget's cookie storage separate for each top-level site where the widget appears.
 
 <!-- example: fragment -->
 ```php
-# HTTPS response before output; $token is already generated.
+# Send over HTTPS before output; $token has already been generated.
 setcookie( 'widget_session', $token, [
 	'path'        => '/',
 	'secure'      => true,
@@ -261,24 +263,24 @@ setcookie( 'widget_session', $token, [
 ] );
 ```
 
-`partitioned` requires `secure` or PHP throws `ValueError`; clients also require `Secure` for `SameSite=None`.
+`partitioned` requires `secure`, otherwise PHP throws `ValueError`. Clients also require `Secure` for `SameSite=None`. The example sends the cookie over HTTPS before writing the response body.
 
 <a id="read-only-session"></a>
 
-## Read a session and release its lock
+## Read a session and release the lock immediately
 
 **PHP 7.0+ | session** [PHP manual](https://www.php.net/manual/en/function.session-start.php) | [PHP implementation: session.c](https://github.com/php/php-src/blob/PHP-8.5/ext/session/session.c) | [PHP implementation: mod_files.c](https://github.com/php/php-src/blob/PHP-8.5/ext/session/mod_files.c)
 
-`read_and_close` loads `$_SESSION` and immediately closes the session, releasing the default file handler's lock.
+If a request only needs to read the session, pass `read_and_close`. PHP loads `$_SESSION` and closes the session immediately. With the standard file handler, this releases the lock so other requests for that session do not wait for our work to finish.
 
 <!-- example: fragment -->
 ```php
-# HTTP handler before output; session settings are already configured.
+# Session settings are already configured; response output has not started.
 if( !session_start(['read_and_close' => true]) )
 	throw new RuntimeException( 'Cannot start session' );
 
 $user_id = $_SESSION['user_id'] ?? null;
-# Later changes to $_SESSION are not saved automatically.
+# Further changes to $_SESSION will not save themselves.
 ```
 
-The files handler skips the timestamp refresh, so read-only traffic can still leave an active session old enough for garbage collection.
+Later changes to `$_SESSION` are not saved automatically. There is also a file-handler detail: this kind of read does not update the file time. Even actively reading the session may therefore not prevent garbage collection from expiring it.

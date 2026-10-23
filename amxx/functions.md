@@ -70,7 +70,7 @@ stock set_player_animation(const player_id, const anim_name[])
 	set_pdata_float(player_id, 220, gametime , 5);
 }
 
-/* Воспроизвети анимацию от первого лица (с ID звуков И внешней анимацией) */
+/* Проигрываем анимацию оружия от первого лица */
 stock play_weapon_animation(const player_id, const sequence_id = 0, const body_id = 0)
 {
 	set_pev(player_id, pev_weaponanim, sequence_id);
@@ -134,7 +134,7 @@ stock remove_color_tag(output[], const len = 191, const mode = 0)
 	}
 }
 
-/* Показ/скрытие иконки у ирока */
+/* Показать или скрыть иконку у игрока */
 stock set_status_icon(const player_id, const icon[], const colors[3], const status = 0)
 {
 	static msg_status_icon_id;
@@ -274,12 +274,12 @@ stock get_player_dist_aim_entity(const player_id, const distance)
 	// Получаем углы игрока
 	pev(player_id, pev_angles, player_angles);
 	
-	// Получам положение глаз и переводим во float
+	// К позиции игрока добавляем смещение глаз, чтобы трасса шла оттуда
 	pev(player_id, pev_origin, eyes_origin);
 	pev(player_id, pev_view_ofs, direction);
 	xs_vec_add(eyes_origin, direction, eyes_origin);
 	
-	// Высчитываем координаты прицела
+	// Получаем направление взгляда
 	pev(player_id, pev_v_angle, direction);
 	engfunc(EngFunc_MakeVectors, direction);
 	global_get(glb_v_forward, direction);
@@ -287,14 +287,14 @@ stock get_player_dist_aim_entity(const player_id, const distance)
 	// Проводим линию от прицела
 	xs_vec_mul_scalar(direction, float(distance), direction);
 	
-	// Получаем координаты точки сопрекосновения
+	// Получаем конец трассы
 	xs_vec_add(eyes_origin, direction, position_end);
 	
 	engfunc(EngFunc_TraceLine, eyes_origin, position_end, DONT_IGNORE_MONSTERS, player_id, 0);
 	{
 		get_tr2(0, TR_flFraction, tr_fraction_fl);
 
-		// Если коснулись чего-то
+		// Если трасса во что-то упёрлась, забираем ID сущности
 		if (tr_fraction_fl < 1.0)
 			entity_id = get_tr2(0, TR_Hit);
 	}
@@ -342,7 +342,7 @@ stock arrayset_float(Float:array[], Float:value, size)
 		array[i] = value;
 }
 
-// Checks if a space is vacant (credits to VEN)
+// Проверяем, свободно ли место для выбранного hull. Автор: VEN
 stock is_hull_vacant(Float:origin[3], hull)
 {
 	engfunc(EngFunc_TraceHull, origin, origin, 0, hull, 0, 0)
@@ -360,12 +360,12 @@ stock get_aim_florigin(const player_id, Float:position_end[3], Float:vecplanenor
 	// Получаем углы игрока
 	pev(player_id, pev_angles, player_angles);
 	
-	// Получам положение глаз и переводим во float
+	// К позиции игрока добавляем смещение глаз, чтобы трасса шла оттуда
 	pev(player_id, pev_origin, eyes_origin);
 	pev(player_id, pev_view_ofs, direction);
 	xs_vec_add(eyes_origin, direction, eyes_origin);
 	
-	// Высчитываем координаты прицела
+	// Получаем направление взгляда
 	pev(player_id, pev_v_angle, direction);
 	engfunc(EngFunc_MakeVectors, direction);
 	global_get(glb_v_forward, direction);
@@ -384,14 +384,14 @@ stock get_aim_florigin(const player_id, Float:position_end[3], Float:vecplanenor
 
 stock player_update_hud(const player_id, const csw_id)
 {
-	// This set clip ammo
+	// Обновляем в HUD патроны в магазине
 	message_begin(MSG_ONE_UNRELIABLE, get_user_msgid("CurWeapon"), _, player_id);
 	write_byte(true);
 	write_byte(csw_id);
 	write_byte(cs_get_weapon_ammo(get_pdata_cbase(player_id, m_pActiveItem)))
 	message_end()
 	
-	// This set BP ammo
+	// Обновляем в HUD запас патронов
 	message_begin(MSG_ONE_UNRELIABLE, get_user_msgid("AmmoX"), _, player_id);
 	write_byte(csw_id);
 	write_byte(cs_get_user_bpammo(player_id, csw_id));
@@ -525,7 +525,7 @@ stock effect_screen_fade( const player_id = 0, const duration = 0, const holdtim
 	message_end();
 }
 
-/* стандартный эффект попадания от высрела (всё кроме дымки) */
+/* Обычный эффект попадания пули, без дымки */
 stock effect_multigunshot(const Float:hit_origin[3], const Float:direction[3], const x_noise = 0, const y_noise = 0, const count = 1)
 {
 	new decalindex = engfunc(EngFunc_DecalIndex, DECAL_LIST[random(DECAL_LIST_CHARSMAX)]);
@@ -548,81 +548,75 @@ stock effect_multigunshot(const Float:hit_origin[3], const Float:direction[3], c
 }
 
 /**
- * Creates an explosion which the engine will do.
- * Note: Requieres Engine Module. Tested only on CS Steam.
+ * Создаём взрыв через env_explosion, дальше его обрабатывает сама игра.
+ * Нужен модуль Engine. В исходном описании указана проверка только на CS Steam.
  *
- * @param vecCenter                Position where the explosion should be created.
- * @param iMagnitude            Explosion size. This defines the explosion's max damage and sprite's size
- * @param iFlags                Explosion flags which you can find on hlsdk_const.inc
- * @param bDoDamage                Should do a radius damage?
- * @param bNoActivate        If this param is on true, the entity won't explode, and you must do it manually
- * @return                    Entity index on sucess, 0 on failure.
+ * @param vecCenter   Где создаём взрыв.
+ * @param iMagnitude  Сила взрыва: влияет на максимальный урон и размер спрайта.
+ * @param iFlags      Флаги взрыва из hlsdk_const.inc.
+ * @param bDoDamage   Наносить ли урон вокруг взрыва.
+ * @param bNoActivate Если true, только создаём сущность. Активировать её нужно отдельно.
+ * @return           ID созданной сущности или 0, если создать не удалось.
  */
 //https://forums.alliedmods.net/showthread.php?t=142412
 stock effect_origin_explosion_def(const Float:vecCenter[3], iMagnitude, iFlags = 0, bool:bDoDamage = false, bool:bNoActivate = false)
 {
-    // env_explosion entities are the ones
-    // who creates explosions. So we are available
-    // for using this one for creating explosions
+    // Для взрыва используем готовую игровую сущность env_explosion
     new iEnt = create_entity("env_explosion")
     
-    if(!iEnt) // Invalid?
+    if(!iEnt) // Не удалось создать сущность
     return 0
     
-    // The center of the explosion
+    // Ставим сущность в точку взрыва
     entity_set_origin(iEnt, vecCenter)
     
-    // Key values must be only string, so we must
-    // convert it from Int to String.
-    new szMagnitude[8] // In explode.cpp the char size is 128 lol.
-    formatex(szMagnitude, charsmax(szMagnitude), "%3d", iMagnitude) // Exactly as how the engine does it.
-    DispatchKeyValue(iEnt, "iMagnitude", szMagnitude) // This will modify m_iMagnitude value.
+    // DispatchKeyValue принимает строку, поэтому сначала переводим число в текст
+    new szMagnitude[8]
+    formatex(szMagnitude, charsmax(szMagnitude), "%3d", iMagnitude)
+    DispatchKeyValue(iEnt, "iMagnitude", szMagnitude) // Передаём силу взрыва в сущность
     
-    // In hlsdk_const.inc you can find env_explosion's spawn flags
-    if(!bDoDamage) // If you don't want to create a damage sphere, so we must only add this flag.
+    // Флаги env_explosion описаны в hlsdk_const.inc
+    if(!bDoDamage) // Без урона добавляем SF_ENVEXPLOSION_NODAMAGE
         entity_set_int(iEnt, EV_INT_spawnflags, iFlags | SF_ENVEXPLOSION_NODAMAGE)
     else
-        entity_set_int(iEnt, EV_INT_spawnflags, iFlags) // 3rd parameter flags.
+        entity_set_int(iEnt, EV_INT_spawnflags, iFlags)
     
-    // Applying some pev values, and offset modifications
+    // Даём игре подготовить созданную сущность
     DispatchSpawn(iEnt)
     
     if(!bNoActivate)
-        force_use(iEnt, iEnt) // The engine doesn't care who used it. Btw, this actives the explosion.
+        force_use(iEnt, iEnt) // Активируем взрыв сразу, если его не нужно отложить
     
     return iEnt
 }
 stock effect_entity_explosion_def(const entity_id, iMagnitude, iFlags = 0, bool:bDoDamage = false, bool:bNoActivate = false)
 {
     new Float:vecCenter[3]; pev(entity_id, pev_origin, vecCenter);
-	// env_explosion entities are the ones
-    // who creates explosions. So we are available
-    // for using this one for creating explosions
+	// Для взрыва используем готовую игровую сущность env_explosion
     new iEnt = create_entity("env_explosion")
     
-    if(!iEnt) // Invalid?
+    if(!iEnt) // Не удалось создать сущность
     return 0
     
-    // The center of the explosion
+    // Ставим сущность в точку взрыва
     entity_set_origin(iEnt, vecCenter)
     
-    // Key values must be only string, so we must
-    // convert it from Int to String.
-    new szMagnitude[8] // In explode.cpp the char size is 128 lol.
-    formatex(szMagnitude, charsmax(szMagnitude), "%3d", iMagnitude) // Exactly as how the engine does it.
-    DispatchKeyValue(iEnt, "iMagnitude", szMagnitude) // This will modify m_iMagnitude value.
+    // DispatchKeyValue принимает строку, поэтому сначала переводим число в текст
+    new szMagnitude[8]
+    formatex(szMagnitude, charsmax(szMagnitude), "%3d", iMagnitude)
+    DispatchKeyValue(iEnt, "iMagnitude", szMagnitude) // Передаём силу взрыва в сущность
     
-    // In hlsdk_const.inc you can find env_explosion's spawn flags
-    if(!bDoDamage) // If you don't want to create a damage sphere, so we must only add this flag.
+    // Флаги env_explosion описаны в hlsdk_const.inc
+    if(!bDoDamage) // Без урона добавляем SF_ENVEXPLOSION_NODAMAGE
         entity_set_int(iEnt, EV_INT_spawnflags, iFlags | SF_ENVEXPLOSION_NODAMAGE)
     else
-        entity_set_int(iEnt, EV_INT_spawnflags, iFlags) // 3rd parameter flags.
+        entity_set_int(iEnt, EV_INT_spawnflags, iFlags)
     
-    // Applying some pev values, and offset modifications
+    // Даём игре подготовить созданную сущность
     DispatchSpawn(iEnt)
     
     if(!bNoActivate)
-        force_use(iEnt, iEnt) // The engine doesn't care who used it. Btw, this actives the explosion.
+        force_use(iEnt, iEnt) // Активируем взрыв сразу, если его не нужно отложить
     
     return iEnt
 }
@@ -675,70 +669,70 @@ stock effect_entity_blast(const entity_id, const sprite_id, const color[3] = {20
 {
 	new Float:originF[3]; pev(entity_id, pev_origin, originF);
 	
-	// Smallest ring
+	// Маленькое кольцо
 	engfunc(EngFunc_MessageBegin, MSG_PVS, SVC_TEMPENTITY, originF, 0)
-	write_byte(TE_BEAMCYLINDER) // TE id
+	write_byte(TE_BEAMCYLINDER) // Тип эффекта
 	engfunc(EngFunc_WriteCoord, originF[0]) // x
 	engfunc(EngFunc_WriteCoord, originF[1]) // y
 	engfunc(EngFunc_WriteCoord, originF[2]) // z
-	engfunc(EngFunc_WriteCoord, originF[0]) // x axis
-	engfunc(EngFunc_WriteCoord, originF[1]) // y axis
-	engfunc(EngFunc_WriteCoord, originF[2]+385.0) // z axis
-	write_short(sprite_id) // sprite
-	write_byte(0) // startframe
-	write_byte(0) // framerate
-	write_byte(4) // life
-	write_byte(60) // width
-	write_byte(0) // noise
-	write_byte(color[0]) // red
-	write_byte(color[1]) // green
-	write_byte(color[2]) // blue
-	write_byte(200) // brightness
-	write_byte(0) // speed
+	engfunc(EngFunc_WriteCoord, originF[0]) // Конечная координата X
+	engfunc(EngFunc_WriteCoord, originF[1]) // Конечная координата Y
+	engfunc(EngFunc_WriteCoord, originF[2]+385.0) // Конечная координата Z
+	write_short(sprite_id) // Спрайт
+	write_byte(0) // Начальный кадр
+	write_byte(0) // Скорость анимации
+	write_byte(4) // Время показа
+	write_byte(60) // Ширина
+	write_byte(0) // Сила колебаний
+	write_byte(color[0]) // Красный
+	write_byte(color[1]) // Зелёный
+	write_byte(color[2]) // Синий
+	write_byte(200) // Яркость
+	write_byte(0) // Скорость
 	message_end()
 	
-	// Medium ring
+	// Среднее кольцо
 	engfunc(EngFunc_MessageBegin, MSG_PVS, SVC_TEMPENTITY, originF, 0)
-	write_byte(TE_BEAMCYLINDER) // TE id
+	write_byte(TE_BEAMCYLINDER) // Тип эффекта
 	engfunc(EngFunc_WriteCoord, originF[0]) // x
 	engfunc(EngFunc_WriteCoord, originF[1]) // y
 	engfunc(EngFunc_WriteCoord, originF[2]) // z
-	engfunc(EngFunc_WriteCoord, originF[0]) // x axis
-	engfunc(EngFunc_WriteCoord, originF[1]) // y axis
-	engfunc(EngFunc_WriteCoord, originF[2]+470.0) // z axis
-	write_short(sprite_id) // sprite
-	write_byte(0) // startframe
-	write_byte(0) // framerate
-	write_byte(4) // life
-	write_byte(60) // width
-	write_byte(0) // noise
-	write_byte(color[0]) // red
-	write_byte(color[1]) // green
-	write_byte(color[2]) // blue
-	write_byte(200) // brightness
-	write_byte(0) // speed
+	engfunc(EngFunc_WriteCoord, originF[0]) // Конечная координата X
+	engfunc(EngFunc_WriteCoord, originF[1]) // Конечная координата Y
+	engfunc(EngFunc_WriteCoord, originF[2]+470.0) // Конечная координата Z
+	write_short(sprite_id) // Спрайт
+	write_byte(0) // Начальный кадр
+	write_byte(0) // Скорость анимации
+	write_byte(4) // Время показа
+	write_byte(60) // Ширина
+	write_byte(0) // Сила колебаний
+	write_byte(color[0]) // Красный
+	write_byte(color[1]) // Зелёный
+	write_byte(color[2]) // Синий
+	write_byte(200) // Яркость
+	write_byte(0) // Скорость
 	message_end()
 	
-	// Largest ring
+	// Большое кольцо
 	engfunc(EngFunc_MessageBegin, MSG_PVS, SVC_TEMPENTITY, originF, 0)
-	write_byte(TE_BEAMCYLINDER) // TE id
+	write_byte(TE_BEAMCYLINDER) // Тип эффекта
 	engfunc(EngFunc_WriteCoord, originF[0]) // x
 	engfunc(EngFunc_WriteCoord, originF[1]) // y
 	engfunc(EngFunc_WriteCoord, originF[2]) // z
-	engfunc(EngFunc_WriteCoord, originF[0]) // x axis
-	engfunc(EngFunc_WriteCoord, originF[1]) // y axis
-	engfunc(EngFunc_WriteCoord, originF[2]+555.0) // z axis
-	write_short(sprite_id) // sprite
-	write_byte(0) // startframe
-	write_byte(0) // framerate
-	write_byte(4) // life
-	write_byte(60) // width
-	write_byte(0) // noise
-	write_byte(color[0]) // red
-	write_byte(color[1]) // green
-	write_byte(color[2]) // blue
-	write_byte(200) // brightness
-	write_byte(0) // speed
+	engfunc(EngFunc_WriteCoord, originF[0]) // Конечная координата X
+	engfunc(EngFunc_WriteCoord, originF[1]) // Конечная координата Y
+	engfunc(EngFunc_WriteCoord, originF[2]+555.0) // Конечная координата Z
+	write_short(sprite_id) // Спрайт
+	write_byte(0) // Начальный кадр
+	write_byte(0) // Скорость анимации
+	write_byte(4) // Время показа
+	write_byte(60) // Ширина
+	write_byte(0) // Сила колебаний
+	write_byte(color[0]) // Красный
+	write_byte(color[1]) // Зелёный
+	write_byte(color[2]) // Синий
+	write_byte(200) // Яркость
+	write_byte(0) // Скорость
 	message_end()
 	
 	if(soundpath[0])
@@ -768,9 +762,9 @@ stock effect_origin_particleburst(const Float:origin[3], const radius = 10, cons
 		write_coord_f(origin[0])
 		write_coord_f(origin[1])
 		write_coord_f(origin[2])
-		write_short(radius) // radius
-		write_byte(color_num) // color
-		write_byte(duration) // duration (will be randomized a bit)
+		write_short(radius) // Радиус
+		write_byte(color_num) // Цвет
+		write_byte(duration) // Длительность, игра немного меняет её случайным образом
 	}
 	message_end();
 }
@@ -1121,9 +1115,9 @@ stock set_player_bartime(const player_id, const sec = 0)
 	message_end();
 }
 
-// dest[] – массив куда скопируются экранированные данные
-// len – длина массива dest
-// src[] – исходная строка для экранирования
+// dest[] - сюда записываем экранированный текст
+// len - размер выходного буфера dest
+// src[] - исходный текст
 stock mysql_escape_string(src[], dest[], len)
 {
     copy(dest, len, src);
@@ -1275,7 +1269,7 @@ stock get_entarr_in_radius(const Float:origin[3], const Float:radius, entity_lis
 	return i;
 }
 
-// Проверяет является ли точка видимой от начало до нее. Игнорируются стекло, игроки и ignore_ent. 
+// Проверяем видимость между точками, пропуская стекло, игроков и ignore_ent.
 stock bool:is_entity_visible(const entity_id, const target_id, ignore_ent = 0) 
 { 
 	new Float:origin_start[3], Float:origin_end[3];
@@ -1288,8 +1282,8 @@ stock bool:is_entity_visible(const entity_id, const target_id, ignore_ent = 0)
 	static Float:fraction 
 	get_tr2(0, TR_flFraction, fraction) 
 
-	// Возвращение результата
-	// Если 1, значит мы ничего не коснулись 
+	// Проверяем, дошла ли трасса до конца
+	// Значение 1 означает, что по пути ничего не встретилось
 	return (fraction == 1.0)
 }
 stock bool:is_entity_point_visible(const entity_id, const Float:origin_end[3], ignore_ent = 0) 
@@ -1303,8 +1297,8 @@ stock bool:is_entity_point_visible(const entity_id, const Float:origin_end[3], i
 	static Float:fraction 
 	get_tr2(0, TR_flFraction, fraction) 
 
-	// Возвращение результата
-	// Если 1, значит мы ничего не коснулись 
+	// Проверяем, дошла ли трасса до конца
+	// Значение 1 означает, что по пути ничего не встретилось
 	return (fraction == 1.0)
 } 
 
@@ -1321,19 +1315,19 @@ stock bool:set_player_origin(const player_id, Float:origin[3], const sprite_id =
 	{
 		message_begin(MSG_BROADCAST, SVC_TEMPENTITY);
 		{
-			write_byte(TE_SPRITETRAIL) // TE ID
-			write_coord_f(player_origin[0]) // Start Position X
-			write_coord_f(player_origin[1]) // Start Position Y
-			write_coord_f(player_origin[2]+ 40.0) // Start Position Z
-			write_coord_f(player_origin[0]) // End Position X
-			write_coord_f(player_origin[1]) // End Position Y
-			write_coord_f(player_origin[2]) // End Position Z
-			write_short(sprite_id) // Sprite Index
-			write_byte(30) // Count
-			write_byte(10) // Life
-			write_byte(1) // Scale
-			write_byte(50) // Velocity Along Vector
-			write_byte(10) // Rendomness of Velocity
+			write_byte(TE_SPRITETRAIL) // Тип эффекта
+			write_coord_f(player_origin[0]) // Начальная координата X
+			write_coord_f(player_origin[1]) // Начальная координата Y
+			write_coord_f(player_origin[2]+ 40.0) // Начальная координата Z
+			write_coord_f(player_origin[0]) // Конечная координата X
+			write_coord_f(player_origin[1]) // Конечная координата Y
+			write_coord_f(player_origin[2]) // Конечная координата Z
+			write_short(sprite_id) // ID спрайта
+			write_byte(30) // Количество
+			write_byte(10) // Время показа
+			write_byte(1) // Масштаб
+			write_byte(50) // Скорость вдоль направления
+			write_byte(10) // Случайный разброс скорости
 		}
 		message_end();
 	}
@@ -1341,7 +1335,7 @@ stock bool:set_player_origin(const player_id, Float:origin[3], const sprite_id =
 	if(soundpath[0])
 		emit_sound(player_id, CHAN_STATIC, soundpath, VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 	
-	// Player cannot stuck in the wall/floor
+	// Проверяем свободное место, чтобы игрок не застрял в стене или полу
 	origin[0] += ((origin[0] - player_origin[0] > 0) ? -50.0 : 50.0);
 	origin[1] += ((origin[1] - player_origin[1] > 0) ? -50.0 : 50.0);
 	origin[2] += 40.0;
@@ -1353,24 +1347,24 @@ stock bool:set_player_origin(const player_id, Float:origin[3], const sprite_id =
 	{
 		message_begin(MSG_BROADCAST, SVC_TEMPENTITY);
 		{
-			write_byte(TE_SPRITETRAIL) // TE ID
-			write_coord_f(origin[0]) // Start Position X
-			write_coord_f(origin[1]) // Start Position Y
-			write_coord_f(origin[2]+ 40.0) // Start Position Z
-			write_coord_f(origin[0]) // End Position X
-			write_coord_f(origin[1]) // End Position Y
-			write_coord_f(origin[2]) // End Position Z
-			write_short(sprite_end_id) // Sprite Index
-			write_byte(30) // Count
-			write_byte(10) // Life
-			write_byte(1) // Scale
-			write_byte(50) // Velocity Along Vector
-			write_byte(10) // Rendomness of Velocity
+			write_byte(TE_SPRITETRAIL) // Тип эффекта
+			write_coord_f(origin[0]) // Начальная координата X
+			write_coord_f(origin[1]) // Начальная координата Y
+			write_coord_f(origin[2]+ 40.0) // Начальная координата Z
+			write_coord_f(origin[0]) // Конечная координата X
+			write_coord_f(origin[1]) // Конечная координата Y
+			write_coord_f(origin[2]) // Конечная координата Z
+			write_short(sprite_end_id) // ID спрайта
+			write_byte(30) // Количество
+			write_byte(10) // Время показа
+			write_byte(1) // Масштаб
+			write_byte(50) // Скорость вдоль направления
+			write_byte(10) // Случайный разброс скорости
 		}
 		message_end();
 	}
 	
-	// Teleport player
+	// Переносим игрока в свободную точку
 	set_pev(player_id, pev_origin, origin);
 	
 	return true;
@@ -1470,7 +1464,7 @@ stock bool:find_player_flags(const player_id, const flags[] = "", flags_bitsum =
 	return false;
 }
 
-// the dot product is performed in 2d, making the view cone infinitely tall
+// Считаем только в 2D: высота цели на результат не влияет
 stock bool:is_in_viewcone_v2(index, const Float:point[3])
 {
 	new Float:angles[3];
@@ -1525,7 +1519,7 @@ stock take_damage(const victim_id, const attacker_id, const inflictor_id, const 
 
 		if(victim_hp_next <= 0)
 		{
-			// Чем был убил
+			// Чем убили
 			set_pev(victim_id, pev_dmg_inflictor, inflictor_id);
 
 			// Выдаем деньги за убийство
@@ -1547,7 +1541,7 @@ stock take_damage(const victim_id, const attacker_id, const inflictor_id, const 
 				
 				message_begin(MSG_BROADCAST, msg_deathmsg_id);
 				{
-					write_byte(attacker_id); // аттакующий
+					write_byte(attacker_id); // атакующий
 					write_byte(victim_id); // жертва
 					write_byte(bodypart); // убийство в голову (0 - нет, 1 - да)
 					write_string(weapon); // орудие убийства
@@ -1645,7 +1639,7 @@ stock get_weaponid_v2(const classname[])
 	return 0;
 }
 
-/* takes a weapon from a player efficiently */
+/* Забираем оружие у игрока */
 stock ham_strip_weapon(id,weapon[])
 {
     if(!equal(weapon,"weapon_",7)) return 0;
@@ -1664,7 +1658,7 @@ stock ham_strip_weapon(id,weapon[])
 
     set_pev(id,pev_weapons,pev(id,pev_weapons) & ~(1<<wId));
 
-    // this block should be used for Counter-Strike:
+    // Этот блок рассчитан на Counter-Strike
     if(wId == CSW_C4)
     {
         cs_set_user_plant(id,0,0);

@@ -2,25 +2,25 @@
 
 [EN](../en/08-entities-and-gameplay.md) | [UK](../uk/08-entities-and-gameplay.md) | [RU](../ru/08-entities-and-gameplay.md) | [Contents](../../README.md)
 
-Entity lifetime, typed fields, triggers and the boundary between changing data and calling game behavior. Each code block is independent; functions with arguments show reusable operations rather than automatic command registration.
+An entity has a lifetime, fields and behavior supplied by the game. Below, we look at avoiding removed entities, reading data correctly and choosing between setting a field and calling a game operation. Each block stands on its own; functions with parameters show an operation to call from your own code.
 
-- [An index is not an entity identity](#entity-identity)
-- [Read entvars with the matching type](#entvars-and-vectors)
-- [Move through an origin API](#moving-entities)
-- [Create a real class, then configure it](#create-and-spawn)
-- [`Touch`: validate both sides and consume once](#touch-and-consume)
-- [`Think` uses an absolute game time](#think-scheduling)
-- [Models need precache and bounds](#models-and-precache)
-- [Search narrowly and remove only your entities](#search-and-remove)
-- [An owner slot can be reused too](#owner-lifetime)
-- [Private data: units, class and platform matter](#private-data)
-- [ReAPI named members, optional](#reapi-members)
-- [Weapons, respawn and death are game operations](#weapons-spawn-and-death)
+- [Avoid confusing a removed entity with a new one](#entity-identity)
+- [Read entity fields with the right type](#entvars-and-vectors)
+- [Move through a position-setting function](#moving-entities)
+- [Create an entity and configure its behavior](#create-and-spawn)
+- [One touch, one reward](#touch-and-consume)
+- [Set the next `Think` time](#think-scheduling)
+- [Load a model and set the entity bounds](#models-and-precache)
+- [Find and remove only your own entities](#search-and-remove)
+- [An owner can change in the same slot too](#owner-lifetime)
+- [Private data: check the fields and offsets](#private-data)
+- [Read named fields through ReAPI](#reapi-members)
+- [Giving weapons, respawning and death](#weapons-spawn-and-death)
 
 <a id="entity-identity"></a>
-## An index is not an entity identity
+## Avoid confusing a removed entity with a new one
 
-Entity indices are reused after removal. A valid index saved earlier may now refer to another entity. For delayed work, save `pev_serial` together with the index and verify both before using the entity.
+After removal, an entity index can be reused. A saved index may pass a validity check while referring to a different object. For delayed work, save `pev_serial` together with the index and check both before using the entity.
 
 
 ```pawn
@@ -36,14 +36,14 @@ public bool:is_same_entity( entity, serial )
 }
 ```
 
-Save the serial when capturing the entity, not when the delayed callback begins. `pev_valid` returns `0` for invalid, `1` for an existing edict and `2` when private data also exists. `pev_valid == 2` permits private-data access in principle; it does not prove that the entity belongs to the class expected by an offset.
+Save the serial when choosing the entity. Reading it only when the delayed handler starts leaves nothing to compare against. `pev_valid()` returns `0` if no entity exists, `1` for an existing engine edict, and `2` when private data exists too. A result of `2` permits private-data access in principle; the expected class and matching offsets still need separate checks.
 
 Sources: [`pev_valid`](https://www.amxmodx.org/api/fakemeta/pev_valid), [`pev_serial`](https://www.amxmodx.org/api/fakemeta/pev_serial).
 
 <a id="entvars-and-vectors"></a>
-## Read entvars with the matching type
+## Read entity fields with the right type
 
-`pev` has different calling forms for integers, floats, strings and vectors. A Pawn cell returned directly is not automatically a `Float`. Here float fields and vectors are read into output variables.
+`pev()` has different forms for integers, floats, strings and vectors. Below, we pass output variables for the floating-point value and vector. Reading a returned cell directly does not automatically convert it to a `Float`.
 
 
 ```pawn
@@ -64,14 +64,14 @@ public describe_entity( entity )
 }
 ```
 
-Vectors use three `Float` cells, not three rounded integer coordinates. Velocity is a direction-and-speed vector; angles use a different field and meaning. With Engine, the equivalent families are `entity_get_int`, `entity_get_float`, `entity_get_vector`, `entity_get_string` and `entity_get_edict`.
+A vector uses three `Float` cells; fractional coordinates should not be rounded to integers. `velocity` describes direction and speed; angles belong to a different field. Engine provides the corresponding `entity_get_int`, `entity_get_float`, `entity_get_vector`, `entity_get_string` and `entity_get_edict` functions.
 
 Sources: [`pev`](https://www.amxmodx.org/api/fakemeta/pev), [`entity_get_vector`](https://www.amxmodx.org/api/engine/entity_get_vector).
 
 <a id="moving-entities"></a>
-## Move through an origin API
+## Move through a position-setting function
 
-Changing an entity position also requires updating its engine linkage. Use `entity_set_origin` or `EngFunc_SetOrigin` instead of treating `pev_origin` as an ordinary field assignment.
+Moving an entity also requires the engine to update where it belongs in its own structures. Use `entity_set_origin()` or `EngFunc_SetOrigin()` for that. A direct assignment to `pev_origin` is not enough. Below, we read the position, add `32.0` to its height and set the new origin.
 
 
 ```pawn
@@ -90,14 +90,14 @@ public move_entity_up( entity )
 }
 ```
 
-This moves the entity by 32 units on Z. It does not check whether the destination is inside a wall. Player teleportation additionally needs a suitable hull trace and a deliberate policy for velocity and ground state; a position setter alone does not find a safe destination.
+This moves the entity 32 units along Z. It does not check for a wall at the destination. Player teleportation also needs a suitable hull trace and a decision about velocity and ground state. A position setter does not find a safe spot for us.
 
 Sources: [`entity_set_origin`](https://www.amxmodx.org/api/engine/entity_set_origin), [engine function constants](https://www.amxmodx.org/api/fakemeta_const).
 
 <a id="create-and-spawn"></a>
-## Create a real class, then configure it
+## Create an entity and configure its behavior
 
-`create_entity` needs a class implemented by the game DLL. A custom classname string does not create a new C++ class. For a simple custom trigger, create `info_target`, run its spawn, then assign the marker name and trigger properties.
+`create_entity()` needs a class already implemented by the game DLL. A new classname string does not add a C++ class. For a simple custom trigger, we create `info_target`, run its spawn, then assign our marker name, size and trigger properties.
 
 
 ```pawn
@@ -121,14 +121,14 @@ public create_marker( const Float:origin[3] )
 }
 ```
 
-The result is an invisible trigger, not a visible pickup model. For game entities configured by keyvalues, set the required keyvalues before `DispatchSpawn`; spawn may overwrite fields or remove an unusable entity. Order depends on that class, so do not reuse the trigger recipe unchanged for doors, weapons or brush entities.
+The result is an invisible trigger area. A visible item needs a model separately. Entities configured through keyvalues may need those values before `DispatchSpawn()`: spawn can change fields or remove an unusable entity. The order depends on the class, so check before applying this trigger example to doors, weapons or brush entities.
 
 Sources: [`create_entity`](https://www.amxmodx.org/api/engine/create_entity), [`DispatchSpawn`](https://www.amxmodx.org/api/engine/DispatchSpawn), [`DispatchKeyValue`](https://www.amxmodx.org/api/engine/DispatchKeyValue).
 
 <a id="touch-and-consume"></a>
-## `Touch`: validate both sides and consume once
+## One touch, one reward
 
-A trigger may touch a player repeatedly. This handler accepts only living players and removes the custom marker before applying its one-time reward. It is meant for the `notes_marker` trigger from the previous section.
+A trigger can receive repeated touches from a player. Below, we check that `notes_marker` still exists and the player is alive, then remove the marker before giving the reward. This prevents one marker from healing repeatedly. The example uses the trigger from the previous section.
 
 
 ```pawn
@@ -146,6 +146,7 @@ public on_marker_touch( marker, player )
 	if( !is_valid_ent( marker ) || !is_user_alive( player ) )
 		return;
 
+	// Consume it before rewarding to avoid repeated touches.
 	remove_entity( marker );
 	new health = get_user_health( player );
 
@@ -154,14 +155,14 @@ public on_marker_touch( marker, player )
 }
 ```
 
-After removal, do not read fields from `marker`. The example consumes the marker even when the player already has 100 health; move that policy check before removal if full-health players should leave it behind. An `owner` field is game data, not an automatic access-control rule.
+After removal, do not read fields from `marker`. This example consumes it even at 100 health. If it should remain for another player, check full health before removal. The `owner` field does not check reward permissions on its own.
 
 Sources: [`register_touch`](https://www.amxmodx.org/api/engine/register_touch), [`remove_entity`](https://www.amxmodx.org/api/engine/remove_entity), [`set_user_health`](https://www.amxmodx.org/api/fun/set_user_health).
 
 <a id="think-scheduling"></a>
-## `Think` uses an absolute game time
+## Set the next `Think` time
 
-`nextthink` is a timestamp, not an interval. Schedule the first call with `get_gametime() + delay`; schedule the next call again if the entity should keep thinking.
+Write a particular game-time moment into `nextthink`. For a call one second from now, use `get_gametime() + 1.0`. If the entity should keep working, set its next call time again inside the handler.
 
 
 ```pawn
@@ -188,14 +189,14 @@ public on_marker_think( marker )
 }
 ```
 
-This schedules a roughly one-second cadence; execution follows server frames, not a hard real-time timer. Keep work proportional to the number of active entities. Do not scan every player or every entity from every thinker when the needed data can be saved at creation or updated by events.
+This gives a roughly one-second cadence, following server frames. More active entities mean more handler calls overall. If data can be saved at creation or updated by an event, avoid scanning every player and entity again from each `Think`.
 
 Sources: [`register_think`](https://www.amxmodx.org/api/engine/register_think), [`get_gametime`](https://www.amxmodx.org/api/amxmodx/get_gametime).
 
 <a id="models-and-precache"></a>
-## Models need precache and bounds
+## Load a model and set the entity bounds
 
-**CS 1.6 asset path.** Precache a model in `plugin_precache`, then assign that same resource to the entity. Set the desired collision bounds after the model, because model assignment can affect bounds.
+**CS 1.6 asset path.** Precache the model in `plugin_precache()`, then assign that same model to the entity. Set the intended collision bounds afterward because model assignment can affect them.
 
 
 ```pawn
@@ -215,18 +216,19 @@ public apply_marker_model( marker )
 		return;
 
 	entity_set_model( marker, MARKER_MODEL );
+	// Set bounds after the model, which can change them.
 	entity_set_size( marker, Float:{ -16.0, -16.0, -16.0 }, Float:{ 16.0, 16.0, 16.0 } );
 }
 ```
 
-The grenade model does not make the entity a grenade: behavior still comes from its real class and callbacks. For a custom resource, verify its path and deploy it to the server. Do not build an unbounded precache list from arbitrary client input.
+A grenade model changes appearance without adding grenade behavior. The real class and entity handlers still determine that. For a custom resource, check its path and deploy the file to the server. Keep the precache list controlled rather than filling it from arbitrary client input.
 
 Sources: [`precache_model`](https://www.amxmodx.org/api/amxmodx/precache_model), [`entity_set_model`](https://www.amxmodx.org/api/engine/entity_set_model), [`entity_set_size`](https://www.amxmodx.org/api/engine/entity_set_size).
 
 <a id="search-and-remove"></a>
-## Search narrowly and remove only your entities
+## Find and remove only your own entities
 
-A custom classname makes cleanup explicit. Cache the next matching index before removing the current entity so the search does not depend on a freed entity.
+A distinct classname lets us find the objects created by our feature. Below, we find the next marker before removing the current one. The search can continue without depending on an entity that has already been freed.
 
 
 ```pawn
@@ -239,6 +241,7 @@ public remove_markers()
 
 	while( entity > 0 )
 	{
+		// Find the next entity while the current one still exists.
 		new next = find_ent_by_class( entity, "notes_marker" );
 		remove_entity( entity );
 		entity = next;
@@ -246,14 +249,14 @@ public remove_markers()
 }
 ```
 
-Do this on a meaningful lifecycle event, such as your mode ending. A world-wide scan every frame is rarely justified. Do not remove players, `worldspawn` or all entities of a common game classname just to clean up a plugin feature.
+Run this cleanup for a relevant event, such as the mode ending. A full-world scan every frame is usually unnecessary. Common game classes, players and `worldspawn` are not our markers; deleting those broadly will break the game.
 
 Sources: [`find_ent_by_class`](https://www.amxmodx.org/api/engine/find_ent_by_class), [`remove_entity`](https://www.amxmodx.org/api/engine/remove_entity).
 
 <a id="owner-lifetime"></a>
-## An owner slot can be reused too
+## An owner can change in the same slot too
 
-For a custom entity, save the owner player index and that connection’s userid. This prevents a reconnecting player in the same slot from inheriting an old marker. The example reserves `iuser1` for this purpose on your own entity.
+For your own entity, save the owner index and that connection’s userid. A new player in the same slot will then not inherit an old marker. Below, we reserve `iuser1` on our own entity for the userid.
 
 
 ```pawn
@@ -266,6 +269,7 @@ public assign_marker_owner( marker, player )
 		return;
 
 	entity_set_edict( marker, EV_ENT_owner, player );
+	// Keep the connection identity alongside the reusable owner slot.
 	entity_set_int( marker, EV_INT_iuser1, get_user_userid( player ) );
 }
 
@@ -286,19 +290,19 @@ public get_marker_owner( marker )
 }
 ```
 
-Decide separately whether disconnect should remove the marker, transfer it or leave it neutral. Do not overwrite `iuser*` fields belonging to game entities or another plugin. Entity ownership can also affect collision behavior, so it is not always suitable as an arbitrary metadata slot.
+Decide separately what happens to the marker on disconnect: remove it, transfer it or leave it neutral. Do not overwrite another object’s `iuser*` fields. The `owner` field can also affect collisions, so it is not always suitable for arbitrary metadata.
 
 Sources: [`get_user_userid`](https://www.amxmodx.org/api/amxmodx/get_user_userid), [`entity_set_edict`](https://www.amxmodx.org/api/engine/entity_set_edict).
 
 <a id="private-data"></a>
-## Private data: units, class and platform matter
+## Private data: check the fields and offsets
 
-Entvars such as `pev_origin` belong to the engine structure. `pdata` accesses fields of the game DLL’s C++ object. A valid edict is not enough: the expected class layout and platform offset must match.
+Fields such as `pev_origin` live in the engine structure. `pdata` accesses fields in the game DLL’s C++ object. This needs the entity class, field layout and platform adjustment to match. An entity merely existing is not enough for safe access.
 
-- `get_pdata_int` / `get_pdata_float` use 4-byte offset units.
-- Byte-addressable natives such as `get_pdata_byte` or `get_pdata_ent` use byte offsets.
-- `linuxdiff` is added to the offset in that native’s units; the common default is not correct for every class.
-- Never mix a byte offset, a cell offset and a Linux adjustment from different tables.
+- With `get_pdata_int()` and `get_pdata_float()`, one offset step means 4 bytes.
+- Byte-access functions such as `get_pdata_byte()` and `get_pdata_ent()` take offsets in bytes.
+- `linuxdiff` is added in the same units as that function’s offset. The usual default adjustment does not suit every class.
+- Keep byte offsets, cell offsets and Linux adjustments from different tables separate. Check which access method and class each number belongs to first.
 
 
 ```pawn
@@ -315,14 +319,14 @@ public inspect_active_item( player )
 }
 ```
 
-**CS 1.6 gamedata example.** `get_ent_data_*` resolves a named member from AMXX gamedata and checks its declared type. It avoids baking raw offsets into the plugin, but still needs matching gamedata and the correct class. A missing pointer can return `-1`; validate the returned entity before reading it.
+**CS 1.6 gamedata example.** `get_ent_data_*` finds the named field in AMXX gamedata and checks its declared type. That keeps numeric offsets out of the plugin, but the gamedata must still match the game, and the class must match the field. A missing pointer can return `-1`; validate the returned entity before reading from it.
 
 Sources: [`get_pdata_int`](https://www.amxmodx.org/api/fakemeta/get_pdata_int), [`get_pdata_ent`](https://www.amxmodx.org/api/fakemeta/get_pdata_ent), [`get_ent_data_entity`](https://www.amxmodx.org/api/fakemeta/get_ent_data_entity).
 
 <a id="reapi-members"></a>
-## ReAPI named members, optional
+## Read named fields through ReAPI
 
-**CS 1.6 + ReAPI + ReGameDLL_CS.** `get_member` reads named game DLL members; `get_entvar` reads entvars. These are different data layers even though both functions accept an entity index.
+**CS 1.6 + ReAPI + ReGameDLL_CS.** `get_member()` reads named game DLL fields, while `get_entvar()` reads engine fields. Both accept an entity index, but access different data. Below, we read the player’s money and health this way.
 
 
 ```pawn
@@ -340,14 +344,14 @@ public inspect_account( player )
 }
 ```
 
-Prefer a behavior-level native when the operation has side effects: for example `rg_add_account` for money updates instead of only overwriting `m_iAccount`. A named member removes a magic offset, but direct assignment still bypasses the logic that a game function would execute.
+When a change should run game logic, use the function for that operation. For example, `rg_add_account()` updates money through the intended API. Directly overwriting `m_iAccount` bypasses the game function’s work, even when a readable name replaces the numeric offset.
 
 Sources: [ReAPI members](https://github.com/rehlds/ReAPI/blob/master/reapi/extra/amxmodx/scripting/include/reapi_gamedll.inc), [ReAPI entvars](https://github.com/rehlds/ReAPI/blob/master/reapi/extra/amxmodx/scripting/include/reapi_engine.inc).
 
 <a id="weapons-spawn-and-death"></a>
-## Weapons, respawn and death are game operations
+## Giving weapons, respawning and death
 
-**CS 1.6.** A weapon entity index is not its `CSW_*` ID, and reserve ammunition is not the weapon’s clip. Grant an item through game logic, check the result, then set the appropriate ammunition pool.
+**CS 1.6.** A weapon has an entity index and a separate `CSW_*` ID. Reserve ammunition and magazine ammunition are separate too. Below, we give an AK-47 through game logic, check that it succeeded, then set reserve ammo.
 
 
 ```pawn
@@ -369,10 +373,10 @@ public give_ak47( player )
 }
 ```
 
-Define what happens to an existing primary weapon; a give call is not a complete loadout policy. AK-47 reserve ammo shares the CS ammunition pool used by other weapons of that ammo type.
+If the player already has a primary weapon, decide separately what happens to it: one `give_item()` call does not define a full loadout policy. AK-47 reserve ammo belongs to a shared ammunition type that other weapons may use too.
 
-For respawn, **CS-specific** `ExecuteHamB( Ham_CS_RoundRespawn, player )` or optional ReAPI `rg_round_respawn` is closer to game behavior than merely setting health or calling a generic spawn. Verify team, connected/dead state and round rules first.
+For **CS** respawning, use `ExecuteHamB( Ham_CS_RoundRespawn, player )` or, with ReAPI, `rg_round_respawn`. These follow game behavior more closely than setting health or using a generic spawn. First check team, connection, alive/dead state and round rules.
 
-For death, setting health to zero, `user_kill`, applying damage and calling `Ham_Killed` have different effects on damage hooks, attribution and game rules. Choose the operation you need; none is a universal substitute for the others.
+For death, choose the operation that fits the intended effect. Setting health to zero, `user_kill()`, applying damage and calling `Ham_Killed` affect damage hooks, kill attribution and game rules differently. Account for those effects before replacing one with another.
 
 Sources: [`give_item`](https://www.amxmodx.org/api/fun/give_item), [`cs_set_user_bpammo`](https://www.amxmodx.org/api/cstrike/cs_set_user_bpammo), [Ham functions](https://www.amxmodx.org/api/ham_const), [`user_kill`](https://www.amxmodx.org/api/amxmodx/user_kill).
